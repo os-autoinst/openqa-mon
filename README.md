@@ -1,3 +1,3 @@
 # openqa-mon
 
-CLI monitoring client for OpenQA
+CLI monitoring client for OpenQA written in go
