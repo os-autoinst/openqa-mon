@@ -1,5 +1,7 @@
 # openqa-mon
 
+[![Build Status](https://travis-ci.com/grisu48/openqa-mon.svg?branch=master)](https://travis-ci.com/grisu48/openqa-mon)
+
 CLI monitoring client for [openQA](https://open.qa) written in plain simple go for periodic live monitoring in a terminal (See demo below)
 
 ![Demo of openqa-mon in action](demo.gif)
