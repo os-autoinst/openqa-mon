@@ -1,8 +1,8 @@
 # openqa-mon
 
-CLI monitoring client for [openQA](https://open.qa) written in plain simple go
+CLI monitoring client for [openQA](https://open.qa) written in plain simple go for periodic live monitoring in a terminal (See demo below)
 
-![Screenshot of openqa-mon in action](Screenshot.png)
+![Demo of openqa-mon in action](demo.gif)
 
 ## Build/Run
 
@@ -36,4 +36,4 @@ Running it with your own instance works nicely
 
 After that you simply run `oqa-mon` and you can continuously monitor the progress of your runs
 
-![oqa (bash alias) in action](oqa.png) 
+![Screenshot of openqa-mon in action](Screenshot.png)
