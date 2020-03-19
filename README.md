@@ -11,29 +11,29 @@ CLI monitoring client for [openQA](https://open.qa) written in plain simple go f
     $ make
     $ sudo make install     # install the binary to /usr/local/bin
     
-    $ openqa-mon http://your-instance.qam.suse.de/
+    $ openqa-mon http://your-instance.suse.de/
 
 Or simply
 
-    $ go run openqa-mon.go http://your-instance.qam.suse.de/
+    $ go run openqa-mon.go http://your-instance.suse.de/
 
 ## Usage
 
-    openqa-mon http://openqa.suse.de/
-
-Running `openqa-mon` against the main internal instance (http://openqa.suse.de/) works, but is slow.
+    openqa-mon http://openqa.opensuse.org
 
 This tool has been designed to monitor the jobs on your own instance.
 
 ### Periodical monitoring
 
-**DISCLAIMER** PLEASE DON'T RUN THIS AGAINST ANY PRODUCTIVE INSTANCE (especially not http://openqa.suse.de/). I don't know how much load this puts on those instances!
-
-Running it with your own instance works nicely
-
     ## Put this in your ~/.bashrc (or whatever shell you are using)
-    alias oqa-mon="watch -c -n 1 openqa-mon http://your-instance.qam.suse.de/"
+    alias oqa-mon="watch -c -n 1 openqa-mon http://your-instance.suse.de/"
 
 After that you simply run `oqa-mon` and you can continuously monitor the progress of your runs
 
-![Screenshot of openqa-mon in action](Screenshot.png)
+![openqa-mon in action](oqa.png)
+
+## Purpose
+
+This CLI is intended as live monitor of the state of your jobs. In contrast to the Browser interface it's smaller and probably also more efficient on the resources.
+
+![Screenshot of openqa-mon in action vs the Browser in the background](Screenshot.png)
