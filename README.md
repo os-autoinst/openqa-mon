@@ -21,13 +21,17 @@ Or simply
 
     openqa-mon http://openqa.suse.de/
 
-Running `openqa-mon` against the main instance works, but is a bit slow. It is highly recommended to run this utility only against your own instance to monitor your job.
+Running `openqa-mon` against the main internal instance (http://openqa.suse.de/) works, but is slow.
+
+This tool has been designed to monitor the jobs on your own instance.
 
 ### Periodical monitoring
 
-**DISCLAIMER** As I don't know how much pressure this puts on an openQA instance, please do NOT run this against any production environment (e.g. http://openqa.suse.de/). Running it with your own instance works nicely.
+**DISCLAIMER** PLEASE DON'T RUN THIS AGAINST ANY PRODUCTIVE INSTANCE (especially not http://openqa.suse.de/). I don't know how much load this puts on those instances!
 
-    ## Put this in your ~/.bashrc
+Running it with your own instance works nicely
+
+    ## Put this in your ~/.bashrc (or whatever shell you are using)
     alias oqa-mon="watch -c -n 1 openqa-mon http://your-instance.qam.suse.de/"
 
 After that you simply run `oqa-mon` and you can continuously monitor the progress of your runs
