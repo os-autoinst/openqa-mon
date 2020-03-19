@@ -40,6 +40,10 @@ type Job struct {
 	Test      string   `json:"test"`
 }
 
+type JobStruct struct {
+	Job Job `json:"job"`
+}
+
 type Jobs struct {
 	Jobs []Job `json:"jobs"`
 }
@@ -114,6 +118,47 @@ func (s byId) Less(i, j int) bool {
 
 }
 
+func FetchJob(url string, jobId int) (Job, error) {
+	var job JobStruct
+	url = fmt.Sprintf("%s/api/v1/jobs/%d", url, jobId)
+	resp, err := http.Get(url)
+	if err != nil {
+		return job.Job, err
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return job.Job, err
+	}
+	err = json.Unmarshal(body, &job)
+	if err != nil {
+		return job.Job, err
+	}
+	return job.Job, nil
+}
+
+func GetLatestJobs(url string) ([]Job, error) {
+	var jobs []Job
+	resp, err := http.Get(url + "/api/v1/jobs/overview")
+	if err != nil {
+		return jobs, err
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return jobs, err
+	}
+	err = json.Unmarshal(body, &jobs)
+
+	// Fetch more details about the jobs
+	for i, job := range jobs {
+		job, err = FetchJob(url, job.ID)
+		if err != nil {
+			return jobs, err
+		}
+		jobs[i] = job
+	}
+	return jobs, nil
+}
+
 func main() {
 	args := os.Args
 	if len(args) < 2 {
@@ -125,32 +170,21 @@ func main() {
 	printN := 10
 	for _, remote := range args[1:] {
 		remote = ensureHTTP(remote)
-		resp, err := http.Get(remote + "/api/v1/jobs")
-		if err != nil {
-			fmt.Fprintln(os.Stderr, "Connection error: ", err)
-			continue
-		}
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, "Error fetching data: ", err)
-			continue
-		}
-		var jobs Jobs
-		err = json.Unmarshal(body, &jobs)
-		if err != nil {
 
-			fmt.Fprintln(os.Stderr, "Error parsing data: ", err)
+		jobs, err := GetLatestJobs(remote)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error fetching jobs: %s\n", err)
 			continue
 		}
-		if len(jobs.Jobs) == 0 {
+		if len(jobs) == 0 {
 			fmt.Println("No jobs on instance found")
 			continue
 		}
-		sort.Sort(byId(jobs.Jobs))
+		sort.Sort(byId(jobs))
 
 		// Print only the last n jobs
-		for i, job := range jobs.Jobs {
-			if i >= len(jobs.Jobs)-printN {
+		for i, job := range jobs {
+			if i >= len(jobs)-printN {
 				job.Println(useColors)
 			}
 		}
