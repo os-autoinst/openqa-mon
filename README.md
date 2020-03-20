@@ -21,7 +21,11 @@ Or simply
 
 ## Usage
 
+	# Check the job overview
     openqa-mon http://openqa.opensuse.org
+	# Check the status of the jobs 100,101 and 199
+	openqa-mon http://openqa.opensuse.org -j 100,101,199
+	
 
 This tool has been designed to monitor the jobs on your own instance.
 
@@ -30,9 +34,16 @@ This tool has been designed to monitor the jobs on your own instance.
     ## Put this in your ~/.bashrc (or whatever shell you are using)
     alias oqa-mon="watch -c -n 1 openqa-mon http://your-instance.suse.de/"
 
-After that you simply run `oqa-mon` and you can continuously monitor the progress of your runs
+After that you simply run `oqa-mon` and you can continuously monitor the progress of your runs:
+
+	# Live monitor the job overview
+    oqa-mon
+    
+    # Live monitor certain job IDs
+    oqa-mon -j 4018049,4018060,4018050,4018051,4018052,4018053,4018054
 
 ![openqa-mon in action](oqa.png)
+
 
 ## Purpose
 

@@ -2,11 +2,13 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"syscall"
 	"unsafe"
@@ -162,6 +164,16 @@ func fetchJob(url string, jobID int) (Job, error) {
 	if err != nil {
 		return job.Job, err
 	}
+	if resp.StatusCode != 200 {
+		if resp.StatusCode == 404 {
+			job.Job.ID = 0
+			return job.Job, nil
+		} else if resp.StatusCode == 403 {
+			return job.Job, errors.New("Access denied")
+		} else {
+			fmt.Fprintf(os.Stderr, "Http status code %d\n", resp.StatusCode)
+		}
+	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return job.Job, err
@@ -198,12 +210,30 @@ func getJobsOverview(url string) ([]Job, error) {
 }
 
 func printHelp() {
-	fmt.Printf("Usage: %s REMOTE\n  REMOTE is the base URL of the openQA server (e.g. https://openqa.opensuse.org)\n", os.Args[0])
+	fmt.Printf("Usage: %s [OPTIONS] REMOTE\n  REMOTE is the base URL of the openQA server (e.g. https://openqa.opensuse.org)\n\n", os.Args[0])
+	fmt.Println("OPTIONS\n")
+	fmt.Println("  -h, --help                       Print this help message")
+	fmt.Println("  -j, --jobs JOBS                  Display information only for the given JOBS (comma separated ids)")
+}
+
+func parseJobs(jobs string) ([]int, error) {
+	split := strings.Split(jobs, ",")
+	ret := make([]int, 0)
+	for _, sID := range split {
+		id, err := strconv.Atoi(sID)
+		if err != nil {
+			return ret, err
+		}
+		ret = append(ret, id)
+	}
+	return ret, nil
 }
 
 func main() {
+	var err error
 	args := os.Args[1:]
 	remotes := make([]string, 0)
+	jobIDs := make([]int, 0)
 
 	// Parse program arguments
 	for i := 0; i < len(args); i++ {
@@ -216,6 +246,18 @@ func main() {
 			case "-h", "--help":
 				printHelp()
 				return
+			case "-j", "--jobs":
+				i++
+				if i >= len(args) {
+					fmt.Fprintln(os.Stderr, "Missing job IDs")
+					os.Exit(1)
+				}
+				jobIDs, err = parseJobs(args[i])
+				if err != nil {
+					fmt.Fprintln(os.Stderr, "Invalid job IDs")
+					fmt.Println("Job IDs must be either a single ID, or multiple comma separated IDs (e.g. 1,2,3)")
+					os.Exit(1)
+				}
 			default:
 				fmt.Fprintf(os.Stderr, "Invalid argument: %s\n", arg)
 				fmt.Printf("Use %s --help to display available options\n", os.Args[0])
@@ -237,20 +279,35 @@ func main() {
 	for _, remote := range remotes {
 		remote = ensureHTTP(remote)
 
-		jobs, err := getJobsOverview(remote)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error fetching jobs: %s\n", err)
-			continue
-		}
-		if len(jobs) == 0 {
-			fmt.Println("No jobs on instance found")
-			continue
+		var jobs []Job
+		if len(jobIDs) == 0 { // If no jobs are defined, fetch overview
+			jobs, err = getJobsOverview(remote)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error fetching jobs: %s\n", err)
+				continue
+			}
+			if len(jobs) == 0 {
+				fmt.Println("No jobs on instance found")
+				continue
+			}
+		} else {
+			// Fetch jobs
+			jobs = make([]Job, 0)
+			for _, id := range jobIDs {
+				job, err := fetchJob(remote, id)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Error fetching job %d: %s\n", id, err)
+					continue
+				}
+				jobs = append(jobs, job)
+			}
 		}
 		// Sort jobs by ID
 		sort.Sort(byID(jobs))
-
 		for _, job := range jobs {
-			job.Println(useColors, termWidth)
+			if job.ID > 0 { // Otherwise it's an empty (.e. not found) job
+				job.Println(useColors, termWidth)
+			}
 		}
 	}
 
