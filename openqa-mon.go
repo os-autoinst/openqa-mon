@@ -8,6 +8,8 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"syscall"
+	"unsafe"
 )
 
 // Terminal color codes
@@ -62,14 +64,48 @@ func ensureHTTP(remote string) string {
 	}
 }
 
-func (job *Job) Println(useColors bool) {
+type winsize struct {
+	Row    uint16
+	Col    uint16
+	Xpixel uint16
+	Ypixel uint16
+}
+
+func terminalWidth() int {
+	ws := &winsize{}
+	ret, _, _ := syscall.Syscall(syscall.SYS_IOCTL,
+		uintptr(syscall.Stdin),
+		uintptr(syscall.TIOCGWINSZ),
+		uintptr(unsafe.Pointer(ws)))
+
+	if int(ret) == 0 {
+		return int(ws.Col)
+	} else {
+		return 80 // Default value
+	}
+}
+
+// Println prints the current job in a 80 character wide line with optional colors enabled
+func (job *Job) Println(useColors bool, width int) {
 	name := job.Test + "@" + job.Settings.Machine
+
+	// Crop or extend name, so that the total line is filled. We need 25 characters for id, progress ecc.
+	if width < 50 {
+		width = 50
+	}
+	if len(name) > width-25 {
+		fmt.Printf("%s %d %d\n", name, len(name), width-25)
+		name = name[:width-25]
+	}
+	for len(name) < width-25 {
+		name = name + " "
+	}
 
 	if job.State == "running" {
 		if useColors {
 			fmt.Print(KGRN)
 		}
-		fmt.Printf(" %-6d %-59s %12s\n", job.ID, name, job.State)
+		fmt.Printf(" %-6d %s %15s\n", job.ID, name, job.State)
 		if useColors {
 			fmt.Print(KNRM)
 		}
@@ -88,7 +124,7 @@ func (job *Job) Println(useColors bool) {
 				fmt.Print(KWHT)
 			}
 		}
-		fmt.Printf(" %-6d %-59s %12s\n", job.ID, name, job.Result)
+		fmt.Printf(" %-6d %s %15s\n", job.ID, name, job.Result)
 		if useColors {
 			fmt.Print(KNRM)
 		}
@@ -97,7 +133,7 @@ func (job *Job) Println(useColors bool) {
 		if useColors {
 			fmt.Print(KCYN)
 		}
-		fmt.Printf(" %-6d %-59s %12s\n", job.ID, name, job.State)
+		fmt.Printf(" %-6d %s %15s\n", job.ID, name, job.State)
 		if useColors {
 			fmt.Print(KNRM)
 		}
@@ -105,22 +141,23 @@ func (job *Job) Println(useColors bool) {
 
 }
 
-type byId []Job
+/* Struct for sorting job slice by job id */
+type byID []Job
 
-func (s byId) Len() int {
+func (s byID) Len() int {
 	return len(s)
 }
-func (s byId) Swap(i, j int) {
+func (s byID) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
-func (s byId) Less(i, j int) bool {
+func (s byID) Less(i, j int) bool {
 	return s[i].ID < s[j].ID
 
 }
 
-func FetchJob(url string, jobId int) (Job, error) {
+func fetchJob(url string, jobID int) (Job, error) {
 	var job JobStruct
-	url = fmt.Sprintf("%s/api/v1/jobs/%d", url, jobId)
+	url = fmt.Sprintf("%s/api/v1/jobs/%d", url, jobID)
 	resp, err := http.Get(url)
 	if err != nil {
 		return job.Job, err
@@ -133,10 +170,11 @@ func FetchJob(url string, jobId int) (Job, error) {
 	if err != nil {
 		return job.Job, err
 	}
+
 	return job.Job, nil
 }
 
-func GetLatestJobs(url string) ([]Job, error) {
+func getJobsOverview(url string) ([]Job, error) {
 	var jobs []Job
 	resp, err := http.Get(url + "/api/v1/jobs/overview")
 	if err != nil {
@@ -150,7 +188,7 @@ func GetLatestJobs(url string) ([]Job, error) {
 
 	// Fetch more details about the jobs
 	for i, job := range jobs {
-		job, err = FetchJob(url, job.ID)
+		job, err = fetchJob(url, job.ID)
 		if err != nil {
 			return jobs, err
 		}
@@ -159,19 +197,47 @@ func GetLatestJobs(url string) ([]Job, error) {
 	return jobs, nil
 }
 
+func printHelp() {
+	fmt.Printf("Usage: %s REMOTE\n  REMOTE is the base URL of the openQA server (e.g. https://openqa.opensuse.org)\n", os.Args[0])
+}
+
 func main() {
-	args := os.Args
-	if len(args) < 2 {
-		fmt.Printf("Usage: %s REMOTE\n  REMOTE is the base URL of the OpenQA server\n", args[0])
+	args := os.Args[1:]
+	remotes := make([]string, 0)
+
+	// Parse program arguments
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		if arg == "" {
+			continue
+		}
+		if arg[0] == '-' {
+			switch arg {
+			case "-h", "--help":
+				printHelp()
+				return
+			default:
+				fmt.Fprintf(os.Stderr, "Invalid argument: %s\n", arg)
+				fmt.Printf("Use %s --help to display available options\n", os.Args[0])
+				os.Exit(1)
+			}
+		} else {
+			// Assume host
+			remotes = append(remotes, arg)
+		}
+	}
+
+	if len(remotes) == 0 {
+		printHelp()
 		return
 	}
 
+	termWidth := terminalWidth()
 	useColors := true
-	printN := 10
-	for _, remote := range args[1:] {
+	for _, remote := range remotes {
 		remote = ensureHTTP(remote)
 
-		jobs, err := GetLatestJobs(remote)
+		jobs, err := getJobsOverview(remote)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error fetching jobs: %s\n", err)
 			continue
@@ -180,13 +246,11 @@ func main() {
 			fmt.Println("No jobs on instance found")
 			continue
 		}
-		sort.Sort(byId(jobs))
+		// Sort jobs by ID
+		sort.Sort(byID(jobs))
 
-		// Print only the last n jobs
-		for i, job := range jobs {
-			if i >= len(jobs)-printN {
-				job.Println(useColors)
-			}
+		for _, job := range jobs {
+			job.Println(useColors, termWidth)
 		}
 	}
 
