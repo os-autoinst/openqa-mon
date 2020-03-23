@@ -216,6 +216,7 @@ func printHelp() {
 	fmt.Println("  -h, --help                       Print this help message")
 	fmt.Println("  -j, --jobs JOBS                  Display information only for the given JOBS (comma separated ids)")
 	fmt.Println("  -c,--continous SECONDS           Continously display stats")
+	fmt.Println("")
 }
 
 func parseJobs(jobs string) ([]int, error) {
@@ -229,6 +230,30 @@ func parseJobs(jobs string) ([]int, error) {
 		ret = append(ret, id)
 	}
 	return ret, nil
+}
+
+// parseJobID parses the given text for a valid job id ("[#]INTEGER[:]" and INTEGER > 0). Returns the job id if valid or 0 on error
+func parseJobID(parseText string) int {
+	// Remove # at beginning
+	for len(parseText) > 1 && parseText[0] == '#' {
+		parseText = parseText[1:]
+	}
+	// Remote : at the end
+	for len(parseText) > 1 && parseText[len(parseText)-1] == ':' {
+		parseText = parseText[:len(parseText)-1]
+	}
+	if len(parseText) == 0 {
+		return 0
+	}
+	num, err := strconv.Atoi(parseText)
+	if err != nil {
+		return 0
+	}
+	if num <= 0 {
+		return 0
+	} else {
+		return num
+	}
 }
 
 func clearScreen() {
@@ -300,8 +325,8 @@ func main() {
 			}
 		} else {
 			// If the argument is a number only, assume it's a job ID otherwise it's a host
-			jobID, err := strconv.Atoi(arg)
-			if err == nil {
+			jobID := parseJobID(arg)
+			if jobID > 0 {
 				jobIDs = append(jobIDs, jobID)
 			} else {
 				remotes = append(remotes, arg)
@@ -318,6 +343,10 @@ func main() {
 		clearScreen()
 	}
 
+	defer func() {
+		// Ensure cursor is visible after termination
+		showCursor()
+	}()
 	for {
 		termWidth := terminalWidth()
 		useColors := true
