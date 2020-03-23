@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
 	"unsafe"
 )
 
@@ -214,6 +215,7 @@ func printHelp() {
 	fmt.Println("OPTIONS\n")
 	fmt.Println("  -h, --help                       Print this help message")
 	fmt.Println("  -j, --jobs JOBS                  Display information only for the given JOBS (comma separated ids)")
+	fmt.Println("  -c,--continous SECONDS           Continously display stats")
 }
 
 func parseJobs(jobs string) ([]int, error) {
@@ -229,11 +231,28 @@ func parseJobs(jobs string) ([]int, error) {
 	return ret, nil
 }
 
+func clearScreen() {
+	fmt.Println("\033[2J")
+}
+
+func moveCursorBeginning() {
+	fmt.Println("\033[0;0H")
+}
+
+func hideCursor() {
+	fmt.Print("\033[?25l")
+}
+
+func showCursor() {
+	fmt.Print("\033[?25h")
+}
+
 func main() {
 	var err error
 	args := os.Args[1:]
 	remotes := make([]string, 0)
 	jobIDs := make([]int, 0)
+	continuous := 0 // If > 0, continously monitor
 
 	// Parse program arguments
 	for i := 0; i < len(args); i++ {
@@ -252,20 +271,41 @@ func main() {
 					fmt.Fprintln(os.Stderr, "Missing job IDs")
 					os.Exit(1)
 				}
-				jobIDs, err = parseJobs(args[i])
+				newJobIDs, err := parseJobs(args[i])
 				if err != nil {
 					fmt.Fprintln(os.Stderr, "Invalid job IDs")
 					fmt.Println("Job IDs must be either a single ID, or multiple comma separated IDs (e.g. 1,2,3)")
 					os.Exit(1)
 				}
+				for _, jobID := range newJobIDs {
+					jobIDs = append(jobIDs, jobID)
+				}
+			case "-c", "--continous":
+				i++
+				if i >= len(args) {
+					fmt.Fprintln(os.Stderr, "Missing continous period")
+					os.Exit(1)
+				}
+				continuous, err = strconv.Atoi(args[i])
+				if err != nil || continuous < 0 {
+					fmt.Fprintln(os.Stderr, "Invalid continous period")
+					fmt.Println("Continous duration needs to be a positive, non-zero integer that determines the seconds between refreshes")
+					os.Exit(1)
+				}
+
 			default:
 				fmt.Fprintf(os.Stderr, "Invalid argument: %s\n", arg)
 				fmt.Printf("Use %s --help to display available options\n", os.Args[0])
 				os.Exit(1)
 			}
 		} else {
-			// Assume host
-			remotes = append(remotes, arg)
+			// If the argument is a number only, assume it's a job ID otherwise it's a host
+			jobID, err := strconv.Atoi(arg)
+			if err == nil {
+				jobIDs = append(jobIDs, jobID)
+			} else {
+				remotes = append(remotes, arg)
+			}
 		}
 	}
 
@@ -274,40 +314,61 @@ func main() {
 		return
 	}
 
-	termWidth := terminalWidth()
-	useColors := true
-	for _, remote := range remotes {
-		remote = ensureHTTP(remote)
+	if continuous > 0 {
+		clearScreen()
+	}
 
-		var jobs []Job
-		if len(jobIDs) == 0 { // If no jobs are defined, fetch overview
-			jobs, err = getJobsOverview(remote)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error fetching jobs: %s\n", err)
-				continue
-			}
-			if len(jobs) == 0 {
-				fmt.Println("No jobs on instance found")
-				continue
-			}
-		} else {
-			// Fetch jobs
-			jobs = make([]Job, 0)
-			for _, id := range jobIDs {
-				job, err := fetchJob(remote, id)
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "Error fetching job %d: %s\n", id, err)
-					continue
-				}
-				jobs = append(jobs, job)
+	for {
+		termWidth := terminalWidth()
+		useColors := true
+		if continuous > 0 {
+			hideCursor()
+			moveCursorBeginning()
+			if len(remotes) == 1 {
+				fmt.Printf("openqa-mon - Monitoring %s | Refresh every %d seconds\n\n", remotes[0], continuous)
+			} else {
+				fmt.Printf("openqa-mon - Monitoring %d remotes | Refresh every %d seconds\n\n", len(remotes), continuous)
 			}
 		}
-		// Sort jobs by ID
-		sort.Sort(byID(jobs))
-		for _, job := range jobs {
-			if job.ID > 0 { // Otherwise it's an empty (.e. not found) job
-				job.Println(useColors, termWidth)
+		for _, remote := range remotes {
+			remote = ensureHTTP(remote)
+
+			var jobs []Job
+			if len(jobIDs) == 0 { // If no jobs are defined, fetch overview
+				jobs, err = getJobsOverview(remote)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Error fetching jobs: %s\n", err)
+					continue
+				}
+				if len(jobs) == 0 {
+					fmt.Println("No jobs on instance found")
+					continue
+				}
+			} else {
+				// Fetch jobs
+				jobs = make([]Job, 0)
+				for _, id := range jobIDs {
+					job, err := fetchJob(remote, id)
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "Error fetching job %d: %s\n", id, err)
+						continue
+					}
+					jobs = append(jobs, job)
+				}
 			}
+			// Sort jobs by ID
+			sort.Sort(byID(jobs))
+			for _, job := range jobs {
+				if job.ID > 0 { // Otherwise it's an empty (.e. not found) job
+					job.Println(useColors, termWidth)
+				}
+			}
+		}
+		if continuous <= 0 {
+			break
+		} else {
+			showCursor()
+			time.Sleep(time.Duration(continuous) * time.Second)
 		}
 	}
 

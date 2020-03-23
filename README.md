@@ -25,11 +25,26 @@ Or simply
     openqa-mon http://openqa.opensuse.org
 	# Check the status of the jobs 100,101 and 199
 	openqa-mon http://openqa.opensuse.org -j 100,101,199
-	
 
-This tool has been designed to monitor the jobs on your own instance.
+You can omit the `-j` parameter. Every parameter that is an `integer` will be considered as `job-id`
+
+    openqa-mon http://openqa.opensuse.org 100 101 199
 
 ### Periodical monitoring
+
+Preliminary native support for continuous monitoring is given with the `-c SECONDS` parameter:
+
+    # Refresh every 5 seconds
+    openqa-mon -c 5 openqa.opensuse.org
+
+Of course this also includes continuous monitoring for certain jobs
+
+    # Monitor job 1211758, refresh every 5 seconds
+    openqa-mon -c 5 openqa.opensuse.org -j 1211758
+
+![Example of continous monitoring](OpenQA-Continous.png)
+
+#### Fallback method: `watch`
 
     ## Put this in your ~/.bashrc (or whatever shell you are using)
     alias oqa-mon="watch -c -n 1 openqa-mon http://your-instance.suse.de/"
