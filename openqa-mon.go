@@ -74,7 +74,7 @@ type winsize struct {
 	Ypixel uint16
 }
 
-func terminalWidth() int {
+func terminalSize() (int, int) {
 	ws := &winsize{}
 	ret, _, _ := syscall.Syscall(syscall.SYS_IOCTL,
 		uintptr(syscall.Stdin),
@@ -82,9 +82,9 @@ func terminalWidth() int {
 		uintptr(unsafe.Pointer(ws)))
 
 	if int(ret) == 0 {
-		return int(ws.Col)
+		return int(ws.Col), int(ws.Row)
 	} else {
-		return 80 // Default value
+		return 80, 24 // Default value
 	}
 }
 
@@ -257,7 +257,7 @@ func parseJobID(parseText string) int {
 }
 
 func clearScreen() {
-	fmt.Println("\033[2J")
+	fmt.Println("\033[2J\033[;H") //\033[2J\033[H\033[2J")
 }
 
 func moveCursorBeginning() {
@@ -270,6 +270,14 @@ func hideCursor() {
 
 func showCursor() {
 	fmt.Print("\033[?25h")
+}
+
+func spaces(n int) string {
+	ret := ""
+	for i := 0; i < n; i++ {
+		ret += " "
+	}
+	return ret
 }
 
 func main() {
@@ -348,17 +356,23 @@ func main() {
 		showCursor()
 	}()
 	for {
-		termWidth := terminalWidth()
+		termWidth, termHeight := terminalSize()
+		spacesRow := spaces(termWidth)
 		useColors := true
 		if continuous > 0 {
 			hideCursor()
 			moveCursorBeginning()
 			if len(remotes) == 1 {
-				fmt.Printf("openqa-mon - Monitoring %s | Refresh every %d seconds\n\n", remotes[0], continuous)
+				line := fmt.Sprintf("openqa-mon - Monitoring %s | Refresh every %d seconds", remotes[0], continuous)
+				fmt.Print(line + spaces(termWidth-len(line)))
+				fmt.Println(spacesRow)
 			} else {
-				fmt.Printf("openqa-mon - Monitoring %d remotes | Refresh every %d seconds\n\n", len(remotes), continuous)
+				line := fmt.Sprintf("openqa-mon - Monitoring %d remotes | Refresh every %d seconds", len(remotes), continuous)
+				fmt.Print(line + spaces(termWidth-len(line)))
+				fmt.Println(spacesRow)
 			}
 		}
+		lines := 3
 		for _, remote := range remotes {
 			remote = ensureHTTP(remote)
 
@@ -392,11 +406,20 @@ func main() {
 					job.Println(useColors, termWidth)
 				}
 			}
+			lines += len(jobs) + 1
 		}
 		if continuous <= 0 {
 			break
 		} else {
 			showCursor()
+			// Fill remaining screen with blank characters to erase
+			n := termHeight - lines
+			for i := 0; i < n; i++ {
+				fmt.Println(spacesRow)
+			}
+			line := "openqa-mon (https://github.com/grisu48/openqa-mon)"
+			date := time.Now().Format("15:04:05")
+			fmt.Print(line + spaces(termWidth-len(line)-len(date)) + date)
 			time.Sleep(time.Duration(continuous) * time.Second)
 		}
 	}
