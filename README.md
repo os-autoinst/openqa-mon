@@ -10,29 +10,33 @@ CLI monitoring client for [openQA](https://open.qa) written in plain simple go f
 
 `openqa-mon` is written in plain go without any additional requirements. Build it with the provided `Makefile`
 
-    $ make
-    $ sudo make install     # install the binary to /usr/local/bin
+    make
+    sudo make install     # install the binary to /usr/local/bin
     
-    $ openqa-mon http://your-instance.suse.de/
+    openqa-mon http://your-instance.suse.de/
 
-Or simply
-
-    $ go run openqa-mon.go http://your-instance.suse.de/
 
 ## Usage
 
 	# Check the job overview
     openqa-mon http://openqa.opensuse.org
+    
 	# Check the status of the jobs 100,101 and 199
 	openqa-mon http://openqa.opensuse.org -j 100,101,199
+	
+    # Continuous monitoring certain jobs (e.g. job 401558 and 401782)
+    openqa-mon -c 5 http://your-instance.suse.de 401558 401782
+	
+    # Continuous monitoring job range (e.g. jobs 202-205, i.e. jobs 202,203,204,205)
+    openqa-mon -c 5 http://your-instance.suse.de 202..205
 
-You can omit the `-j` parameter. Every parameter that is an `integer` will be considered as `job-id`
+You can omit the `-j` parameter. Every positive, non-zero `integer` parameter will be considered as `job-id` to be monitored
 
     openqa-mon http://openqa.opensuse.org 100 101 199
 
 ### Periodical monitoring
 
-Preliminary native support for continuous monitoring is given with the `-c SECONDS` parameter:
+Support for continuous monitoring is given with the `-c SECONDS` parameter:
 
     # Refresh every 5 seconds
     openqa-mon -c 5 openqa.opensuse.org
@@ -44,7 +48,7 @@ Of course this also includes continuous monitoring for certain jobs
 
 ![Example of continous monitoring](OpenQA-Continous.png)
 
-#### Fallback method: `watch`
+#### Alternative method: `watch`
 
     ## Put this in your ~/.bashrc (or whatever shell you are using)
     alias oqa-mon="watch -c -n 1 openqa-mon http://your-instance.suse.de/"

@@ -74,7 +74,7 @@ type winsize struct {
 	Ypixel uint16
 }
 
-func terminalWidth() int {
+func terminalSize() (int, int) {
 	ws := &winsize{}
 	ret, _, _ := syscall.Syscall(syscall.SYS_IOCTL,
 		uintptr(syscall.Stdin),
@@ -82,9 +82,9 @@ func terminalWidth() int {
 		uintptr(unsafe.Pointer(ws)))
 
 	if int(ret) == 0 {
-		return int(ws.Col)
+		return int(ws.Col), int(ws.Row)
 	} else {
-		return 80 // Default value
+		return 80, 24 // Default value
 	}
 }
 
@@ -106,7 +106,7 @@ func (job *Job) Println(useColors bool, width int) {
 
 	if job.State == "running" {
 		if useColors {
-			fmt.Print(KGRN)
+			fmt.Print(KBLU)
 		}
 		fmt.Printf(" %-6d %s %15s\n", job.ID, name, job.State)
 		if useColors {
@@ -122,7 +122,7 @@ func (job *Job) Println(useColors bool, width int) {
 			case "user_cancelled":
 				fmt.Print(KYEL)
 			case "passed":
-				fmt.Print(KBLU)
+				fmt.Print(KGRN)
 			default:
 				fmt.Print(KWHT)
 			}
@@ -216,6 +216,7 @@ func printHelp() {
 	fmt.Println("  -h, --help                       Print this help message")
 	fmt.Println("  -j, --jobs JOBS                  Display information only for the given JOBS (comma separated ids)")
 	fmt.Println("  -c,--continous SECONDS           Continously display stats")
+	fmt.Println("")
 }
 
 func parseJobs(jobs string) ([]int, error) {
@@ -231,8 +232,61 @@ func parseJobs(jobs string) ([]int, error) {
 	return ret, nil
 }
 
+// parseJobID parses the given text for a valid job id ("[#]INTEGER[:]" and INTEGER > 0). Returns the job id if valid or 0 on error
+func parseJobID(parseText string) int {
+	// Remove # at beginning
+	for len(parseText) > 1 && parseText[0] == '#' {
+		parseText = parseText[1:]
+	}
+	// Remote : at the end
+	for len(parseText) > 1 && parseText[len(parseText)-1] == ':' {
+		parseText = parseText[:len(parseText)-1]
+	}
+	if len(parseText) == 0 {
+		return 0
+	}
+	num, err := strconv.Atoi(parseText)
+	if err != nil {
+		return 0
+	}
+	if num <= 0 {
+		return 0
+	}
+	return num
+}
+
+// parseJobIDs parses the given text for a valid job id ("[#]INTEGER[:]" and INTEGER > 0) or job id ranges (MIN..MAX). Returns the job id if valid or 0 on error
+func parseJobIDs(parseText string) []int {
+	ret := make([]int, 0)
+
+	// Search for range
+	i := strings.Index(parseText, "..")
+	if i > 0 {
+		lower, upper := parseText[:i], parseText[i+2:]
+		min := parseJobID(lower)
+		if min <= 0 {
+			return ret
+		}
+		max := parseJobID(upper)
+		if max <= 0 {
+			return ret
+		}
+
+		// Create range
+		for i = min; i <= max; i++ {
+			ret = append(ret, i)
+		}
+		return ret
+	}
+	i = parseJobID(parseText)
+	if i > 0 {
+		ret = append(ret, i)
+	}
+	return ret
+}
+
 func clearScreen() {
-	fmt.Println("\033[2J")
+	fmt.Println("\033[2J\033[;H") //\033[2J\033[H\033[2J")
 }
 
 func moveCursorBeginning() {
@@ -245,6 +299,14 @@ func hideCursor() {
 
 func showCursor() {
 	fmt.Print("\033[?25h")
+}
+
+func spaces(n int) string {
+	ret := ""
+	for i := 0; i < n; i++ {
+		ret += " "
+	}
+	return ret
 }
 
 func main() {
@@ -299,12 +361,21 @@ func main() {
 				os.Exit(1)
 			}
 		} else {
-			// If the argument is a number only, assume it's a job ID otherwise it's a host
-			jobID, err := strconv.Atoi(arg)
-			if err == nil {
-				jobIDs = append(jobIDs, jobID)
-			} else {
+			// No argument, so it's either a job id, a job id range or a remote URI.
+			// If it's a uri, skip the job id test
+
+			if strings.HasPrefix(arg, "http://") || strings.HasPrefix(arg, "https://") {
 				remotes = append(remotes, arg)
+			} else {
+				// If the argument is a number only, assume it's a job ID otherwise it's a host
+				newIDs := parseJobIDs(arg)
+				if len(newIDs) > 0 {
+					for _, jobID := range newIDs {
+						jobIDs = append(jobIDs, jobID)
+					}
+				} else {
+					remotes = append(remotes, arg)
+				}
 			}
 		}
 	}
@@ -318,18 +389,28 @@ func main() {
 		clearScreen()
 	}
 
+	defer func() {
+		// Ensure cursor is visible after termination
+		showCursor()
+	}()
 	for {
-		termWidth := terminalWidth()
+		termWidth, termHeight := terminalSize()
+		spacesRow := spaces(termWidth)
 		useColors := true
 		if continuous > 0 {
 			hideCursor()
 			moveCursorBeginning()
 			if len(remotes) == 1 {
-				fmt.Printf("openqa-mon - Monitoring %s | Refresh every %d seconds\n\n", remotes[0], continuous)
+				line := fmt.Sprintf("openqa-mon - Monitoring %s | Refresh every %d seconds", remotes[0], continuous)
+				fmt.Print(line + spaces(termWidth-len(line)))
+				fmt.Println(spacesRow)
 			} else {
-				fmt.Printf("openqa-mon - Monitoring %d remotes | Refresh every %d seconds\n\n", len(remotes), continuous)
+				line := fmt.Sprintf("openqa-mon - Monitoring %d remotes | Refresh every %d seconds", len(remotes), continuous)
+				fmt.Print(line + spaces(termWidth-len(line)))
+				fmt.Println(spacesRow)
 			}
 		}
+		lines := 3
 		for _, remote := range remotes {
 			remote = ensureHTTP(remote)
 
@@ -363,11 +444,20 @@ func main() {
 					job.Println(useColors, termWidth)
 				}
 			}
+			lines += len(jobs) + 1
 		}
 		if continuous <= 0 {
 			break
 		} else {
 			showCursor()
+			// Fill remaining screen with blank characters to erase
+			n := termHeight - lines
+			for i := 0; i < n; i++ {
+				fmt.Println(spacesRow)
+			}
+			line := "openqa-mon (https://github.com/grisu48/openqa-mon)"
+			date := time.Now().Format("15:04:05")
+			fmt.Print(line + spaces(termWidth-len(line)-len(date)) + date)
 			time.Sleep(time.Duration(continuous) * time.Second)
 		}
 	}
