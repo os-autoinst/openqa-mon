@@ -18,6 +18,18 @@ CLI monitoring client for [openQA](https://open.qa) written in plain simple go f
 
 ## Usage
 
+    SYNOPSIS:
+    openqa-mon [OPTIONS] REMOTE [JOBS]
+    
+      REMOTE - openQA base URL
+      JOBS can be: either a single job id, multiple comma separated job ids or a job id range (MIN..MAX)
+                   See examples below for examples
+    OPTIONS
+      -c N             Periodic monitoring, refresh every N seconds
+      -h, --help       Print help message
+
+#### Examples
+
 	# Check the job overview
     openqa-mon http://openqa.opensuse.org
     
