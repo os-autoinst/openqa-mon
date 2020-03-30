@@ -26,6 +26,9 @@ CLI monitoring client for [openQA](https://open.qa) written in plain simple go f
 	
     # Continuous monitoring certain jobs (e.g. job 401558 and 401782)
     openqa-mon -c 5 http://your-instance.suse.de 401558 401782
+	
+    # Continuous monitoring job range (e.g. jobs 202-205, i.e. jobs 202,203,204,205)
+    openqa-mon -c 5 http://your-instance.suse.de 202..205
 
 You can omit the `-j` parameter. Every positive, non-zero `integer` parameter will be considered as `job-id` to be monitored
 

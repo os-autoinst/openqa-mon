@@ -106,7 +106,7 @@ func (job *Job) Println(useColors bool, width int) {
 
 	if job.State == "running" {
 		if useColors {
-			fmt.Print(KGRN)
+			fmt.Print(KBLU)
 		}
 		fmt.Printf(" %-6d %s %15s\n", job.ID, name, job.State)
 		if useColors {
@@ -122,7 +122,7 @@ func (job *Job) Println(useColors bool, width int) {
 			case "user_cancelled":
 				fmt.Print(KYEL)
 			case "passed":
-				fmt.Print(KBLU)
+				fmt.Print(KGRN)
 			default:
 				fmt.Print(KWHT)
 			}
@@ -251,9 +251,38 @@ func parseJobID(parseText string) int {
 	}
 	if num <= 0 {
 		return 0
-	} else {
-		return num
 	}
+	return num
+}
+
+// parseJobIDs parses the given text for a valid job id ("[#]INTEGER[:]" and INTEGER > 0) or job id ranges (MIN..MAX). Returns the job id if valid or 0 on error
+func parseJobIDs(parseText string) []int {
+	ret := make([]int, 0)
+
+	// Search for range
+	i := strings.Index(parseText, "..")
+	if i > 0 {
+		lower, upper := parseText[:i], parseText[i+2:]
+		min := parseJobID(lower)
+		if min <= 0 {
+			return ret
+		}
+		max := parseJobID(upper)
+		if max <= 0 {
+			return ret
+		}
+
+		// Create range
+		for i = min; i <= max; i++ {
+			ret = append(ret, i)
+		}
+		return ret
+	}
+	i = parseJobID(parseText)
+	if i > 0 {
+		ret = append(ret, i)
+	}
+	return ret
 }
 
 func clearScreen() {
@@ -332,12 +361,21 @@ func main() {
 				os.Exit(1)
 			}
 		} else {
-			// If the argument is a number only, assume it's a job ID otherwise it's a host
-			jobID := parseJobID(arg)
-			if jobID > 0 {
-				jobIDs = append(jobIDs, jobID)
-			} else {
+			// No argument, so it's either a job id, a job id range or a remote URI.
+			// If it's a uri, skip the job id test
+
+			if strings.HasPrefix(arg, "http://") || strings.HasPrefix(arg, "https://") {
 				remotes = append(remotes, arg)
+			} else {
+				// If the argument is a number only, assume it's a job ID otherwise it's a host
+				newIDs := parseJobIDs(arg)
+				if len(newIDs) > 0 {
+					for _, jobID := range newIDs {
+						jobIDs = append(jobIDs, jobID)
+					}
+				} else {
+					remotes = append(remotes, arg)
+				}
 			}
 		}
 	}
