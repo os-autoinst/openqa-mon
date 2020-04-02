@@ -49,6 +49,8 @@ type Job struct {
 	Tfinished string   `json:"t_finished"`
 	Tstarted  string   `json:"t_started"`
 	Test      string   `json:"test"`
+	/* this is added by the program and not part of the fetched json */
+	Link string
 }
 
 type JobStruct struct {
@@ -106,8 +108,16 @@ func (job *Job) Println(useColors bool, width int) {
 		fmt.Printf("%s %d %d\n", name, len(name), width-25)
 		name = name[:width-25]
 	}
-	for len(name) < width-25 {
-		name = name + " "
+
+	// Also print the link, if possible
+
+	if len(name)+len(job.Link)+4 < width-25 {
+		// Align link on the right side. Add spaces
+		spaces := spaces(width - 25 - (len(name) + len(job.Link) + 4))
+		name = name + spaces + job.Link
+	} else {
+		// Still fill up, also if link does not fit
+		name = name + spaces(width-25-len(name))
 	}
 
 	if job.State == "running" {
@@ -164,9 +174,9 @@ func (s byID) Less(i, j int) bool {
 
 }
 
-func fetchJob(url string, jobID int) (Job, error) {
+func fetchJob(remote string, jobID int) (Job, error) {
 	var job JobStruct
-	url = fmt.Sprintf("%s/api/v1/jobs/%d", url, jobID)
+	url := fmt.Sprintf("%s/api/v1/jobs/%d", remote, jobID)
 	resp, err := http.Get(url)
 	if err != nil {
 		return job.Job, err
@@ -189,7 +199,7 @@ func fetchJob(url string, jobID int) (Job, error) {
 	if err != nil {
 		return job.Job, err
 	}
-
+	job.Job.Link = fmt.Sprintf("%s/t%d", remote, jobID)
 	return job.Job, nil
 }
 
@@ -365,7 +375,6 @@ func main() {
 					fmt.Println("Continous duration needs to be a positive, non-zero integer that determines the seconds between refreshes")
 					os.Exit(1)
 				}
-
 			default:
 				fmt.Fprintf(os.Stderr, "Invalid argument: %s\n", arg)
 				fmt.Printf("Use %s --help to display available options\n", os.Args[0])
