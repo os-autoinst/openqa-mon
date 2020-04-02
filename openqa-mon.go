@@ -25,6 +25,12 @@ const KMAG = "\x1B[35m"
 const KCYN = "\x1B[36m"
 const KWHT = "\x1B[37m"
 
+// Remote instance
+type Remote struct {
+	URI  string
+	Jobs []int
+}
+
 // Job is a running Job instance
 type Job struct {
 	AssignedWorkerID int `json:"assigned_worker_id"`
@@ -312,8 +318,7 @@ func spaces(n int) string {
 func main() {
 	var err error
 	args := os.Args[1:]
-	remotes := make([]string, 0)
-	jobIDs := make([]int, 0)
+	remotes := make([]Remote, 0)
 	continuous := 0 // If > 0, continously monitor
 
 	// Parse program arguments
@@ -333,14 +338,20 @@ func main() {
 					fmt.Fprintln(os.Stderr, "Missing job IDs")
 					os.Exit(1)
 				}
-				newJobIDs, err := parseJobs(args[i])
-				if err != nil {
-					fmt.Fprintln(os.Stderr, "Invalid job IDs")
-					fmt.Println("Job IDs must be either a single ID, or multiple comma separated IDs (e.g. 1,2,3)")
+				if len(remotes) == 0 {
+					fmt.Fprintf(os.Stderr, "Jobs need to be defined after a remote instance\n")
 					os.Exit(1)
 				}
-				for _, jobID := range newJobIDs {
-					jobIDs = append(jobIDs, jobID)
+				jobIDs := parseJobIDs(arg)
+				if len(jobIDs) > 0 {
+					if len(remotes) == 0 {
+						fmt.Fprintf(os.Stderr, "Jobs need to be defined after a remote instance\n")
+						os.Exit(1)
+					}
+					remote := &remotes[len(remotes)-1]
+					for _, jobID := range jobIDs {
+						remote.Jobs = append(remote.Jobs, jobID)
+					}
 				}
 			case "-c", "--continous":
 				i++
@@ -365,16 +376,25 @@ func main() {
 			// If it's a uri, skip the job id test
 
 			if strings.HasPrefix(arg, "http://") || strings.HasPrefix(arg, "https://") {
-				remotes = append(remotes, arg)
+				remote := Remote{URI: arg}
+				remote.Jobs = make([]int, 0)
+				remotes = append(remotes, remote)
 			} else {
 				// If the argument is a number only, assume it's a job ID otherwise it's a host
-				newIDs := parseJobIDs(arg)
-				if len(newIDs) > 0 {
-					for _, jobID := range newIDs {
-						jobIDs = append(jobIDs, jobID)
+				jobIDs := parseJobIDs(arg)
+				if len(jobIDs) > 0 {
+					if len(remotes) == 0 {
+						fmt.Fprintf(os.Stderr, "Jobs need to be defined after a remote instance\n")
+						os.Exit(1)
+					}
+					remote := &remotes[len(remotes)-1]
+					for _, jobID := range jobIDs {
+						remote.Jobs = append(remote.Jobs, jobID)
 					}
 				} else {
-					remotes = append(remotes, arg)
+					remote := Remote{URI: arg}
+					remote.Jobs = make([]int, 0)
+					remotes = append(remotes, remote)
 				}
 			}
 		}
@@ -412,11 +432,11 @@ func main() {
 		}
 		lines := 3
 		for _, remote := range remotes {
-			remote = ensureHTTP(remote)
+			uri := ensureHTTP(remote.URI)
 
 			var jobs []Job
-			if len(jobIDs) == 0 { // If no jobs are defined, fetch overview
-				jobs, err = getJobsOverview(remote)
+			if len(remote.Jobs) == 0 { // If no jobs are defined, fetch overview
+				jobs, err = getJobsOverview(uri)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "Error fetching jobs: %s\n", err)
 					continue
@@ -428,8 +448,8 @@ func main() {
 			} else {
 				// Fetch jobs
 				jobs = make([]Job, 0)
-				for _, id := range jobIDs {
-					job, err := fetchJob(remote, id)
+				for _, id := range remote.Jobs {
+					job, err := fetchJob(uri, id)
 					if err != nil {
 						fmt.Fprintf(os.Stderr, "Error fetching job %d: %s\n", id, err)
 						continue
