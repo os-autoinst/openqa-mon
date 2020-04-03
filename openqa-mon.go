@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"os/signal"
 	"sort"
 	"strconv"
 	"strings"
@@ -418,10 +419,19 @@ func main() {
 		clearScreen()
 	}
 
-	defer func() {
-		// Ensure cursor is visible after termination
+	// Ensure cursor is visible after termination
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		sig := <-sigs
 		showCursor()
+		switch sig {
+		case syscall.SIGINT, syscall.SIGTERM:
+			fmt.Println("Terminating.")
+			os.Exit(1)
+		}
 	}()
+
 	for {
 		termWidth, termHeight := terminalSize()
 		spacesRow := spaces(termWidth)
@@ -430,7 +440,7 @@ func main() {
 			hideCursor()
 			moveCursorBeginning()
 			if len(remotes) == 1 {
-				line := fmt.Sprintf("openqa-mon - Monitoring %s | Refresh every %d seconds", remotes[0], continuous)
+				line := fmt.Sprintf("openqa-mon - Monitoring %s | Refresh every %d seconds", remotes[0].URI, continuous)
 				fmt.Print(line + spaces(termWidth-len(line)))
 				fmt.Println(spacesRow)
 			} else {
