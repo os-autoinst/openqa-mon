@@ -99,38 +99,12 @@ func terminalSize() (int, int) {
 
 // Println prints the current job in a 80 character wide line with optional colors enabled
 func (job *Job) Println(useColors bool, width int) {
-	name := job.Test + "@" + job.Settings.Machine
-
-	// Crop or extend name, so that the total line is filled. We need 25 characters for id, progress ecc.
-	if width < 50 {
-		width = 50
-	}
-	if len(name) > width-25 {
-		fmt.Printf("%s %d %d\n", name, len(name), width-25)
-		name = name[:width-25]
-	}
-
-	// Also print the link, if possible
-
-	if len(name)+len(job.Link)+4 < width-25 {
-		// Align link on the right side. Add spaces
-		spaces := spaces(width - 25 - (len(name) + len(job.Link) + 4))
-		name = name + spaces + job.Link
-	} else {
-		// Still fill up, also if link does not fit
-		name = name + spaces(width-25-len(name))
-	}
-
-	if job.State == "running" {
-		if useColors {
+	status := job.State
+	if useColors {
+		if job.State == "running" {
 			fmt.Print(KBLU)
-		}
-		fmt.Printf(" %-6d %s %15s\n", job.ID, name, job.State)
-		if useColors {
-			fmt.Print(KNRM)
-		}
-	} else if job.State == "done" {
-		if useColors {
+		} else if job.State == "done" {
+			status = job.State
 			switch job.Result {
 			case "failed":
 				fmt.Print(KRED)
@@ -143,22 +117,46 @@ func (job *Job) Println(useColors bool, width int) {
 			default:
 				fmt.Print(KWHT)
 			}
-		}
-		fmt.Printf(" %-6d %s %15s\n", job.ID, name, job.Result)
-		if useColors {
-			fmt.Print(KNRM)
-		}
-	} else {
-
-		if useColors {
+		} else {
 			fmt.Print(KCYN)
-		}
-		fmt.Printf(" %-6d %s %15s\n", job.ID, name, job.State)
-		if useColors {
-			fmt.Print(KNRM)
 		}
 	}
 
+	// Spacing rules:
+	// |id 8 chars|2 spaces|name@machine[2spaces|link]|2 spaces|status 15 characteres
+
+	// fixed characters: 8+2+2+15 = 27
+	fixedCharacters := 27
+
+	name := job.Test + "@" + job.Settings.Machine
+	link := job.Link
+
+	// Is there space for the link (including 2 additional spaces between name and link)?
+	if len(name)+len(link)+2 > width-fixedCharacters {
+		link = ""
+	}
+
+	// Add two spaces between name and link, if applicable
+	if link != "" {
+		link = "  " + link
+	}
+	// Crop or extend name with spaces to fill the whole line
+	i := width - fixedCharacters - len(link) - len(name)
+	if i == 0 {
+	} else if i < 0 {
+		name = name[:width-fixedCharacters]
+		link = ""
+	} else {
+		// Expand name
+		name = name + spaces(i)
+	}
+
+	fmt.Printf("%8d  %s%s  %15s\n", job.ID, name, link, status)
+
+	// Reset color
+	if useColors {
+		fmt.Print(KNRM)
+	}
 }
 
 /* Struct for sorting job slice by job id */
@@ -200,7 +198,11 @@ func fetchJob(remote string, jobID int) (Job, error) {
 	if err != nil {
 		return job.Job, err
 	}
-	job.Job.Link = fmt.Sprintf("%s/t%d", remote, jobID)
+	if strings.HasSuffix(remote, "/") {
+		job.Job.Link = fmt.Sprintf("%st%d", remote, jobID)
+	} else {
+		job.Job.Link = fmt.Sprintf("%s/t%d", remote, jobID)
+	}
 	return job.Job, nil
 }
 
@@ -326,6 +328,13 @@ func spaces(n int) string {
 	return ret
 }
 
+func max(x int, y int) int {
+	if x > y {
+		return x
+	}
+	return y
+}
+
 func main() {
 	var err error
 	args := os.Args[1:]
@@ -434,6 +443,9 @@ func main() {
 
 	for {
 		termWidth, termHeight := terminalSize()
+		// Ensure a certain minimum extend
+		termWidth = max(termWidth, 50)
+		termHeight = max(termHeight, 10)
 		spacesRow := spaces(termWidth)
 		useColors := true
 		if continuous > 0 {
