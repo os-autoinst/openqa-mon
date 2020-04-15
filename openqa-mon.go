@@ -114,6 +114,10 @@ func (job *Job) Println(useColors bool, width int) {
 				fmt.Print(KYEL)
 			case "passed":
 				fmt.Print(KGRN)
+			case "user_restarted":
+				fmt.Print(KBLU)
+			case "parallel_restarted":
+				fmt.Print(KBLU)
 			default:
 				fmt.Print(KWHT)
 			}
@@ -125,8 +129,8 @@ func (job *Job) Println(useColors bool, width int) {
 	// Spacing rules:
 	// |id 8 chars|2 spaces|name@machine[2spaces|link]|2 spaces|status 15 characteres
 
-	// fixed characters: 8+2+2+15 = 27
-	fixedCharacters := 27
+	// fixed characters: 8+2+2+18 = 30
+	fixedCharacters := 30
 
 	name := job.Test + "@" + job.Settings.Machine
 	link := job.Link
@@ -151,7 +155,7 @@ func (job *Job) Println(useColors bool, width int) {
 		name = name + spaces(i)
 	}
 
-	fmt.Printf("%8d  %s%s  %15s\n", job.ID, name, link, status)
+	fmt.Printf("%8d  %s%s  %.18s\n", job.ID, name, link, status)
 
 	// Reset color
 	if useColors {
