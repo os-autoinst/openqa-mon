@@ -104,7 +104,7 @@ func (job *Job) Println(useColors bool, width int) {
 		if job.State == "running" {
 			fmt.Print(KBLU)
 		} else if job.State == "done" {
-			status = job.State
+			status = job.Result
 			switch job.Result {
 			case "failed":
 				fmt.Print(KRED)
