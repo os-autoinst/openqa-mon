@@ -155,6 +155,9 @@ func (job *Job) Println(useColors bool, width int) {
 		name = name + spaces(i)
 	}
 
+	if len(status) < 18 {
+		status = spaces(18-len(status)) + status
+	}
 	fmt.Printf("%8d  %s%s  %.18s\n", job.ID, name, link, status)
 
 	// Reset color
