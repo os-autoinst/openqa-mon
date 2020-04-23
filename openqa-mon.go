@@ -240,9 +240,12 @@ func printHelp() {
 	fmt.Printf("Usage: %s [OPTIONS] REMOTE\n  REMOTE is the base URL of the openQA server (e.g. https://openqa.opensuse.org)\n\n", os.Args[0])
 	fmt.Println("OPTIONS\n")
 	fmt.Println("  -h, --help                       Print this help message")
-	fmt.Println("  -j, --jobs JOBS                  Display information only for the given JOBS (comma separated ids)")
+	fmt.Println("  -j, --jobs JOBS                  Display information only for the given JOBS")
+	fmt.Println("                                   JOBS can be a single job id, a comma separated list (e.g. 42,43,1337)")
+	fmt.Println("                                   or a job range (1335..1339)")
 	fmt.Println("  -c,--continous SECONDS           Continously display stats")
 	fmt.Println("")
+	fmt.Println("2020, https://github.com/grisu48/openqa-mon")
 }
 
 func parseJobs(jobs string) ([]int, error) {
@@ -264,7 +267,7 @@ func parseJobID(parseText string) int {
 	for len(parseText) > 1 && parseText[0] == '#' {
 		parseText = parseText[1:]
 	}
-	// Remote : at the end
+	// Remove : at the end
 	for len(parseText) > 1 && parseText[len(parseText)-1] == ':' {
 		parseText = parseText[:len(parseText)-1]
 	}
@@ -304,19 +307,27 @@ func parseJobIDs(parseText string) []int {
 		}
 		return ret
 	}
-	i = parseJobID(parseText)
-	if i > 0 {
-		ret = append(ret, i)
+	// Assume job ID set, which also covers single jobs IDs
+	split := strings.Split(parseText, ",")
+	for _, s := range split {
+		i = parseJobID(s)
+		if i > 0 {
+			ret = append(ret, i)
+		}
 	}
 	return ret
 }
 
 func clearScreen() {
-	fmt.Println("\033[2J\033[;H") //\033[2J\033[H\033[2J")
+	fmt.Print("\033[2J\033[;H") //\033[2J\033[H\033[2J")
 }
 
 func moveCursorBeginning() {
-	fmt.Println("\033[0;0H")
+	fmt.Print("\033[H")
+}
+
+func moveCursorLineBeginning(line int) {
+	fmt.Printf("\033[%dH", line)
 }
 
 func hideCursor() {
@@ -369,7 +380,7 @@ func main() {
 					fmt.Fprintf(os.Stderr, "Jobs need to be defined after a remote instance\n")
 					os.Exit(1)
 				}
-				jobIDs := parseJobIDs(arg)
+				jobIDs := parseJobIDs(args[i])
 				if len(jobIDs) > 0 {
 					if len(remotes) == 0 {
 						fmt.Fprintf(os.Stderr, "Jobs need to be defined after a remote instance\n")
@@ -378,7 +389,11 @@ func main() {
 					remote := &remotes[len(remotes)-1]
 					for _, jobID := range jobIDs {
 						remote.Jobs = append(remote.Jobs, jobID)
+						fmt.Println(jobID)
 					}
+				} else {
+					fmt.Fprintf(os.Stderr, "Illegal job identifier: %s\n", args[i])
+					os.Exit(1)
 				}
 			case "-c", "--continous":
 				i++
@@ -418,9 +433,8 @@ func main() {
 						remote.Jobs = append(remote.Jobs, jobID)
 					}
 				} else {
-					remote := Remote{URI: arg}
-					remote.Jobs = make([]int, 0)
-					remotes = append(remotes, remote)
+					fmt.Fprintf(os.Stderr, "Illegal input: %s. Input must be either a REMOTE (starting with http:// or https://) or a JOB identifier\n", arg)
+					os.Exit(1)
 				}
 			}
 		}
@@ -455,20 +469,17 @@ func main() {
 		termHeight = max(termHeight, 10)
 		spacesRow := spaces(termWidth)
 		useColors := true
-		if continuous > 0 {
-			hideCursor()
-			moveCursorBeginning()
-			if len(remotes) == 1 {
-				line := fmt.Sprintf("openqa-mon - Monitoring %s | Refresh every %d seconds", remotes[0].URI, continuous)
-				fmt.Print(line + spaces(termWidth-len(line)))
-				fmt.Println(spacesRow)
-			} else {
-				line := fmt.Sprintf("openqa-mon - Monitoring %d remotes | Refresh every %d seconds", len(remotes), continuous)
-				fmt.Print(line + spaces(termWidth-len(line)))
-				fmt.Println(spacesRow)
-			}
+		remotesString := fmt.Sprintf("%d remotes", len(remotes))
+		if len(remotes) == 1 {
+			remotesString = remotes[0].URI
 		}
-		lines := 3
+		if continuous > 0 {
+			moveCursorBeginning()
+			line := fmt.Sprintf("openqa-mon - Monitoring %s | Refresh every %d seconds", remotesString, continuous)
+			fmt.Print(line + spaces(termWidth-len(line)))
+			fmt.Println(spaces(termWidth))
+		}
+		lines := 2
 		for _, remote := range remotes {
 			uri := ensureHTTP(remote.URI)
 
@@ -497,6 +508,7 @@ func main() {
 			}
 			// Sort jobs by ID
 			sort.Sort(byID(jobs))
+			// Print jobs
 			for _, job := range jobs {
 				if job.ID > 0 { // Otherwise it's an empty (.e. not found) job
 					job.Println(useColors, termWidth)
@@ -507,7 +519,6 @@ func main() {
 		if continuous <= 0 {
 			break
 		} else {
-			showCursor()
 			// Fill remaining screen with blank characters to erase
 			n := termHeight - lines
 			for i := 0; i < n; i++ {
@@ -517,6 +528,8 @@ func main() {
 			date := time.Now().Format("15:04:05")
 			fmt.Print(line + spaces(termWidth-len(line)-len(date)) + date)
 			time.Sleep(time.Duration(continuous) * time.Second)
+			moveCursorLineBeginning(termHeight)
+			fmt.Print(line + spaces(termWidth-len(line)-14) + "Refreshing ...")
 		}
 	}
 
