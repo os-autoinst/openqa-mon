@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"os/exec"
 	"os/signal"
 	"sort"
 	"strconv"
@@ -66,6 +67,27 @@ type Settings struct {
 	Arch    string `json:"ARCH"`
 	Backend string `json:"BACKEND"`
 	Machine string `json:"MACHINE"`
+}
+
+func bell() {
+	// Use system bell
+	fmt.Print("\a")
+}
+
+func (job *Job) stateString() string {
+	if job.State == "done" {
+		return job.Result
+	} else {
+		return job.State
+	}
+}
+
+func notifySend(text string) {
+	cmd := exec.Command("notify-send", text)
+	err := cmd.Run()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error sending notification via 'notify-send': %s\n", err)
+	}
 }
 
 func ensureHTTP(remote string) string {
@@ -244,6 +266,8 @@ func printHelp() {
 	fmt.Println("                                   JOBS can be a single job id, a comma separated list (e.g. 42,43,1337)")
 	fmt.Println("                                   or a job range (1335..1339)")
 	fmt.Println("  -c,--continous SECONDS           Continously display stats")
+	fmt.Println("  -b,--bell                        Bell notification on job status changes")
+	fmt.Println("  -n,--notify                      Send desktop notifications on job status changes")
 	fmt.Println("")
 	fmt.Println("2020, https://github.com/grisu48/openqa-mon")
 }
@@ -353,11 +377,59 @@ func max(x int, y int) int {
 	return y
 }
 
+func jobsMap(jobs []Job) map[int]Job {
+	ret := make(map[int]Job, 0)
+	for _, job := range jobs {
+		ret[job.ID] = job
+	}
+	return ret
+}
+
+/* jobsChanged returns the jobs that are in a different state between the two sets */
+func jobsChanged(jobs1 []Job, jobs2 []Job) []Job {
+	ret := make([]Job, 0)
+	jobs := jobsMap(jobs2)
+	for _, job := range jobs1 {
+		if val, ok := jobs[job.ID]; ok {
+			if job.Result != val.Result || job.State != val.State {
+				ret = append(ret, job)
+			}
+		} else {
+			ret = append(ret, job)
+		}
+	}
+	if len(jobs1) != len(jobs2) {
+		// Also account for jobs, which are not present in jobs1 set
+		jobs := jobsMap(jobs1)
+		for _, job := range jobs2 {
+			if _, ok := jobs[job.ID]; !ok {
+				ret = append(ret, job)
+			}
+		}
+	}
+	return ret
+}
+
+/* Assuming the input jobs are status change jobs, remove the trivial status changes like uploading */
+func eraseTrivialChanges(jobs []Job) []Job {
+	ret := make([]Job, 0)
+	for _, job := range jobs {
+		if job.State == "uploading" {
+			continue
+		} else {
+			ret = append(ret, job)
+		}
+	}
+	return ret
+}
+
 func main() {
 	var err error
 	args := os.Args[1:]
 	remotes := make([]Remote, 0)
-	continuous := 0 // If > 0, continously monitor
+	continuous := 0              // If > 0, continously monitor
+	bellNotification := false    // Notify about status changes, if in continuous monitor
+	desktopNotification := false // Notify about job status changes via notify-send
 
 	// Parse program arguments
 	for i := 0; i < len(args); i++ {
@@ -407,6 +479,10 @@ func main() {
 					fmt.Println("Continous duration needs to be a positive, non-zero integer that determines the seconds between refreshes")
 					os.Exit(1)
 				}
+			case "-b", "--bell":
+				bellNotification = true
+			case "-n", "--notify":
+				desktopNotification = true
 			default:
 				fmt.Fprintf(os.Stderr, "Invalid argument: %s\n", arg)
 				fmt.Printf("Use %s --help to display available options\n", os.Args[0])
@@ -462,6 +538,7 @@ func main() {
 		}
 	}()
 
+	jobsMemory := make([]Job, 0)
 	for {
 		termWidth, termHeight := terminalSize()
 		// Ensure a certain minimum extend
@@ -480,6 +557,7 @@ func main() {
 			fmt.Println(spaces(termWidth))
 		}
 		lines := 2
+		currentJobs := make([]Job, 0)
 		for _, remote := range remotes {
 			uri := ensureHTTP(remote.URI)
 
@@ -515,10 +593,35 @@ func main() {
 				}
 			}
 			lines += len(jobs) + 1
+			currentJobs = append(currentJobs, jobs...)
 		}
 		if continuous <= 0 {
 			break
 		} else {
+			// Check if jobs have changes
+			if bellNotification {
+				if len(jobsMemory) == 0 {
+					jobsMemory = currentJobs
+				} else {
+					changedJobs := jobsChanged(currentJobs, jobsMemory)
+					changedJobs = eraseTrivialChanges(changedJobs)
+					if len(changedJobs) > 0 {
+						jobsMemory = currentJobs
+						if bellNotification {
+							bell()
+						}
+						if desktopNotification {
+							if len(changedJobs) == 1 {
+								job := changedJobs[0]
+								notifySend(fmt.Sprintf("[%s] - Job %d %s", job.stateString(), job.ID, job.Name))
+							} else {
+								notifySend(fmt.Sprintf("%d job changed state", len(changedJobs)))
+							}
+						}
+					}
+				}
+			}
+
 			// Fill remaining screen with blank characters to erase
 			n := termHeight - lines
 			for i := 0; i < n; i++ {
