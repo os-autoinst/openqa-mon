@@ -30,8 +30,13 @@ Enable live monitor and refresh at the given SECONDS intervals
 Enable bell notifications (terminal bell sound)
 
 .TP
-.B -B -n|--notify
+.B -n|--notify
 Enable desktop notifications (sent via notify-send)
+
+.TP
+.B -f|--follow
+Follow jobs, i.e. replace jobs by their clones if available.
+This setting is useful to track jobs also if they are going to be restarted in openQA.
 
 .SH EXAMPLES
 
@@ -73,10 +78,12 @@ Continuously monitor the jobs 42 and the jobs from 1335 to 1339. Refresh every 5
 
 .TP
 .nf
-.B openqa-mon -c 5 -b -n https://openqa.opensuse.org 42
+.B openqa-mon -b -n -f -c 5 https://openqa.opensuse.org 42
 .TP
 .PP
-Continuously monitor the jobs 42. Refresh every 5 seconds. Ring bell and displays desktop notification on status changes
+Continuously monitor the job 42. Refresh every 5 seconds. Ring bell and displays desktop notification on status changes.
+Follow job, if it gets restarted.
+
 
 .SH COPYRIGHT
 .PP
