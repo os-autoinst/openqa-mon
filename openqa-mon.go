@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -82,43 +83,6 @@ func (job *Job) stateString() string {
 	}
 }
 
-func notifySend(text string) {
-	cmd := exec.Command("notify-send", text)
-	err := cmd.Run()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error sending notification via 'notify-send': %s\n", err)
-	}
-}
-
-func ensureHTTP(remote string) string {
-	if !(strings.HasPrefix(remote, "http://") || strings.HasPrefix(remote, "https://")) {
-		return "http://" + remote
-	} else {
-		return remote
-	}
-}
-
-type winsize struct {
-	Row    uint16
-	Col    uint16
-	Xpixel uint16
-	Ypixel uint16
-}
-
-func terminalSize() (int, int) {
-	ws := &winsize{}
-	ret, _, _ := syscall.Syscall(syscall.SYS_IOCTL,
-		uintptr(syscall.Stdin),
-		uintptr(syscall.TIOCGWINSZ),
-		uintptr(unsafe.Pointer(ws)))
-
-	if int(ret) == 0 {
-		return int(ws.Col), int(ws.Row)
-	} else {
-		return 80, 24 // Default value
-	}
-}
-
 // Println prints the current job in a 80 character wide line with optional colors enabled
 func (job *Job) Println(useColors bool, width int) {
 	status := job.State
@@ -186,6 +150,70 @@ func (job *Job) Println(useColors bool, width int) {
 	if useColors {
 		fmt.Print(KNRM)
 	}
+}
+
+func notifySend(text string) {
+	cmd := exec.Command("notify-send", text)
+	err := cmd.Run()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error sending notification via 'notify-send': %s\n", err)
+	}
+}
+
+type winsize struct {
+	Row    uint16
+	Col    uint16
+	Xpixel uint16
+	Ypixel uint16
+}
+
+func terminalSize() (int, int) {
+	ws := &winsize{}
+	ret, _, _ := syscall.Syscall(syscall.SYS_IOCTL,
+		uintptr(syscall.Stdin),
+		uintptr(syscall.TIOCGWINSZ),
+		uintptr(unsafe.Pointer(ws)))
+
+	if int(ret) == 0 {
+		return int(ws.Col), int(ws.Row)
+	} else {
+		return 80, 24 // Default value
+	}
+}
+
+func clearScreen() {
+	fmt.Print("\033[2J\033[;H") //\033[2J\033[H\033[2J")
+}
+
+func moveCursorBeginning() {
+	fmt.Print("\033[H")
+}
+
+func moveCursorLineBeginning(line int) {
+	fmt.Printf("\033[%dH", line)
+}
+
+func hideCursor() {
+	fmt.Print("\033[?25l")
+}
+
+func showCursor() {
+	fmt.Print("\033[?25h")
+}
+
+func ensureHTTP(remote string) string {
+	if !(strings.HasPrefix(remote, "http://") || strings.HasPrefix(remote, "https://")) {
+		return "http://" + remote
+	} else {
+		return remote
+	}
+}
+
+func homogenizeRemote(remote string) string {
+	for len(remote) > 0 && strings.HasSuffix(remote, "/") {
+		remote = remote[:len(remote)-1]
+	}
+	return remote
 }
 
 /* Struct for sorting job slice by job id */
@@ -260,6 +288,7 @@ func getJobsOverview(url string) ([]Job, error) {
 
 func printHelp() {
 	fmt.Printf("Usage: %s [OPTIONS] REMOTE\n  REMOTE is the base URL of the openQA server (e.g. https://openqa.opensuse.org)\n\n", os.Args[0])
+	fmt.Println("                             REMOTE can be the directlink to a test (e.g. https://openqa.opensuse.org/t123)\n")
 	fmt.Println("OPTIONS\n")
 	fmt.Println("  -h, --help                       Print this help message")
 	fmt.Println("  -j, --jobs JOBS                  Display information only for the given JOBS")
@@ -343,24 +372,36 @@ func parseJobIDs(parseText string) []int {
 	return ret
 }
 
-func clearScreen() {
-	fmt.Print("\033[2J\033[;H") //\033[2J\033[H\033[2J")
-}
-
-func moveCursorBeginning() {
-	fmt.Print("\033[H")
-}
-
-func moveCursorLineBeginning(line int) {
-	fmt.Printf("\033[%dH", line)
-}
-
-func hideCursor() {
-	fmt.Print("\033[?25l")
-}
-
-func showCursor() {
-	fmt.Print("\033[?25h")
+/** Try to match the url to be a test url. On success, return the remote and the job id */
+func matchTestURL(url string) (bool, string, int) {
+	r, _ := regexp.Compile("^http[s]?://.+/(t[0-9]+$|tests/[0-9]+$)")
+	match := r.MatchString(url)
+	if !match {
+		return match, "", 0
+	}
+	// Parse
+	rEnd, _ := regexp.Compile("/t[0-9]+$")
+	loc := rEnd.FindStringIndex(url)
+	if len(loc) == 2 {
+		i := loc[0]
+		job, err := strconv.Atoi(url[i+2:])
+		if err != nil {
+			return false, "", 0
+		}
+		return true, url[0:i], job
+	} else {
+		rEnd, _ = regexp.Compile("/tests/[0-9]+$")
+		loc := rEnd.FindStringIndex(url)
+		if len(loc) == 2 {
+			i := loc[0]
+			job, err := strconv.Atoi(url[i+7:])
+			if err != nil {
+				return false, "", 0
+			}
+			return true, url[0:i], job
+		}
+	}
+	return false, "", 0
 }
 
 func spaces(n int) string {
@@ -454,6 +495,27 @@ func eraseTrivialChanges(jobs []Job) []Job {
 	return ret
 }
 
+/** Append the given remote by adding a job id to the existing remote or creating a new one */
+func appendRemote(remotes []Remote, remote string, jobID int) []Remote {
+	remote = homogenizeRemote(remote)
+	// Search for existing remote
+	for i, k := range remotes {
+		if k.URI == remote {
+			if jobID > 0 {
+				remotes[i].Jobs = append(remotes[i].Jobs, jobID)
+			}
+			return remotes
+		}
+	}
+	// Not found, add new remote
+	rem := Remote{URI: remote}
+	rem.Jobs = make([]int, 0)
+	if jobID > 0 {
+		rem.Jobs = append(rem.Jobs, jobID)
+	}
+	return append(remotes, rem)
+}
+
 func main() {
 	var err error
 	args := os.Args[1:]
@@ -463,7 +525,7 @@ func main() {
 	desktopNotification := false // Notify about job status changes via notify-send
 	followJobs := false          // Replace jobs by their cloned ones
 
-	// Parse program arguments
+	// Manually parse program arguments, as the "flag" package is not sufficent for automatic parsing of job links and job numbers
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
 		if arg == "" {
@@ -525,11 +587,14 @@ func main() {
 		} else {
 			// No argument, so it's either a job id, a job id range or a remote URI.
 			// If it's a uri, skip the job id test
-
 			if strings.HasPrefix(arg, "http://") || strings.HasPrefix(arg, "https://") {
-				remote := Remote{URI: arg}
-				remote.Jobs = make([]int, 0)
-				remotes = append(remotes, remote)
+				// Try to parse as job run (e.g. http://phoenix-openqa.qam.suse.de/t1241)
+				match, url, jobID := matchTestURL(arg)
+				if match {
+					remotes = appendRemote(remotes, url, jobID)
+				} else {
+					remotes = appendRemote(remotes, arg, 0)
+				}
 			} else {
 				// If the argument is a number only, assume it's a job ID otherwise it's a host
 				jobIDs := parseJobIDs(arg)
