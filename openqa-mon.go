@@ -516,9 +516,41 @@ func appendRemote(remotes []Remote, remote string, jobID int) []Remote {
 	return append(remotes, rem)
 }
 
+// Expand short arguments to long one
+func expandArguments(args []string) []string {
+	ret := make([]string, 0)
+
+	for _, arg := range args {
+		if arg == "" {
+			continue
+		}
+		if len(arg) >= 2 && arg[0] == '-' && arg[1] != '-' {
+			for _, c := range arg[1:] {
+				switch c {
+				case 'h':
+					ret = append(ret, "--help")
+				case 'c':
+					ret = append(ret, "--continuous")
+				case 'f':
+					ret = append(ret, "--follow")
+				case 'b':
+					ret = append(ret, "--bell")
+				case 'n':
+					ret = append(ret, "--notify")
+				case 'j':
+					ret = append(ret, "--jobs")
+				}
+			}
+		} else {
+			ret = append(ret, arg)
+		}
+	}
+	return ret
+}
+
 func main() {
 	var err error
-	args := os.Args[1:]
+	args := expandArguments(os.Args[1:])
 	remotes := make([]Remote, 0)
 	continuous := 0              // If > 0, continously monitor
 	bellNotification := false    // Notify about status changes, if in continuous monitor
@@ -561,7 +593,7 @@ func main() {
 					fmt.Fprintf(os.Stderr, "Illegal job identifier: %s\n", args[i])
 					os.Exit(1)
 				}
-			case "-c", "--continous":
+			case "-c", "--continuous":
 				i++
 				if i >= len(args) {
 					fmt.Fprintln(os.Stderr, "Missing continous period")
