@@ -25,6 +25,19 @@ The -j parameter can be omitted, openqa-mon detects an integer, set of interger 
 .B -c|--continuous SECONDS
 Enable live monitor and refresh at the given SECONDS intervals
 
+.TP
+.B -b|--bell
+Enable bell notifications (terminal bell sound)
+
+.TP
+.B -n|--notify
+Enable desktop notifications (sent via notify-send)
+
+.TP
+.B -f|--follow
+Follow jobs, i.e. replace jobs by their clones if available.
+This setting is useful to track jobs also if they are going to be restarted in openQA.
+
 .SH EXAMPLES
 
 .TP
@@ -58,10 +71,18 @@ openqa-mon detects integers, sets of integers and integer ranges and treats them
 
 .TP
 .nf
-.B openqa-mon -c 5 https://openqa.opensuse.org 42,1335..1339
+.B openqa-mon -c 5 -b https://openqa.opensuse.org 42,1335..1339
 .TP
 .PP
-Continuously monitor the jobs 42 and the jobs from 1335 to 1339. Refresh every 5 seconds
+Continuously monitor the jobs 42 and the jobs from 1335 to 1339. Refresh every 5 seconds. Ring bell on status changes
+
+.TP
+.nf
+.B openqa-mon -b -n -f -c 5 https://openqa.opensuse.org 42
+.TP
+.PP
+Continuously monitor the job 42. Refresh every 5 seconds. Ring bell and displays desktop notification on status changes.
+Follow job, if it gets restarted.
 
 
 .SH COPYRIGHT
@@ -74,7 +95,7 @@ Creator: Felix Niederwanger <felix.niederwanger@suse.de>
 
 Thanks for the constructive feedback to (in no particular order)
 
-- Christian Dywan - Pavel Dostal - Oliver Kurz -
+- Christian Dywan - Pavel Dostal - Oliver Kurz - George Gkioulis -
 
 This tool has been created to help me and my colleagues work better with openQA.
 

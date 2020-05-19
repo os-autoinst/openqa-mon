@@ -128,21 +128,21 @@ func (job *Job) Println(useColors bool, width int) {
 		} else if job.State == "done" {
 			status = job.Result
 			switch job.Result {
-			case "failed":
+			case "failed", "incomplete":
 				fmt.Print(KRED)
-			case "incomplete":
-				fmt.Print(KRED)
-			case "user_cancelled":
-				fmt.Print(KYEL)
+			case "cancelled", "user_cancelled":
+				fmt.Print(KMAG)
 			case "passed":
 				fmt.Print(KGRN)
-			case "user_restarted":
+			case "user_restarted", "parallel_restarted":
 				fmt.Print(KBLU)
-			case "parallel_restarted":
-				fmt.Print(KBLU)
+			case "softfailed":
+				fmt.Print(KYEL)
 			default:
 				fmt.Print(KWHT)
 			}
+		} else if job.State == "cancelled" {
+			fmt.Print(KMAG)
 		} else {
 			fmt.Print(KCYN)
 		}
@@ -268,6 +268,7 @@ func printHelp() {
 	fmt.Println("  -c,--continous SECONDS           Continously display stats")
 	fmt.Println("  -b,--bell                        Bell notification on job status changes")
 	fmt.Println("  -n,--notify                      Send desktop notifications on job status changes")
+	fmt.Println("  -f,--follow                      Follow jobs, i.e. replace jobs by their clones if available")
 	fmt.Println("")
 	fmt.Println("2020, https://github.com/grisu48/openqa-mon")
 }
@@ -377,12 +378,42 @@ func max(x int, y int) int {
 	return y
 }
 
+func unique(a []int) []int {
+	keys := make(map[int]bool)
+	list := []int{}
+	for _, entry := range a {
+		if _, value := keys[entry]; !value {
+			keys[entry] = true
+			list = append(list, entry)
+		}
+	}
+	return list
+}
+
 func jobsMap(jobs []Job) map[int]Job {
 	ret := make(map[int]Job, 0)
 	for _, job := range jobs {
 		ret[job.ID] = job
 	}
 	return ret
+}
+
+func containsJobID(jobs []Job, ID int) bool {
+	for _, job := range jobs {
+		if job.ID == ID {
+			return true
+		}
+	}
+	return false
+}
+
+func containsInt(a []int, cmp int) bool {
+	for _, i := range a {
+		if i == cmp {
+			return true
+		}
+	}
+	return false
 }
 
 /* jobsChanged returns the jobs that are in a different state between the two sets */
@@ -414,7 +445,7 @@ func jobsChanged(jobs1 []Job, jobs2 []Job) []Job {
 func eraseTrivialChanges(jobs []Job) []Job {
 	ret := make([]Job, 0)
 	for _, job := range jobs {
-		if job.State == "uploading" {
+		if job.State == "uploading" || job.State == "assigned" {
 			continue
 		} else {
 			ret = append(ret, job)
@@ -430,6 +461,7 @@ func main() {
 	continuous := 0              // If > 0, continously monitor
 	bellNotification := false    // Notify about status changes, if in continuous monitor
 	desktopNotification := false // Notify about job status changes via notify-send
+	followJobs := false          // Replace jobs by their cloned ones
 
 	// Parse program arguments
 	for i := 0; i < len(args); i++ {
@@ -483,6 +515,8 @@ func main() {
 				bellNotification = true
 			case "-n", "--notify":
 				desktopNotification = true
+			case "-f", "--follow":
+				followJobs = true
 			default:
 				fmt.Fprintf(os.Stderr, "Invalid argument: %s\n", arg)
 				fmt.Printf("Use %s --help to display available options\n", os.Args[0])
@@ -519,6 +553,9 @@ func main() {
 	if len(remotes) == 0 {
 		printHelp()
 		return
+	}
+	for _, remote := range remotes {
+		remote.Jobs = unique(remote.Jobs)
 	}
 
 	if continuous > 0 {
@@ -575,13 +612,27 @@ func main() {
 			} else {
 				// Fetch jobs
 				jobs = make([]Job, 0)
-				for _, id := range remote.Jobs {
+				jobsModified := false
+				for i, id := range remote.Jobs {
+				fetchJob:
 					job, err := fetchJob(uri, id)
 					if err != nil {
 						fmt.Fprintf(os.Stderr, "Error fetching job %d: %s\n", id, err)
 						continue
 					}
+					if followJobs && job.CloneID != 0 && job.CloneID != id {
+						id = job.CloneID
+						if containsJobID(jobs, id) || containsInt(remote.Jobs, id) {
+							continue
+						}
+						remote.Jobs[i] = id
+						jobsModified = true
+						goto fetchJob
+					}
 					jobs = append(jobs, job)
+				}
+				if jobsModified {
+					remote.Jobs = unique(remote.Jobs)
 				}
 			}
 			// Sort jobs by ID
@@ -614,8 +665,14 @@ func main() {
 							if len(changedJobs) == 1 {
 								job := changedJobs[0]
 								notifySend(fmt.Sprintf("[%s] - Job %d %s", job.stateString(), job.ID, job.Name))
-							} else {
-								notifySend(fmt.Sprintf("%d job changed state", len(changedJobs)))
+							} else if len(changedJobs) < 4 { // Up to 3 jobs are ok to display
+								message := fmt.Sprintf("%d jobs changed state:", len(changedJobs))
+								for _, job := range changedJobs {
+									message += "\n  " + fmt.Sprintf("[%s] - Job %d %s", job.stateString(), job.ID, job.Name)
+								}
+								notifySend(message)
+							} else { // For more job it doesn't make any sense anymore to display them
+								notifySend(fmt.Sprintf("%d jobs changed state", len(changedJobs)))
 							}
 						}
 					}
