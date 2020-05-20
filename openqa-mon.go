@@ -237,6 +237,7 @@ func fetchJob(remote string, jobID int) (Job, error) {
 	if err != nil {
 		return job.Job, err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		if resp.StatusCode == 404 {
 			job.Job.ID = 0
@@ -269,6 +270,7 @@ func getJobsOverview(url string) ([]Job, error) {
 	if err != nil {
 		return jobs, err
 	}
+	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return jobs, err
