@@ -738,9 +738,10 @@ func main() {
 			for _, job := range jobs {
 				if job.ID > 0 { // Otherwise it's an empty (.e. not found) job
 					job.Println(useColors, termWidth)
+					lines++
 				}
 			}
-			lines += len(jobs) + 1
+			lines++
 			currentJobs = append(currentJobs, jobs...)
 		}
 		if continuous <= 0 {
