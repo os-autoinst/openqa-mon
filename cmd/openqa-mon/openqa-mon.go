@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"os/user"
 	"regexp"
 	"sort"
 	"strconv"
@@ -45,6 +46,7 @@ func printHelp() {
 	fmt.Println("  -b,--bell                        Bell notification on job status changes")
 	fmt.Println("  -n,--notify                      Send desktop notifications on job status changes")
 	fmt.Println("  -f,--follow                      Follow jobs, i.e. replace jobs by their clones if available")
+	fmt.Println("  --config FILE                    Read additional config file FILE")
 	fmt.Println("")
 	fmt.Println("2020, https://github.com/grisu48/openqa-mon")
 }
@@ -170,14 +172,35 @@ func expandArguments(args []string) []string {
 	return ret
 }
 
+func homeDir() string {
+	usr, err := user.Current()
+	if err != nil {
+		panic(err)
+	}
+	return usr.HomeDir
+}
+
 func main() {
 	var err error
+	var config Config
 	args := expandArguments(os.Args[1:])
 	remotes := make([]Remote, 0)
-	continuous := 0              // If > 0, continously monitor
-	bellNotification := false    // Notify about status changes, if in continuous monitor
-	desktopNotification := false // Notify about job status changes via notify-send
-	followJobs := false          // Replace jobs by their cloned ones
+	// Configuration - apply default values and read config files: Global '/etc/openqa/openqa-mon.conf' and user '~/openqa-mon.conf'
+	config.Continuous = 0
+	config.Notify = false
+	config.Bell = false
+	config.Follow = false
+	// readConfig returns nil also if the file does not exists
+	err = readConfig("/etc/openqa/openqa-mon.conf", &config)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error reading config '/etc/openqa/openqa-mon.conf': %s\n", err)
+		os.Exit(1)
+	}
+	err = readConfig(homeDir()+"/.openqa-mon.conf", &config)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error reading config '"+homeDir()+"/.openqa-mon.conf': %s\n", err)
+		os.Exit(1)
+	}
 
 	// Manually parse program arguments, as the "flag" package is not sufficent for automatic parsing of job links and job numbers
 	for i := 0; i < len(args); i++ {
@@ -187,10 +210,10 @@ func main() {
 		}
 		if arg[0] == '-' {
 			switch arg {
-			case "-h", "--help":
+			case "--help":
 				printHelp()
 				return
-			case "-j", "--jobs":
+			case "--jobs":
 				i++
 				if i >= len(args) {
 					fmt.Fprintln(os.Stderr, "Missing job IDs")
@@ -215,24 +238,36 @@ func main() {
 					fmt.Fprintf(os.Stderr, "Illegal job identifier: %s\n", args[i])
 					os.Exit(1)
 				}
-			case "-c", "--continuous":
+			case "--continuous":
 				i++
 				if i >= len(args) {
 					fmt.Fprintln(os.Stderr, "Missing continous period")
 					os.Exit(1)
 				}
-				continuous, err = strconv.Atoi(args[i])
-				if err != nil || continuous < 0 {
+				config.Continuous, err = strconv.Atoi(args[i])
+				if err != nil || config.Continuous < 0 {
 					fmt.Fprintln(os.Stderr, "Invalid continous period")
 					fmt.Println("Continous duration needs to be a positive, non-zero integer that determines the seconds between refreshes")
 					os.Exit(1)
 				}
-			case "-b", "--bell":
-				bellNotification = true
-			case "-n", "--notify":
-				desktopNotification = true
-			case "-f", "--follow":
-				followJobs = true
+			case "--bell":
+				config.Bell = true
+			case "--notify":
+				config.Notify = true
+			case "--follow":
+				config.Follow = true
+			case "--config":
+				i++
+				if i >= len(args) {
+					fmt.Fprintln(os.Stderr, "Missing config file")
+					os.Exit(1)
+				}
+				err = readConfig(args[i], &config)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Error reading config '%s': %s\n", args[i], err)
+					os.Exit(1)
+				}
+
 			default:
 				fmt.Fprintf(os.Stderr, "Invalid argument: %s\n", arg)
 				fmt.Printf("Use %s --help to display available options\n", os.Args[0])
@@ -254,8 +289,13 @@ func main() {
 				jobIDs := parseJobIDs(arg)
 				if len(jobIDs) > 0 {
 					if len(remotes) == 0 {
-						fmt.Fprintf(os.Stderr, "Jobs need to be defined after a remote instance\n")
-						os.Exit(1)
+						// Apply default remote, if defined
+						if config.DefaultRemote == "" {
+							fmt.Fprintf(os.Stderr, "Jobs need to be defined after a remote instance\n")
+							os.Exit(1)
+						}
+						remote := Remote{URI: config.DefaultRemote}
+						remotes = append(remotes, remote)
 					}
 					remote := &remotes[len(remotes)-1]
 					for _, jobID := range jobIDs {
@@ -270,14 +310,20 @@ func main() {
 	}
 
 	if len(remotes) == 0 {
-		printHelp()
-		return
+		// Apply default remote, if defined
+		if config.DefaultRemote == "" {
+			printHelp()
+			return
+		}
+		remote := Remote{URI: config.DefaultRemote}
+		remotes = append(remotes, remote)
+
 	}
 	for _, remote := range remotes {
 		remote.Jobs = unique(remote.Jobs)
 	}
 
-	if continuous > 0 {
+	if config.Continuous > 0 {
 		clearScreen()
 	}
 
@@ -306,9 +352,9 @@ func main() {
 		if len(remotes) == 1 {
 			remotesString = remotes[0].URI
 		}
-		if continuous > 0 {
+		if config.Continuous > 0 {
 			moveCursorBeginning()
-			line := fmt.Sprintf("openqa-mon - Monitoring %s | Refresh every %d seconds", remotesString, continuous)
+			line := fmt.Sprintf("openqa-mon - Monitoring %s | Refresh every %d seconds", remotesString, config.Continuous)
 			fmt.Print(line + spaces(termWidth-len(line)))
 			fmt.Println(spaces(termWidth))
 		}
@@ -339,7 +385,7 @@ func main() {
 						fmt.Fprintf(os.Stderr, "Error fetching job %d: %s\n", id, err)
 						continue
 					}
-					if followJobs && job.CloneID != 0 && job.CloneID != id {
+					if config.Follow && job.CloneID != 0 && job.CloneID != id {
 						id = job.CloneID
 						if containsJobID(jobs, id) || containsInt(remote.Jobs, id) {
 							continue
@@ -366,11 +412,11 @@ func main() {
 			lines++
 			currentJobs = append(currentJobs, jobs...)
 		}
-		if continuous <= 0 {
+		if config.Continuous <= 0 {
 			break
 		} else {
 			// Check if jobs have changes
-			if bellNotification {
+			if config.Bell || config.Notify {
 				if len(jobsMemory) == 0 {
 					jobsMemory = currentJobs
 				} else {
@@ -378,10 +424,10 @@ func main() {
 					changedJobs = eraseTrivialChanges(changedJobs)
 					if len(changedJobs) > 0 {
 						jobsMemory = currentJobs
-						if bellNotification {
+						if config.Bell {
 							bell()
 						}
-						if desktopNotification {
+						if config.Notify {
 							if len(changedJobs) == 1 {
 								job := changedJobs[0]
 								notifySend(fmt.Sprintf("[%s] - Job %d %s", job.stateString(), job.ID, job.Name))
@@ -407,7 +453,7 @@ func main() {
 			line := "openqa-mon (https://github.com/grisu48/openqa-mon)"
 			date := time.Now().Format("15:04:05")
 			fmt.Print(line + spaces(termWidth-len(line)-len(date)) + date)
-			time.Sleep(time.Duration(continuous) * time.Second)
+			time.Sleep(time.Duration(config.Continuous) * time.Second)
 			moveCursorLineBeginning(termHeight)
 			fmt.Print(line + spaces(termWidth-len(line)-14) + "Refreshing ...")
 		}
