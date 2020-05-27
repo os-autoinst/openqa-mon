@@ -38,6 +38,51 @@ Enable desktop notifications (sent via notify-send)
 Follow jobs, i.e. replace jobs by their clones if available.
 This setting is useful to track jobs also if they are going to be restarted in openQA.
 
+.TP
+.B --config FILE
+Reads additional config file FILE. See CONFIG FILES for details.
+
+
+.SH CONFIG FILES
+
+.TP
+openqa-mon reads by default the following configuration files:
+/etc/openqa/openqa-mon.conf (global config) or in  ~/.openqa-mon.conf (user config).
+.TP
+An example configuration file looks like the following:
+
+
+.BR "## openqa-mon config file"
+.br
+.BR "## "
+.br
+.BR "## this is an example config file for openqa-mon. Modify and place this file in"
+.br
+.BR "## /etc/openqa/openqa-mon.conf (global) or in ~/.openqa-mon.conf (user config)"
+.br
+.BR "## "
+.br
+.BR "## Have a lot of fun ..."
+.br
+.br
+.br
+.BR "## Default remote to use, if nothing is defined"
+.br
+.BR "# DefaultRemote = http://openqa.opensuse.org"
+.br
+.BR "## Enable bell notifications"
+.br
+.BR "# Bell = true"
+.br
+.BR "## Enable desktop notifications"
+.br
+.BR "# Notification = true"
+.br
+.BR "## Follow jobs"
+.br
+.BR "# Follow = true"
+.br
+
 .SH EXAMPLES
 
 .TP

@@ -1,6 +1,6 @@
 default: all
 all: openqa-mon
-openqa-mon: cmd/openqa-mon/openqa-mon.go cmd/openqa-mon/terminal.go cmd/openqa-mon/jobs.go
+openqa-mon: cmd/openqa-mon/openqa-mon.go cmd/openqa-mon/terminal.go cmd/openqa-mon/jobs.go cmd/openqa-mon/config.go
 	go build $^
 
 install: openqa-mon
