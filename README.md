@@ -4,7 +4,7 @@
 
 CLI monitoring client for [openQA](https://open.qa) written in plain simple go for periodic live monitoring in a terminal (See demo below)
 
-![Demo of openqa-mon in action](demo.gif)
+![Demo of openqa-mon in action](doc/demo.gif)
 
 ## Build/Run
 
@@ -58,7 +58,7 @@ Of course this also includes continuous monitoring for certain jobs
     # Monitor job 1211758, refresh every 5 seconds
     openqa-mon -c 5 openqa.opensuse.org -j 1211758
 
-![Example of continous monitoring](OpenQA-Continous.png)
+![Example of continous monitoring](doc/OpenQA-Continous.png)
 
 #### Alternative method: `watch`
 
@@ -73,11 +73,11 @@ After that you simply run `oqa-mon` and you can continuously monitor the progres
     # Live monitor certain job IDs
     oqa-mon -j 4018049,4018060,4018050,4018051,4018052,4018053,4018054
 
-![openqa-mon in action](oqa.png)
+![openqa-mon in action](doc/oqa.png)
 
 
 ## Purpose
 
 This CLI is intended as live monitor of the state of your jobs. In contrast to the Browser interface it's smaller and probably also more efficient on the resources.
 
-![Screenshot of openqa-mon in action vs the Browser in the background](Screenshot.png)
+![Screenshot of openqa-mon in action vs the Browser in the background](doc/Screenshot.png)

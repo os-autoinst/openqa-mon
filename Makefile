@@ -1,11 +1,11 @@
 default: all
 all: openqa-mon
-openqa-mon: openqa-mon.go
-	go build openqa-mon.go
+openqa-mon: cmd/openqa-mon/openqa-mon.go cmd/openqa-mon/terminal.go cmd/openqa-mon/jobs.go
+	go build $^
 
 install: openqa-mon
 	install openqa-mon /usr/local/bin
-	install openqa-mon.8 /usr/local/man/man8/
+	install doc/openqa-mon.8 /usr/local/man/man8/
 uninstall:
 	rm -f /usr/local/bin/openqa-mon
 	rm -f /usr/local/man/man8/openqa-mon.8

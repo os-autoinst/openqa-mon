@@ -1,1 +1,4 @@
-openqa-mon
+# Binaries
+/openqa-mon
+# Temporary files
+/*.json
