@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.com/grisu48/openqa-mon.svg?branch=master)](https://travis-ci.com/grisu48/openqa-mon)
 
-CLI monitoring client for [openQA](https://open.qa) written in plain simple go for periodic live monitoring in a terminal (See demo below)
+CLI monitoring client for [openQA](https://open.qa) written in plain simple go for periodic live monitoring in a terminal
 
 ![Demo of openqa-mon in action](doc/demo.gif)
 
@@ -27,6 +27,9 @@ CLI monitoring client for [openQA](https://open.qa) written in plain simple go f
     OPTIONS
       -c N             Periodic monitoring, refresh every N seconds
       -h, --help       Print help message
+      -b, --bell       Bell notification on job status change
+      -n, --notify     Desktop notification on job status change
+      -f, --follow     Follow jobs, i.e. replace jobs by their clones if available
 
 #### Examples
 
@@ -60,23 +63,32 @@ Of course this also includes continuous monitoring for certain jobs
 
 ![Example of continous monitoring](doc/OpenQA-Continous.png)
 
-#### Alternative method: `watch`
 
-    ## Put this in your ~/.bashrc (or whatever shell you are using)
-    alias oqa-mon="watch -c -n 1 openqa-mon http://your-instance.suse.de/"
+## Config file
 
-After that you simply run `oqa-mon` and you can continuously monitor the progress of your runs:
+`openqa-mon` reads default configuration from `/etc/openqa/openqa-mon.conf` (global config) or in  `~/.openqa-mon.conf` (user config). Copy and modify the example configuration file [openqa-mon.conf](openqa-mon.conf) to `~/.openqa-mon.conf`
 
-	# Live monitor the job overview
-    oqa-mon
-    
-    # Live monitor certain job IDs
-    oqa-mon -j 4018049,4018060,4018050,4018051,4018052,4018053,4018054
+	## openqa-mon config file
+	## 
+	## this is an example config file for openqa-mon. Modify and place this file in
+	## /etc/openqa/openqa-mon.conf (global) or in ~/.openqa-mon.conf (user config)
+	## 
+	## Have a lot of fun ...
+	
+	
+	## Default remote to use, if nothing is defined
+	# DefaultRemote = http://openqa.opensuse.org
+	## Enable bell notifications
+	# Bell = true
+	## Enable desktop notifications
+	# Notification = true
+	## Follow jobs
+	# Follow = true
 
-![openqa-mon in action](doc/oqa.png)
+If you comment out and set `DefaultRemote`, the tool will use this for defined job IDs or for displaying the job overview without specifying `REMOTE` as parameter.
 
 
-## Purpose
+# Purpose
 
 This CLI is intended as live monitor of the state of your jobs. In contrast to the Browser interface it's smaller and probably also more efficient on the resources.
 
