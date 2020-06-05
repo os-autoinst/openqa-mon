@@ -52,35 +52,30 @@ func printHelp() {
 }
 
 /** Try to match the url to be a test url. On success, return the remote and the job id */
-func matchTestURL(url string) (bool, string, int) {
-	r, _ := regexp.Compile("^http[s]?://.+/(t[0-9]+$|tests/[0-9]+$)")
+func matchTestURL(url string) (bool, string, []int) {
+	jobs := make([]int, 0)
+	r, _ := regexp.Compile("^http[s]?://.+/(t[0-9]+$|t[0-9]+..[0-9]+$|tests/[0-9]+$|tests/[0-9]+..[0-9]$)")
 	match := r.MatchString(url)
 	if !match {
-		return match, "", 0
+		return match, "", jobs
 	}
 	// Parse
-	rEnd, _ := regexp.Compile("/t[0-9]+$")
+	rEnd, _ := regexp.Compile("/(t[0-9]+$|t[0-9]+..[0-9]+$)")
 	loc := rEnd.FindStringIndex(url)
 	if len(loc) == 2 {
 		i := loc[0]
-		job, err := strconv.Atoi(url[i+2:])
-		if err != nil {
-			return false, "", 0
-		}
-		return true, url[0:i], job
+		jobs = parseJobIDs(url[i+2:])
+		return true, url[0:i], jobs
 	} else {
-		rEnd, _ = regexp.Compile("/tests/[0-9]+$")
+		rEnd, _ = regexp.Compile("/tests/([0-9]+$|[0-9]+..[0-9]+)")
 		loc := rEnd.FindStringIndex(url)
 		if len(loc) == 2 {
 			i := loc[0]
-			job, err := strconv.Atoi(url[i+7:])
-			if err != nil {
-				return false, "", 0
-			}
-			return true, url[0:i], job
+			jobs = parseJobIDs(url[i+7:])
+			return true, url[0:i], jobs
 		}
 	}
-	return false, "", 0
+	return false, "", jobs
 }
 
 func spaces(n int) string {
@@ -278,9 +273,11 @@ func main() {
 			// If it's a uri, skip the job id test
 			if strings.HasPrefix(arg, "http://") || strings.HasPrefix(arg, "https://") {
 				// Try to parse as job run (e.g. http://phoenix-openqa.qam.suse.de/t1241)
-				match, url, jobID := matchTestURL(arg)
+				match, url, jobIDs := matchTestURL(arg)
 				if match {
-					remotes = appendRemote(remotes, url, jobID)
+					for _, jobID := range jobIDs {
+						remotes = appendRemote(remotes, url, jobID)
+					}
 				} else {
 					remotes = appendRemote(remotes, arg, 0)
 				}
