@@ -34,6 +34,22 @@ Enable bell notifications (terminal bell sound)
 Enable desktop notifications (sent via notify-send)
 
 .TP
+.B -m|--monitor
+Enable bell and desktop notifications (alias for "--bell --notify")
+
+.TP
+.B --no-bell
+Disable bell notifications (terminal bell sound)
+
+.TP
+.B --no-notify
+Disable desktop notifications (sent via notify-send)
+
+.TP
+.B --silent
+Disable bell and desktop notifications (alias for "--no-bell --no-notify")
+
+.TP
 .B -f|--follow
 Follow jobs, i.e. replace jobs by their clones if available.
 This setting is useful to track jobs also if they are going to be restarted in openQA.
