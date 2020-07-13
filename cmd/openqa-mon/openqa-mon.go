@@ -42,12 +42,17 @@ func printHelp() {
 	fmt.Println("  -h, --help                       Print this help message")
 	fmt.Println("  -j, --jobs JOBS                  Display information only for the given JOBS")
 	fmt.Println("                                   JOBS can be a single job id, a comma separated list (e.g. 42,43,1337)")
-	fmt.Println("                                   or a job range (1335..1339)")
+	fmt.Println("                                   or a job range (1335..1339 or 1335+4)")
 	fmt.Println("  -c,--continous SECONDS           Continously display stats")
 	fmt.Println("  -b,--bell                        Bell notification on job status changes")
+	fmt.Println("  --no-bell                        Disable bell notification")
 	fmt.Println("  -n,--notify                      Send desktop notifications on job status changes")
+	fmt.Println("  --no-notify                      Disable desktop notifications")
+	fmt.Println("  -m,--monitor                     Enable bell and desktop notifications")
+	fmt.Println("  --silent                         Disable bell and desktop notifications")
 	fmt.Println("  -f,--follow                      Follow jobs, i.e. replace jobs by their clones if available")
 	fmt.Println("  -p,--hierarchy                   Show job hierarchy (i.e. children jobs)")
+	fmt.Println("")
 	fmt.Println("  --config FILE                    Read additional config file FILE")
 	fmt.Println("")
 	fmt.Println("2020, https://github.com/grisu48/openqa-mon")
@@ -141,7 +146,7 @@ func appendRemote(remotes []Remote, remote string, jobID int) []Remote {
 func expandArguments(args []string) []string {
 	ret := make([]string, 0)
 
-	for _, arg := range args {
+	for i, arg := range args {
 		if arg == "" {
 			continue
 		}
@@ -152,6 +157,9 @@ func expandArguments(args []string) []string {
 					ret = append(ret, "--help")
 				case 'c':
 					ret = append(ret, "--continuous")
+					// The next argument will be the number of seconds, add them here
+					ret = append(ret, args[i+1])
+					args[i+1] = ""
 				case 'f':
 					ret = append(ret, "--follow")
 				case 'b':
@@ -162,6 +170,8 @@ func expandArguments(args []string) []string {
 					ret = append(ret, "--jobs")
 				case 'p':
 					ret = append(ret, "--hierarchy")
+				case 'm':
+					ret = append(ret, "--monitor")
 				}
 			}
 		} else {
@@ -286,6 +296,16 @@ func main() {
 			case "--bell":
 				config.Bell = true
 			case "--notify":
+				config.Notify = true
+			case "--no-bell":
+				config.Bell = false
+			case "--no-notify":
+				config.Notify = false
+			case "--silent":
+				config.Bell = false
+				config.Notify = false
+			case "--monitor":
+				config.Bell = true
 				config.Notify = true
 			case "--follow":
 				config.Follow = true
