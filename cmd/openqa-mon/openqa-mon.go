@@ -46,6 +46,7 @@ func printHelp() {
 	fmt.Println("  -b,--bell                        Bell notification on job status changes")
 	fmt.Println("  -n,--notify                      Send desktop notifications on job status changes")
 	fmt.Println("  -f,--follow                      Follow jobs, i.e. replace jobs by their clones if available")
+	fmt.Println("  -p,--hierarchy                   Show job hierarchy (i.e. children jobs)")
 	fmt.Println("  --config FILE                    Read additional config file FILE")
 	fmt.Println("")
 	fmt.Println("2020, https://github.com/grisu48/openqa-mon")
@@ -158,6 +159,8 @@ func expandArguments(args []string) []string {
 					ret = append(ret, "--notify")
 				case 'j':
 					ret = append(ret, "--jobs")
+				case 'p':
+					ret = append(ret, "--hierarchy")
 				}
 			}
 		} else {
@@ -165,6 +168,39 @@ func expandArguments(args []string) []string {
 		}
 	}
 	return ret
+}
+
+func printJobHierarchy(job Job, useColors bool, termWidth int) ([]Job, error) {
+	jobs := make([]Job, 0)
+
+	for _, id := range job.Children.Chained {
+		cJob, err := fetchJob(job.Remote, id)
+		if err != nil {
+			return jobs, err
+		}
+		cJob.Prefix = "  [C]"
+		cJob.Println(useColors, termWidth)
+		jobs = append(jobs, cJob)
+	}
+	for _, id := range job.Children.DirectlyChained {
+		cJob, err := fetchJob(job.Remote, id)
+		if err != nil {
+			return jobs, err
+		}
+		cJob.Prefix = "  [D]"
+		cJob.Println(useColors, termWidth)
+		jobs = append(jobs, cJob)
+	}
+	for _, id := range job.Children.Parallel {
+		cJob, err := fetchJob(job.Remote, id)
+		if err != nil {
+			return jobs, err
+		}
+		cJob.Prefix = "  [P]"
+		cJob.Println(useColors, termWidth)
+		jobs = append(jobs, cJob)
+	}
+	return jobs, nil
 }
 
 func homeDir() string {
@@ -185,6 +221,7 @@ func main() {
 	config.Notify = false
 	config.Bell = false
 	config.Follow = false
+	config.Hierarchy = false
 	// readConfig returns nil also if the file does not exists
 	err = readConfig("/etc/openqa/openqa-mon.conf", &config)
 	if err != nil {
@@ -251,6 +288,8 @@ func main() {
 				config.Notify = true
 			case "--follow":
 				config.Follow = true
+			case "--hierarchy":
+				config.Hierarchy = true
 			case "--config":
 				i++
 				if i >= len(args) {
@@ -378,6 +417,7 @@ func main() {
 				for i, id := range remote.Jobs {
 				fetchJob:
 					job, err := fetchJob(uri, id)
+					job.Remote = remote.URI
 					if err != nil {
 						fmt.Fprintf(os.Stderr, "Error fetching job %d: %s\n", id, err)
 						continue
@@ -401,9 +441,18 @@ func main() {
 			sort.Sort(byID(jobs))
 			// Print jobs
 			for _, job := range jobs {
-				if job.ID > 0 { // Otherwise it's an empty (.e. not found) job
-					job.Println(useColors, termWidth)
-					lines++
+				if job.ID <= 0 { // Job not found
+					continue
+				}
+				job.Println(useColors, termWidth)
+				lines++
+				if config.Hierarchy {
+					// Print children as well. We do this here, so to keep the hierarchy
+					nn, err := printJobHierarchy(job, useColors, termWidth)
+					if err != nil {
+						// XXX: For now we swallow the error
+					}
+					lines += len(nn)
 				}
 			}
 			lines++
