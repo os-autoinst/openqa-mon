@@ -263,6 +263,9 @@ func parseJobIDs(parseText string) []int {
 		if max <= 0 {
 			return ret
 		}
+		if min > max {
+			min, max = max, min
+		}
 
 		// Create range
 		for i = min; i <= max; i++ {
@@ -270,6 +273,22 @@ func parseJobIDs(parseText string) []int {
 		}
 		return ret
 	}
+	// Search for + (usage: jobID+3 returns [jobID,jobID+3])
+	i = strings.Index(parseText, "+")
+	if i > 0 {
+		lower, upper := parseText[:i], parseText[i+1:]
+		start := parseJobID(lower)
+		if start <= 0 {
+			return ret
+		}
+		// On errors it returns conveniently 0, so don't do error checking here
+		steps, _ := strconv.Atoi(upper)
+		for i = 0; i <= steps; i++ {
+			ret = append(ret, start+i)
+		}
+		return ret
+	}
+
 	// Assume job ID set, which also covers single jobs IDs
 	split := strings.Split(parseText, ",")
 	for _, s := range split {

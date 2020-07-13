@@ -36,7 +36,8 @@ func homogenizeRemote(remote string) string {
 
 func printHelp() {
 	fmt.Printf("Usage: %s [OPTIONS] REMOTE\n  REMOTE is the base URL of the openQA server (e.g. https://openqa.opensuse.org)\n\n", os.Args[0])
-	fmt.Println("                             REMOTE can be the directlink to a test (e.g. https://openqa.opensuse.org/t123)\n")
+	fmt.Println("                             REMOTE can be the directlink to a test (e.g. https://openqa.opensuse.org/t123)")
+	fmt.Println("                             or a job range (e.g. https://openqa.opensuse.org/t123..125 or https://openqa.opensuse.org/t123+2)\n")
 	fmt.Println("OPTIONS\n")
 	fmt.Println("  -h, --help                       Print this help message")
 	fmt.Println("  -j, --jobs JOBS                  Display information only for the given JOBS")
