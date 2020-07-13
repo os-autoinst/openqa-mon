@@ -34,16 +34,16 @@ Enable bell notifications (terminal bell sound)
 Enable desktop notifications (sent via notify-send)
 
 .TP
-.B -m|--monitor
-Enable bell and desktop notifications (alias for "--bell --notify")
-
-.TP
 .B --no-bell
-Disable bell notifications (terminal bell sound)
+Disable bell notifications
 
 .TP
 .B --no-notify
-Disable desktop notifications (sent via notify-send)
+Disable desktop notifications
+
+.TP
+.B -m|--monitor
+Enable bell and desktop notifications (alias for "--bell --notify")
 
 .TP
 .B --silent
@@ -52,7 +52,7 @@ Disable bell and desktop notifications (alias for "--no-bell --no-notify")
 .TP
 .B -f|--follow
 Follow jobs, i.e. replace jobs by their clones if available.
-This setting is useful to track jobs also if they are going to be restarted in openQA.
+This setting is useful to track jobs if they are going to be restarted in openQA.
 
 .TP
 .B -p|--hierarchy
@@ -159,6 +159,13 @@ Follow job, if it gets restarted.
 .TP
 .PP
 Monitor job 1245 on instance http://openqa.opensuse.org/.
+
+.TP
+.nf
+.B openqa-mon -mfp http://openqa.opensuse.org/t413
+.TP
+.PP
+Monitor job 413 on instance http://openqa.opensuse.org/ with enabled notifications, follow the job and display the hierarchy
 
 
 .SH COPYRIGHT

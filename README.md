@@ -22,14 +22,23 @@ CLI monitoring client for [openQA](https://open.qa) written in plain simple go f
     openqa-mon [OPTIONS] REMOTE [JOBS]
     
       REMOTE - openQA base URL
-      JOBS can be: either a single job id, multiple comma separated job ids or a job id range (MIN..MAX)
+      JOBS can be: either a single job id, multiple comma separated job ids or a job id range (MIN..MAX or START+INDEX)
                    See examples below for examples
     OPTIONS
       -c N             Periodic monitoring, refresh every N seconds
       -h, --help       Print help message
+      
       -b, --bell       Bell notification on job status change
       -n, --notify     Desktop notification on job status change
+      -m,--monitor     Enable all notifications
+      --no-bell        Disable bell notifications
+      --no-notify      Disable desktop notifications
+      -s,--silent      Disable all notifications
+      
       -f, --follow     Follow jobs, i.e. replace jobs by their clones if available
+      -p, --hierarchy  Show job's children as well (job hierarchy)
+      
+      --config FILE    Set config file
 
 #### Examples
 
@@ -44,6 +53,10 @@ CLI monitoring client for [openQA](https://open.qa) written in plain simple go f
 	
     # Continuous monitoring job range (e.g. jobs 202-205, i.e. jobs 202,203,204,205)
     openqa-mon -c 5 http://your-instance.suse.de 202..205
+    openqa-mon -c 5 http://your-instance.suse.de 202+3
+    
+    # Continuous monitoring with all notifications and job hierarchy (show children)
+    openqa-mon -mfpc 2 http://your-instance.suse.de 413
 
 You can omit the `-j` parameter. Every positive, non-zero `integer` parameter will be considered as `job-id` to be monitored
 

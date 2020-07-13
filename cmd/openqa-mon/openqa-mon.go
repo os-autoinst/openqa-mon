@@ -45,11 +45,12 @@ func printHelp() {
 	fmt.Println("                                   or a job range (1335..1339 or 1335+4)")
 	fmt.Println("  -c,--continous SECONDS           Continously display stats")
 	fmt.Println("  -b,--bell                        Bell notification on job status changes")
-	fmt.Println("  --no-bell                        Disable bell notification")
 	fmt.Println("  -n,--notify                      Send desktop notifications on job status changes")
+	fmt.Println("  --no-bell                        Disable bell notification")
 	fmt.Println("  --no-notify                      Disable desktop notifications")
 	fmt.Println("  -m,--monitor                     Enable bell and desktop notifications")
-	fmt.Println("  --silent                         Disable bell and desktop notifications")
+	fmt.Println("  -s,--silent                      Disable bell and desktop notifications")
+	fmt.Println("")
 	fmt.Println("  -f,--follow                      Follow jobs, i.e. replace jobs by their clones if available")
 	fmt.Println("  -p,--hierarchy                   Show job hierarchy (i.e. children jobs)")
 	fmt.Println("")
@@ -172,6 +173,8 @@ func expandArguments(args []string) []string {
 					ret = append(ret, "--hierarchy")
 				case 'm':
 					ret = append(ret, "--monitor")
+				case 's':
+					ret = append(ret, "--silent")
 				}
 			}
 		} else {
