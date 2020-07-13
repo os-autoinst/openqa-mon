@@ -13,12 +13,13 @@ import (
 
 // Job is a running Job instance
 type Job struct {
-	AssignedWorkerID int `json:"assigned_worker_id"`
-	BlockedByID      int `json:"blocked_by_id"`
-	// Children
-	CloneID int `json:"clone_id"`
-	GroupID int `json:"group_id"`
-	ID      int `json:"id"`
+	AssignedWorkerID int      `json:"assigned_worker_id"`
+	BlockedByID      int      `json:"blocked_by_id"`
+	Children         Children `json:"children"`
+	Parents          Children `json:"parents"`
+	CloneID          int      `json:"clone_id"`
+	GroupID          int      `json:"group_id"`
+	ID               int      `json:"id"`
 	// Modules
 	Name string `json:"name"`
 	// Parents
@@ -30,7 +31,16 @@ type Job struct {
 	Tstarted  string   `json:"t_started"`
 	Test      string   `json:"test"`
 	/* this is added by the program and not part of the fetched json */
-	Link string
+	Link   string
+	Remote string
+	Prefix string
+}
+
+// Children struct is for chained, directly chained and parallel children/parents
+type Children struct {
+	Chained         []int `json:"Chained"`
+	DirectlyChained []int `json:"Directly chained"`
+	Parallel        []int `json:"Parallel"`
 }
 
 type JobStruct struct {
@@ -90,7 +100,11 @@ func (job *Job) Println(useColors bool, width int) {
 	// fixed characters: 8+2+2+18 = 30
 	fixedCharacters := 30
 
-	name := job.Test + "@" + job.Settings.Machine
+	name := job.Prefix
+	if len(name) > 0 {
+		name += " "
+	}
+	name += job.Test + "@" + job.Settings.Machine
 	link := job.Link
 
 	// Is there space for the link (including 2 additional spaces between name and link)?
@@ -188,6 +202,7 @@ func getJobsOverview(url string) ([]Job, error) {
 	// Fetch more details about the jobs
 	for i, job := range jobs {
 		job, err = fetchJob(url, job.ID)
+		job.Remote = url
 		if err != nil {
 			return jobs, err
 		}
