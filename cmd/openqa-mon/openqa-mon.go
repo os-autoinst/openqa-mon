@@ -184,36 +184,56 @@ func expandArguments(args []string) []string {
 	return ret
 }
 
-func printJobHierarchy(job Job, useColors bool, termWidth int) ([]Job, error) {
-	jobs := make([]Job, 0)
+func jobsContainId(jobs []Job, id int) bool {
+	for _, job := range jobs {
+		if job.ID == id {
+			return true
+		}
+	}
+	return false
+}
 
-	for _, id := range job.Children.Chained {
+func getJobChildren(job Job, children []int, follow bool, prefix string) ([]Job, error) {
+	jobs := make([]Job, 0)
+	for _, id := range children {
+	fetchJob:
 		cJob, err := fetchJob(job.Remote, id)
 		if err != nil {
 			return jobs, err
 		}
-		cJob.Prefix = "  [C]"
-		cJob.Println(useColors, termWidth)
-		jobs = append(jobs, cJob)
-	}
-	for _, id := range job.Children.DirectlyChained {
-		cJob, err := fetchJob(job.Remote, id)
-		if err != nil {
-			return jobs, err
+		if follow && cJob.CloneID != 0 && cJob.CloneID != id {
+			id = cJob.CloneID
+			// Ignore, if already in the list
+			if jobsContainId(jobs, id) {
+				continue
+			}
+			goto fetchJob
 		}
-		cJob.Prefix = "  [D]"
-		cJob.Println(useColors, termWidth)
+		cJob.Prefix = prefix
 		jobs = append(jobs, cJob)
 	}
-	for _, id := range job.Children.Parallel {
-		cJob, err := fetchJob(job.Remote, id)
-		if err != nil {
-			return jobs, err
-		}
-		cJob.Prefix = "  [P]"
-		cJob.Println(useColors, termWidth)
-		jobs = append(jobs, cJob)
+	sort.Sort(byID(jobs))
+	return jobs, nil
+}
+
+func getJobHierarchy(job Job, follow bool) ([]Job, error) {
+	jobs := make([]Job, 0)
+	chained, err := getJobChildren(job, unique(job.Children.Chained), follow, "  [CC]")
+	if err != nil {
+		return jobs, err
 	}
+	jobs = append(jobs, chained...)
+	directlyChained, err := getJobChildren(job, unique(job.Children.DirectlyChained), follow, "  [DC]")
+	if err != nil {
+		return jobs, err
+	}
+	jobs = append(jobs, directlyChained...)
+	parallel, err := getJobChildren(job, unique(job.Children.Parallel), follow, "  [PL]")
+	if err != nil {
+		return jobs, err
+	}
+	jobs = append(jobs, parallel...)
+
 	return jobs, nil
 }
 
@@ -472,11 +492,14 @@ func main() {
 				lines++
 				if config.Hierarchy {
 					// Print children as well. We do this here, so to keep the hierarchy
-					nn, err := printJobHierarchy(job, useColors, termWidth)
+					children, err := getJobHierarchy(job, config.Follow)
 					if err != nil {
 						// XXX: For now we swallow the error
 					}
-					lines += len(nn)
+					for _, child := range children {
+						child.Println(useColors, termWidth)
+					}
+					lines += len(children)
 				}
 			}
 			lines++
