@@ -53,6 +53,7 @@ func printHelp() {
 	fmt.Println("")
 	fmt.Println("  -f,--follow                      Follow jobs, i.e. replace jobs by their clones if available")
 	fmt.Println("  -p,--hierarchy                   Show job hierarchy (i.e. children jobs)")
+	fmt.Println("  --hide-state STATES              Hide jobs with that are in the given state (e.g. 'running,assigned')")
 	fmt.Println("")
 	fmt.Println("  --config FILE                    Read additional config file FILE")
 	fmt.Println("")
@@ -116,6 +117,29 @@ func unique(a []int) []int {
 func containsInt(a []int, cmp int) bool {
 	for _, i := range a {
 		if i == cmp {
+			return true
+		}
+	}
+	return false
+}
+
+func trimSplit(s string, sep string) []string {
+	split := strings.Split(s, sep)
+	for i, t := range split {
+		split[i] = strings.TrimSpace(t)
+	}
+	return split
+}
+
+func trimLower(s string) string {
+	return strings.ToLower(strings.TrimSpace(s))
+}
+
+/** Check if the given job should not be displayed */
+func hideJob(job Job, config Config) bool {
+	for _, s := range config.HideStates {
+		s = trimLower(s)
+		if trimLower(job.State) == s || trimLower(job.Result) == s {
 			return true
 		}
 	}
@@ -256,6 +280,7 @@ func main() {
 	config.Bell = false
 	config.Follow = false
 	config.Hierarchy = false
+	config.HideStates = make([]string, 0)
 	// readConfig returns nil also if the file does not exists
 	err = readConfig("/etc/openqa/openqa-mon.conf", &config)
 	if err != nil {
@@ -345,7 +370,14 @@ func main() {
 					fmt.Fprintf(os.Stderr, "Error reading config '%s': %s\n", args[i], err)
 					os.Exit(1)
 				}
-
+			case "--hide-state", "--hide-job-state":
+				i++
+				if i >= len(args) {
+					fmt.Fprintln(os.Stderr, "Missing job state")
+					os.Exit(1)
+				}
+				states := trimSplit(args[i], ",")
+				config.HideStates = append(config.HideStates, states...)
 			default:
 				fmt.Fprintf(os.Stderr, "Invalid argument: %s\n", arg)
 				fmt.Printf("Use %s --help to display available options\n", os.Args[0])
@@ -488,8 +520,10 @@ func main() {
 				if job.ID <= 0 { // Job not found
 					continue
 				}
-				job.Println(useColors, termWidth)
-				lines++
+				if !hideJob(job, config) {
+					job.Println(useColors, termWidth)
+					lines++
+				}
 				if config.Hierarchy {
 					// Print children as well. We do this here, so to keep the hierarchy
 					children, err := getJobHierarchy(job, config.Follow)
@@ -497,9 +531,11 @@ func main() {
 						// XXX: For now we swallow the error
 					}
 					for _, child := range children {
-						child.Println(useColors, termWidth)
+						if !hideJob(child, config) {
+							child.Println(useColors, termWidth)
+							lines++
+						}
 					}
-					lines += len(children)
 				}
 			}
 			lines++

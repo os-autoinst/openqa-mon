@@ -9,12 +9,13 @@ import (
 )
 
 type Config struct {
-	DefaultRemote string // Default remote to take, if not otherwise defined
-	Continuous    int    // If >0, set continuous monitoring with this interval in seconds
-	Bell          bool   // bell enabled by default
-	Notify        bool   // notify enabled by default
-	Follow        bool   // follow jobs by default
-	Hierarchy     bool   // show hierarchy
+	DefaultRemote string   // Default remote to take, if not otherwise defined
+	Continuous    int      // If >0, set continuous monitoring with this interval in seconds
+	Bell          bool     // bell enabled by default
+	Notify        bool     // notify enabled by default
+	Follow        bool     // follow jobs by default
+	Hierarchy     bool     // show hierarchy
+	HideStates    []string // hide the following job states
 }
 
 func strBool(text string) (bool, error) {
