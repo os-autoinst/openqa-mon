@@ -230,6 +230,10 @@ func parseJobID(parseText string) int {
 	for len(parseText) > 1 && parseText[0] == '#' {
 		parseText = parseText[1:]
 	}
+	// Remove possible fragment in case the user dumped a part of a url
+	if i := strings.Index(parseText, "#"); i >= 0 {
+		parseText = parseText[:i]
+	}
 	// Remove : at the end
 	for len(parseText) > 1 && parseText[len(parseText)-1] == ':' {
 		parseText = parseText[:len(parseText)-1]

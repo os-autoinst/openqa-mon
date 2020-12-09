@@ -60,6 +60,14 @@ func printHelp() {
 	fmt.Println("2020, https://github.com/grisu48/openqa-mon")
 }
 
+/** remove fragment from a given url */
+func removeFragment(url string) string {
+	if i := strings.Index(url, "#"); i >= 0 {
+		return url[:i]
+	}
+	return url
+}
+
 /** Try to match the url to be a test url. On success, return the remote and the job id */
 func matchTestURL(url string) (bool, string, []int) {
 	jobs := make([]int, 0)
@@ -281,7 +289,7 @@ func main() {
 	config.Follow = false
 	config.Hierarchy = false
 	config.HideStates = make([]string, 0)
-	// readConfig returns nil also if the file does not exists
+	// readConfig ignores a nonexisting file and returns nil
 	err = readConfig("/etc/openqa/openqa-mon.conf", &config)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error reading config '/etc/openqa/openqa-mon.conf': %s\n", err)
@@ -388,7 +396,7 @@ func main() {
 			// If it's a uri, skip the job id test
 			if strings.HasPrefix(arg, "http://") || strings.HasPrefix(arg, "https://") {
 				// Try to parse as job run (e.g. http://phoenix-openqa.qam.suse.de/t1241)
-				match, url, jobIDs := matchTestURL(arg)
+				match, url, jobIDs := matchTestURL(removeFragment(arg))
 				if match {
 					for _, jobID := range jobIDs {
 						remotes = appendRemote(remotes, url, jobID)
