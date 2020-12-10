@@ -201,12 +201,12 @@ func getJobsOverview(url string) ([]Job, error) {
 
 	// Fetch more details about the jobs
 	for i, job := range jobs {
-		job, err = fetchJob(url, job.ID)
-		job.Remote = url
-		if err != nil {
+		if job, err = fetchJob(url, job.ID); err != nil {
 			return jobs, err
+		} else {
+			job.Remote = url
+			jobs[i] = job
 		}
-		jobs[i] = job
 	}
 	return jobs, nil
 }
@@ -215,67 +215,53 @@ func parseJobs(jobs string) ([]int, error) {
 	split := strings.Split(jobs, ",")
 	ret := make([]int, 0)
 	for _, sID := range split {
-		id, err := strconv.Atoi(sID)
-		if err != nil {
+		if id, err := strconv.Atoi(sID); err != nil {
 			return ret, err
+		} else {
+			ret = append(ret, id)
 		}
-		ret = append(ret, id)
 	}
 	return ret, nil
 }
 
-// parseJobID parses the given text for a valid job id ("[#]INTEGER[:]" and INTEGER > 0). Returns the job id if valid or 0 on error
+// parseJobID parses the given text for a valid job id ("[.*#]INTEGER[:]" and INTEGER > 0). Returns the job id if valid or 0 on error
 func parseJobID(parseText string) int {
-	// Remove # at beginning
-	for len(parseText) > 1 && parseText[0] == '#' {
-		parseText = parseText[1:]
-	}
 	// Remove possible fragment in case the user dumped a part of a url
-	if i := strings.Index(parseText, "#"); i >= 0 {
-		parseText = parseText[:i]
-	}
+	parseText = removeFragment(parseText)
 	// Remove : at the end
 	for len(parseText) > 1 && parseText[len(parseText)-1] == ':' {
 		parseText = parseText[:len(parseText)-1]
 	}
-	if len(parseText) == 0 {
+	if num, err := strconv.Atoi(parseText); err != nil || num <= 0 {
 		return 0
+	} else {
+		return num
 	}
-	num, err := strconv.Atoi(parseText)
-	if err != nil {
-		return 0
+}
+
+func createIntRange(min int, max int, offset int) []int {
+	ret := make([]int, 0)
+	for i := min; i <= max; i++ {
+		ret = append(ret, i+offset)
 	}
-	if num <= 0 {
-		return 0
-	}
-	return num
+	return ret
 }
 
 // parseJobIDs parses the given text for a valid job id ("[#]INTEGER[:]" and INTEGER > 0) or job id ranges (MIN..MAX). Returns the job id if valid or 0 on error
 func parseJobIDs(parseText string) []int {
 	ret := make([]int, 0)
-
 	// Search for range
 	i := strings.Index(parseText, "..")
 	if i > 0 {
 		lower, upper := parseText[:i], parseText[i+2:]
-		min := parseJobID(lower)
-		if min <= 0 {
-			return ret
-		}
-		max := parseJobID(upper)
-		if max <= 0 {
+		min, max := parseJobID(lower), parseJobID(upper)
+		if min <= 0 || max <= 0 {
 			return ret
 		}
 		if min > max {
 			min, max = max, min
 		}
-
-		// Create range
-		for i = min; i <= max; i++ {
-			ret = append(ret, i)
-		}
-		return ret
+		return createIntRange(min, max, 0)
 	}
 	// Search for + (usage: jobID+3 returns [jobID,jobID+3])
 	i = strings.Index(parseText, "+")
@@ -285,12 +271,8 @@ func parseJobIDs(parseText string) []int {
 		if start <= 0 {
 			return ret
 		}
-		// On errors it returns conveniently 0, so don't do error checking here
-		steps, _ := strconv.Atoi(upper)
-		for i = 0; i <= steps; i++ {
-			ret = append(ret, start+i)
-		}
-		return ret
+		steps, _ := strconv.Atoi(upper) // On errors it returns conveniently 0, so don't do error checking here
+		return createIntRange(0, steps, start)
 	}
 
 	// Assume job ID set, which also covers single jobs IDs

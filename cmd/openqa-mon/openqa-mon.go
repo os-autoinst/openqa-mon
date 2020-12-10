@@ -37,8 +37,10 @@ func homogenizeRemote(remote string) string {
 func printHelp() {
 	fmt.Printf("Usage: %s [OPTIONS] REMOTE\n  REMOTE is the base URL of the openQA server (e.g. https://openqa.opensuse.org)\n\n", os.Args[0])
 	fmt.Println("                             REMOTE can be the directlink to a test (e.g. https://openqa.opensuse.org/t123)")
-	fmt.Println("                             or a job range (e.g. https://openqa.opensuse.org/t123..125 or https://openqa.opensuse.org/t123+2)\n")
-	fmt.Println("OPTIONS\n")
+	fmt.Println("                             or a job range (e.g. https://openqa.opensuse.org/t123..125 or https://openqa.opensuse.org/t123+2)")
+	fmt.Println("")
+	fmt.Println("OPTIONS")
+	fmt.Println("")
 	fmt.Println("  -h, --help                       Print this help message")
 	fmt.Println("  -j, --jobs JOBS                  Display information only for the given JOBS")
 	fmt.Println("                                   JOBS can be a single job id, a comma separated list (e.g. 42,43,1337)")
@@ -71,7 +73,8 @@ func removeFragment(url string) string {
 /** Try to match the url to be a test url. On success, return the remote and the job id */
 func matchTestURL(url string) (bool, string, []int) {
 	jobs := make([]int, 0)
-	r, _ := regexp.Compile("^http[s]?://.+/(t[0-9]+$|t[0-9]+..[0-9]+$|tests/[0-9]+$|tests/[0-9]+..[0-9]$)")
+	// TODO: Add fragment into regex
+	r, _ := regexp.Compile("^http[s]?://.+/(t[0-9]+$|t[0-9]+..[0-9]+$|tests/[0-9]+$|tests/[0-9]+..[0-9]+$)")
 	match := r.MatchString(url)
 	if !match {
 		return match, "", jobs
