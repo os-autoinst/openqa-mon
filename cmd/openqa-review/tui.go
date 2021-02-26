@@ -161,6 +161,15 @@ func (tui *TUI) Start() {
 	// disable input buffering
 	exec.Command("stty", "-F", "/dev/tty", "cbreak", "min", "1").Run()
 	go tui.readInput()
+	// Listen for terminal changes signal
+	go func() {
+		sigs := make(chan os.Signal, 1)
+		signal.Notify(sigs, syscall.SIGWINCH)
+		for {
+			<-sigs
+			tui.Update()
+		}
+	}()
 }
 
 func (tui *TUI) Clear() {
@@ -377,7 +386,13 @@ func printJob(job gopenqa.Job, width int) {
 
 	// Full status line requires 89 characters (20+4+8+1+12+1+40+3) plus name
 	if width > 90 {
-		fmt.Printf("%s%20s%s    %8d %s%-12s%s %40s | %s\n", c1, tStr, ANSI_RESET, job.ID, c2, state, ANSI_RESET+ANSI_WHITE, job.Link, job.Name)
+		// Crop the name, if necessary
+		cname := job.Name
+		nName := len(cname)
+		if width < 89+nName {
+			cname = cname[:width-89]
+		}
+		fmt.Printf("%s%20s%s    %8d %s%-12s%s %40s | %s\n", c1, tStr, ANSI_RESET, job.ID, c2, state, ANSI_RESET+ANSI_WHITE, job.Link, cname)
 	} else if width > 60 {
 		// Just not enough space for the full line (>89 characters) ...
 		// We skip the timestamp and display only the link (or job number if not available)
