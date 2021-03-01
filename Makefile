@@ -3,7 +3,7 @@ default: all
 GOARGS=
 
 all: openqa-mon openqa-mq openqa-review
-openqa-mon: cmd/openqa-mon/openqa-mon.go cmd/openqa-mon/terminal.go cmd/openqa-mon/jobs.go cmd/openqa-mon/config.go
+openqa-mon: cmd/openqa-mon/openqa-mon.go cmd/openqa-mon/config.go cmd/openqa-mon/tui.go cmd/openqa-mon/util.go
 	go build $(GOARGS) -o $@ $^
 openqa-mq: cmd/openqa-mq/openqa-mq.go
 	go build $(GOARGS) -o $@ $^

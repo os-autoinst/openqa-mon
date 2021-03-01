@@ -1,37 +1,23 @@
+/* openqa-mon is a simple CLI utility for active monitoring of openQA jobs */
 package main
 
 import (
 	"fmt"
 	"os"
 	"os/signal"
-	"os/user"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/grisu48/gopenqa"
 )
 
 // Remote instance
 type Remote struct {
 	URI  string
 	Jobs []int
-}
-
-func ensureHTTP(remote string) string {
-	if !(strings.HasPrefix(remote, "http://") || strings.HasPrefix(remote, "https://")) {
-		return "http://" + remote
-	} else {
-		return remote
-	}
-}
-
-func homogenizeRemote(remote string) string {
-	for len(remote) > 0 && strings.HasSuffix(remote, "/") {
-		remote = remote[:len(remote)-1]
-	}
-	return remote
 }
 
 func printHelp() {
@@ -62,14 +48,6 @@ func printHelp() {
 	fmt.Println("2020, https://github.com/grisu48/openqa-mon")
 }
 
-/** remove fragment from a given url */
-func removeFragment(url string) string {
-	if i := strings.Index(url, "#"); i >= 0 {
-		return url[:i]
-	}
-	return url
-}
-
 /** Try to match the url to be a test url. On success, return the remote and the job id */
 func matchTestURL(url string) (bool, string, []int) {
 	jobs := make([]int, 0)
@@ -98,56 +76,8 @@ func matchTestURL(url string) (bool, string, []int) {
 	return false, "", jobs
 }
 
-func spaces(n int) string {
-	ret := ""
-	for i := 0; i < n; i++ {
-		ret += " "
-	}
-	return ret
-}
-
-func max(x int, y int) int {
-	if x > y {
-		return x
-	}
-	return y
-}
-
-func unique(a []int) []int {
-	keys := make(map[int]bool)
-	list := []int{}
-	for _, entry := range a {
-		if _, value := keys[entry]; !value {
-			keys[entry] = true
-			list = append(list, entry)
-		}
-	}
-	return list
-}
-
-func containsInt(a []int, cmp int) bool {
-	for _, i := range a {
-		if i == cmp {
-			return true
-		}
-	}
-	return false
-}
-
-func trimSplit(s string, sep string) []string {
-	split := strings.Split(s, sep)
-	for i, t := range split {
-		split[i] = strings.TrimSpace(t)
-	}
-	return split
-}
-
-func trimLower(s string) string {
-	return strings.ToLower(strings.TrimSpace(s))
-}
-
 /** Check if the given job should not be displayed */
-func hideJob(job Job, config Config) bool {
+func hideJob(job gopenqa.Job, config Config) bool {
 	for _, s := range config.HideStates {
 		s = trimLower(s)
 		if trimLower(job.State) == s || trimLower(job.Result) == s {
@@ -219,7 +149,7 @@ func expandArguments(args []string) []string {
 	return ret
 }
 
-func jobsContainId(jobs []Job, id int) bool {
+func jobsContainId(jobs []gopenqa.Job, id int) bool {
 	for _, job := range jobs {
 		if job.ID == id {
 			return true
@@ -228,42 +158,20 @@ func jobsContainId(jobs []Job, id int) bool {
 	return false
 }
 
-func getJobChildren(job Job, children []int, follow bool, prefix string) ([]Job, error) {
-	jobs := make([]Job, 0)
-	for _, id := range children {
-	fetchJob:
-		cJob, err := fetchJob(job.Remote, id)
-		if err != nil {
-			return jobs, err
-		}
-		if follow && cJob.CloneID != 0 && cJob.CloneID != id {
-			id = cJob.CloneID
-			// Ignore, if already in the list
-			if jobsContainId(jobs, id) {
-				continue
-			}
-			goto fetchJob
-		}
-		cJob.Prefix = prefix
-		jobs = append(jobs, cJob)
-	}
-	sort.Sort(byID(jobs))
-	return jobs, nil
-}
-
-func getJobHierarchy(job Job, follow bool) ([]Job, error) {
-	jobs := make([]Job, 0)
-	chained, err := getJobChildren(job, unique(job.Children.Chained), follow, "  [CC]")
+func getJobHierarchy(job gopenqa.Job, follow bool) ([]gopenqa.Job, error) {
+	jobs := make([]gopenqa.Job, 0)
+	// TODO: The prefix got missing ...
+	chained, err := job.FetchChildren(unique(job.Children.Chained), follow)
 	if err != nil {
 		return jobs, err
 	}
 	jobs = append(jobs, chained...)
-	directlyChained, err := getJobChildren(job, unique(job.Children.DirectlyChained), follow, "  [DC]")
+	directlyChained, err := job.FetchChildren(unique(job.Children.DirectlyChained), follow)
 	if err != nil {
 		return jobs, err
 	}
 	jobs = append(jobs, directlyChained...)
-	parallel, err := getJobChildren(job, unique(job.Children.Parallel), follow, "  [PL]")
+	parallel, err := job.FetchChildren(unique(job.Children.Parallel), follow)
 	if err != nil {
 		return jobs, err
 	}
@@ -272,17 +180,11 @@ func getJobHierarchy(job Job, follow bool) ([]Job, error) {
 	return jobs, nil
 }
 
-func homeDir() string {
-	usr, err := user.Current()
-	if err != nil {
-		panic(err)
-	}
-	return usr.HomeDir
-}
+var config Config
+var tui TUI
 
 func main() {
 	var err error
-	var config Config
 	args := expandArguments(os.Args[1:])
 	remotes := make([]Remote, 0)
 	// Configuration - apply default values and read config files: Global '/etc/openqa/openqa-mon.conf' and user '~/openqa-mon.conf'
@@ -409,7 +311,7 @@ func main() {
 				}
 			} else {
 				// If the argument is a number only, assume it's a job ID otherwise it's a host
-				jobIDs := parseJobIDs(arg)
+				jobIDs := parseJobIDs(removeFragment(arg))
 				if len(jobIDs) > 0 {
 					if len(remotes) == 0 {
 						// Apply default remote, if defined
@@ -440,163 +342,174 @@ func main() {
 		}
 		remote := Remote{URI: config.DefaultRemote}
 		remotes = append(remotes, remote)
-
 	}
 	for _, remote := range remotes {
 		remote.Jobs = unique(remote.Jobs)
 	}
 
-	if config.Continuous > 0 {
-		clearScreen()
+	// Single listing mode, no TUI
+	if config.Continuous <= 0 {
+		singleCall(remotes)
+		os.Exit(0)
 	}
+	tui = CreateTUI()
+	tui.EnterAltScreen()
+	tui.Clear()
+	remotesString := fmt.Sprintf("%d remotes", len(remotes))
+	if len(remotes) == 1 {
+		remotesString = remotes[0].URI
+	}
+	tui.SetHeader(fmt.Sprintf("openqa-mon - Monitoring %s | Refreshing every %d seconds", remotesString, config.Continuous))
+	tui.Update()
+	defer tui.LeaveAltScreen()
+	continuousMonitoring(remotes)
+	os.Exit(0)
+}
 
+/* Get all jobs from the given remotes
+ * callback will be called for each received job
+ * returns the (possibly modified) input remotes
+ */
+func FetchJobs(remotes []Remote, callback func(gopenqa.Job)) ([]Remote, error) {
+	for _, remote := range remotes {
+		instance := gopenqa.CreateInstance(ensureHTTP(remote.URI))
+		// If no jobs are defined, fetch overview
+		if len(remote.Jobs) == 0 {
+			overview, err := instance.GetOverview("", gopenqa.EmptyParams())
+			if err != nil {
+				return remotes, err
+			}
+			for _, job := range overview {
+				callback(job)
+			}
+		} else {
+			// Fetch individual jobs
+			jobsModified := false // If remote.Jobs has been modified (e.g. id changes when detecting a restarted job)
+			for i, id := range remote.Jobs {
+				job, err := instance.GetJobFollow(id)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Error fetching job %d: %s\n", id, err)
+					continue
+				}
+				if job.ID != id {
+					remote.Jobs[i] = id
+					jobsModified = true
+				}
+				callback(job)
+			}
+			if jobsModified {
+				remote.Jobs = unique(remote.Jobs)
+			}
+		}
+	}
+	return remotes, nil
+}
+
+// Fires a job notification, if notifications are enabled
+func NotifyJobChanged(j gopenqa.Job) {
+	if config.Bell {
+		bell()
+	}
+	if config.Notify {
+		notifySend(fmt.Sprintf("[%s] - Job %d %s", j.JobState(), j.ID, j.Name))
+	}
+}
+
+// Single call - Run without terminal user interface, just list the received jobs and quit
+func singleCall(remotes []Remote) {
+	width, _ := terminalSize()
+	// Fetch jobs and list them
+	fmt.Fprintf(os.Stderr, "Fetching jobs ... ")
+	_, err := FetchJobs(remotes, func(job gopenqa.Job) {
+		PrintJob(job, true, width)
+	})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error fetching jobs: %s\n", err)
+		os.Exit(1)
+	}
+}
+
+func continuousMonitoring(remotes []Remote) {
+	var err error
 	// Ensure cursor is visible after termination
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
+		sigs := make(chan os.Signal, 1)
+		signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 		sig := <-sigs
-		showCursor()
+		tui.LeaveAltScreen()
 		switch sig {
 		case syscall.SIGINT, syscall.SIGTERM:
-			fmt.Println("Terminating.")
 			os.Exit(1)
 		}
 	}()
 
-	jobsMemory := make([]Job, 0)
+	refreshSignal := make(chan int, 1)
+
+	// Keybress callback
+	tui.Keypress = func(b byte) {
+		if b == 'q' {
+			tui.LeaveAltScreen()
+			os.Exit(0)
+		} else if b == 'r' {
+			// Refresh
+			refreshSignal <- 1
+		} else if b == 'h' || b == '?' {
+			tui.SetShowHelp(!tui.DoShowHelp())
+		} else if b == 'u' {
+			tui.Update()
+		}
+	}
+
+	// Start TUI handlers (keypress, ecc)
+	tui.Start()
+
+	// Current state of the jobs
+	jobs := make([]gopenqa.Job, 0)
+
+	tui.SetStatus("Initial job fetching ... ")
 	for {
-		termWidth, termHeight := terminalSize()
-		// Ensure a certain minimum extend
-		termWidth = max(termWidth, 50)
-		termHeight = max(termHeight, 10)
-		spacesRow := spaces(termWidth)
-		useColors := true
-		remotesString := fmt.Sprintf("%d remotes", len(remotes))
-		if len(remotes) == 1 {
-			remotesString = remotes[0].URI
-		}
-		if config.Continuous > 0 {
-			moveCursorBeginning()
-			line := fmt.Sprintf("openqa-mon - Monitoring %s | Refresh every %d seconds", remotesString, config.Continuous)
-			fmt.Print(line + spaces(termWidth-len(line)))
-			fmt.Println(spaces(termWidth))
-		}
-		lines := 2
-		currentJobs := make([]Job, 0)
-		for _, remote := range remotes {
-			uri := ensureHTTP(remote.URI)
-
-			var jobs []Job
-			if len(remote.Jobs) == 0 { // If no jobs are defined, fetch overview
-				jobs, err = getJobsOverview(uri)
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "Error fetching jobs: %s\n", err)
-					continue
-				}
-				if len(jobs) == 0 {
-					fmt.Println("No jobs on instance found")
-					continue
-				}
-			} else {
-				// Fetch jobs
-				jobs = make([]Job, 0)
-				jobsModified := false
-				for i, id := range remote.Jobs {
-				fetchJob:
-					job, err := fetchJob(uri, id)
-					job.Remote = remote.URI
-					if err != nil {
-						fmt.Fprintf(os.Stderr, "Error fetching job %d: %s\n", id, err)
-						continue
+		// Fetch new jobs. Update remotes (job id's) when necessary
+		remotes, err = FetchJobs(remotes, func(job gopenqa.Job) {
+			// Job received. Update existing job or add job if not yet present
+			for i, j := range jobs {
+				if j.ID == job.ID {
+					jobs[i] = job
+					// Ignore if job status remains the same
+					if j.JobState() == job.JobState() {
+						return
 					}
-					if config.Follow && job.CloneID != 0 && job.CloneID != id {
-						id = job.CloneID
-						if containsJobID(jobs, id) || containsInt(remote.Jobs, id) {
-							continue
-						}
-						remote.Jobs[i] = id
-						jobsModified = true
-						goto fetchJob
+					// Ignore trivial changes (uploading, assigned)
+					state := job.JobState()
+					if state == "uploading" || state == "assigned" {
+						return
 					}
-					jobs = append(jobs, job)
-				}
-				if jobsModified {
-					remote.Jobs = unique(remote.Jobs)
-				}
-			}
-			// Sort jobs by ID
-			sort.Sort(byID(jobs))
-			// Print jobs
-			for _, job := range jobs {
-				if job.ID <= 0 { // Job not found
-					continue
-				}
-				if !hideJob(job, config) {
-					job.Println(useColors, termWidth)
-					lines++
-				}
-				if config.Hierarchy {
-					// Print children as well. We do this here, so to keep the hierarchy
-					children, err := getJobHierarchy(job, config.Follow)
-					if err != nil {
-						// XXX: For now we swallow the error
-					}
-					for _, child := range children {
-						if !hideJob(child, config) {
-							child.Println(useColors, termWidth)
-							lines++
-						}
-					}
-				}
-			}
-			lines++
-			currentJobs = append(currentJobs, jobs...)
-		}
-		if config.Continuous <= 0 {
-			break
-		} else {
-			// Check if jobs have changes
-			if config.Bell || config.Notify {
-				if len(jobsMemory) == 0 {
-					jobsMemory = currentJobs
-				} else {
-					changedJobs := jobsChanged(currentJobs, jobsMemory)
-					changedJobs = eraseTrivialChanges(changedJobs)
-					if len(changedJobs) > 0 {
-						jobsMemory = currentJobs
-						if config.Bell {
-							bell()
-						}
-						if config.Notify {
-							if len(changedJobs) == 1 {
-								job := changedJobs[0]
-								notifySend(fmt.Sprintf("[%s] - Job %d %s", job.stateString(), job.ID, job.Name))
-							} else if len(changedJobs) < 4 { // Up to 3 jobs are ok to display
-								message := fmt.Sprintf("%d jobs changed state:", len(changedJobs))
-								for _, job := range changedJobs {
-									message += "\n  " + fmt.Sprintf("[%s] - Job %d %s", job.stateString(), job.ID, job.Name)
-								}
-								notifySend(message)
-							} else { // For more job it doesn't make any sense anymore to display them
-								notifySend(fmt.Sprintf("%d jobs changed state", len(changedJobs)))
-							}
-						}
-					}
+					// Notify about job update
+					NotifyJobChanged(job)
+					// Refresh tui after each job update
+					tui.Model.SetJobs(jobs)
+					tui.Update()
+					return
 				}
 			}
 
-			// Fill remaining screen with blank characters to erase
-			n := termHeight - lines
-			for i := 0; i < n; i++ {
-				fmt.Println(spacesRow)
-			}
-			line := "openqa-mon (https://github.com/grisu48/openqa-mon)"
-			date := time.Now().Format("15:04:05")
-			fmt.Print(line + spaces(termWidth-len(line)-len(date)) + date)
-			time.Sleep(time.Duration(config.Continuous) * time.Second)
-			moveCursorLineBeginning(termHeight)
-			fmt.Print(line + spaces(termWidth-len(line)-14) + "Refreshing ...")
+			// Append new job
+			jobs = append(jobs, job)
+			tui.Model.SetJobs(jobs)
+			tui.Update()
+		})
+		if err != nil {
+			tui.SetStatus(fmt.Sprintf("Error fetching jobs: %s", err))
 		}
+
+		tui.SetStatus("")
+		// Wait for next update, or timeout or signal
+		select {
+		case <-refreshSignal:
+			tui.SetStatus("Manual refresh ... ")
+		case <-time.After(time.Duration(config.Continuous) * time.Second):
+			tui.SetStatus("Refreshing ... ")
+		}
+
 	}
 
 }
