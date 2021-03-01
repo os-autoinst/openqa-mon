@@ -45,7 +45,7 @@ func printHelp() {
 	fmt.Println("")
 	fmt.Println("  --config FILE                    Read additional config file FILE")
 	fmt.Println("")
-	fmt.Println("2020, https://github.com/grisu48/openqa-mon")
+	fmt.Println("2021, https://github.com/grisu48/openqa-mon")
 }
 
 /** Try to match the url to be a test url. On success, return the remote and the job id */
@@ -283,7 +283,7 @@ func main() {
 					fmt.Fprintf(os.Stderr, "Error reading config '%s': %s\n", args[i], err)
 					os.Exit(1)
 				}
-			case "--hide-state", "--hide-job-state":
+			case "--hide-state", "--hide-job-state", "--hide":
 				i++
 				if i >= len(args) {
 					fmt.Fprintln(os.Stderr, "Missing job state")
@@ -360,6 +360,7 @@ func main() {
 		remotesString = remotes[0].URI
 	}
 	tui.SetHeader(fmt.Sprintf("openqa-mon - Monitoring %s | Refreshing every %d seconds", remotesString, config.Continuous))
+	tui.Model.HideStates = config.HideStates
 	tui.Update()
 	defer tui.LeaveAltScreen()
 	continuousMonitoring(remotes)
@@ -490,8 +491,10 @@ func continuousMonitoring(remotes []Remote) {
 		} else if b == 'r' {
 			// Refresh
 			refreshSignal <- 1
-		} else if b == 'h' || b == '?' {
+		} else if b == '?' {
 			tui.SetShowHelp(!tui.DoShowHelp())
+		} else if b == 'h' {
+			tui.SetHideStates(!tui.DoHideStates())
 		} else {
 			// Ignore keypress and update tui
 			tui.Update()

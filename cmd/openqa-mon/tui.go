@@ -40,12 +40,14 @@ type TUI struct {
 	status     string // Additional status text
 	showStatus bool   // Show status line
 	showHelp   bool   // Show help line
+	hideEnable bool   // If hideStates will be considered
 }
 
 /* The model that will be displayed in the TUI */
 type TUIModel struct {
-	jobs  []gopenqa.Job // Jobs to be displayed
-	mutex sync.Mutex    // Access mutex to the model
+	jobs       []gopenqa.Job // Jobs to be displayed
+	HideStates []string      // Jobs with this status will be hidden
+	mutex      sync.Mutex    // Access mutex to the model
 }
 
 type winsize struct {
@@ -93,6 +95,7 @@ func CreateTUI() TUI {
 	tui.Keypress = nil
 	tui.status = ""
 	tui.showStatus = true
+	tui.hideEnable = true
 	return tui
 }
 
@@ -250,6 +253,17 @@ func (tui *TUI) DoShowHelp() bool {
 	return tui.showHelp
 }
 
+func (tui *TUI) SetHideStates(enabled bool) {
+	tui.Model.mutex.Lock()
+	defer tui.Model.mutex.Unlock()
+	tui.hideEnable = enabled
+	tui.Update()
+}
+
+func (tui *TUI) DoHideStates() bool {
+	return tui.hideEnable
+}
+
 // Read keys
 func (tui *TUI) readInput() {
 	var b []byte = make([]byte, 1)
@@ -266,6 +280,16 @@ func (tui *TUI) readInput() {
 	}
 }
 
+func (tui *TUI) doHideJob(j gopenqa.Job) bool {
+	state := j.JobState()
+	for _, s := range tui.Model.HideStates {
+		if state == s {
+			return true
+		}
+	}
+	return false
+}
+
 // Redraw tui
 func (tui *TUI) Update() {
 	width, height := terminalSize()
@@ -277,7 +301,7 @@ func (tui *TUI) Update() {
 		lines++
 	}
 	if tui.showHelp {
-		fmt.Println("?:Toggle help    r: Refresh    q:Quit")
+		fmt.Println("?:Toggle help    r: Refresh    h:Toggle hide    q:Quit")
 		lines++
 	}
 	fmt.Println()
@@ -289,6 +313,9 @@ func (tui *TUI) Update() {
 		maxHeight -= 2
 	}
 	for _, job := range tui.Model.jobs {
+		if tui.hideEnable && tui.doHideJob(job) {
+			continue
+		}
 		// Ignore offset jobs (for scrolling)
 		if offset > 0 {
 			offset--
