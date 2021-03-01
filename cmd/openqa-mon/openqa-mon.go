@@ -370,7 +370,7 @@ func main() {
  * callback will be called for each received job
  * returns the (possibly modified) input remotes
  */
-func FetchJobs(remotes []Remote, callback func(gopenqa.Job)) ([]Remote, error) {
+func FetchJobs(remotes []Remote, callback func(int, gopenqa.Job)) ([]Remote, error) {
 	for _, remote := range remotes {
 		instance := gopenqa.CreateInstance(ensureHTTP(remote.URI))
 		// If no jobs are defined, fetch overview
@@ -380,22 +380,56 @@ func FetchJobs(remotes []Remote, callback func(gopenqa.Job)) ([]Remote, error) {
 				return remotes, err
 			}
 			for _, job := range overview {
-				callback(job)
+				callback(job.ID, job)
 			}
 		} else {
 			// Fetch individual jobs
 			jobsModified := false // If remote.Jobs has been modified (e.g. id changes when detecting a restarted job)
 			for i, id := range remote.Jobs {
-				job, err := instance.GetJobFollow(id)
+				var job gopenqa.Job
+				var err error
+				if config.Follow {
+					job, err = instance.GetJobFollow(id)
+				} else {
+					job, err = instance.GetJob(id)
+				}
 				if err != nil {
-					fmt.Fprintf(os.Stderr, "Error fetching job %d: %s\n", id, err)
-					continue
+					return remotes, err
 				}
 				if job.ID != id {
-					remote.Jobs[i] = id
+					remote.Jobs[i] = job.ID
 					jobsModified = true
 				}
-				callback(job)
+				callback(id, job)
+
+				// Fetch children
+				if config.Hierarchy {
+					// Depending on the child type, add prefix
+					if children, err := job.FetchChildren(job.Children.DirectlyChained, true); err != nil {
+						return remotes, err
+					} else {
+						for _, job := range children {
+							job.Prefix = "  +"
+							callback(job.ID, job)
+						}
+					}
+					if children, err := job.FetchChildren(job.Children.Chained, true); err != nil {
+						return remotes, err
+					} else {
+						for _, job := range children {
+							job.Prefix = "  ."
+							callback(job.ID, job)
+						}
+					}
+					if children, err := job.FetchChildren(job.Children.Parallel, true); err != nil {
+						return remotes, err
+					} else {
+						for _, job := range children {
+							job.Prefix = "  +"
+							callback(job.ID, job)
+						}
+					}
+				}
 			}
 			if jobsModified {
 				remote.Jobs = unique(remote.Jobs)
@@ -418,10 +452,12 @@ func NotifyJobChanged(j gopenqa.Job) {
 // Single call - Run without terminal user interface, just list the received jobs and quit
 func singleCall(remotes []Remote) {
 	width, _ := terminalSize()
+	// If not a tty, disable color
+	color := IsTTY()
+
 	// Fetch jobs and list them
-	fmt.Fprintf(os.Stderr, "Fetching jobs ... ")
-	_, err := FetchJobs(remotes, func(job gopenqa.Job) {
-		PrintJob(job, true, width)
+	_, err := FetchJobs(remotes, func(id int, job gopenqa.Job) {
+		PrintJob(job, color, width)
 	})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error fetching jobs: %s\n", err)
@@ -443,6 +479,7 @@ func continuousMonitoring(remotes []Remote) {
 		}
 	}()
 
+	// Signal for a refresh
 	refreshSignal := make(chan int, 1)
 
 	// Keybress callback
@@ -455,7 +492,8 @@ func continuousMonitoring(remotes []Remote) {
 			refreshSignal <- 1
 		} else if b == 'h' || b == '?' {
 			tui.SetShowHelp(!tui.DoShowHelp())
-		} else if b == 'u' {
+		} else {
+			// Ignore keypress and update tui
 			tui.Update()
 		}
 	}
@@ -469,10 +507,10 @@ func continuousMonitoring(remotes []Remote) {
 	tui.SetStatus("Initial job fetching ... ")
 	for {
 		// Fetch new jobs. Update remotes (job id's) when necessary
-		remotes, err = FetchJobs(remotes, func(job gopenqa.Job) {
+		remotes, err = FetchJobs(remotes, func(id int, job gopenqa.Job) {
 			// Job received. Update existing job or add job if not yet present
 			for i, j := range jobs {
-				if j.ID == job.ID {
+				if j.ID == id { // Compare to given id as this is the original id (not the ID of a possible cloned job)
 					jobs[i] = job
 					// Ignore if job status remains the same
 					if j.JobState() == job.JobState() {

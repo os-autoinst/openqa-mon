@@ -71,6 +71,14 @@ func terminalSize() (int, int) {
 	}
 }
 
+func IsTTY() bool {
+	if fileInfo, _ := os.Stdout.Stat(); (fileInfo.Mode() & os.ModeCharDevice) != 0 {
+		return true
+	} else {
+		return false
+	}
+}
+
 func spaces(n int) string {
 	ret := ""
 	for i := 0; i < n; i++ {
