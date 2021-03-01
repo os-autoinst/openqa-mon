@@ -301,7 +301,12 @@ func (tui *TUI) Update() {
 		lines++
 	}
 	if tui.showHelp {
-		fmt.Println("?:Toggle help    r: Refresh    h:Toggle hide    q:Quit")
+
+		fmt.Print("?:Toggle help    r: Refresh")
+		if len(tui.Model.HideStates) > 0 {
+			fmt.Print("    h:Toggle hide")
+		}
+		fmt.Println("    q:Quit")
 		lines++
 	}
 	fmt.Println()
