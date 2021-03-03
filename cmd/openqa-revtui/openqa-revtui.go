@@ -165,7 +165,7 @@ func loadDefaultConfig() error {
 	if err != nil {
 		return err
 	}
-	configFile := home + "/.openqa_review.toml"
+	configFile := home + "/.openqa-revtui.toml"
 	if fileExists(configFile) {
 		if err := cf.LoadToml(configFile); err != nil {
 			return err
@@ -349,6 +349,8 @@ func tui_main(tui *TUI, instance gopenqa.Instance) int {
 		} else if key == 's' {
 			// Shift through the sorting mechanism
 			tui.SetSorting((tui.Sorting() + 1) % 2)
+			tui.Update()
+		} else {
 			tui.Update()
 		}
 	}

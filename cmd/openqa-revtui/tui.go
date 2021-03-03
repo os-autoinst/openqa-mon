@@ -73,6 +73,7 @@ type TUIModel struct {
 	jobs      []gopenqa.Job            // Jobs to be displayed
 	jobGroups map[int]gopenqa.JobGroup // Job Groups
 	mutex     sync.Mutex               // Access mutex to the model
+	offset    int                      // Line offset for printing
 }
 
 func (tui *TUIModel) Apply(jobs []gopenqa.Job) {
@@ -144,6 +145,7 @@ func (tui *TUI) SetHeader(header string) {
 func (tui *TUI) readInput() {
 	// TODO: Find a way to read raw without ENTER
 	var b []byte = make([]byte, 1)
+	var p byte
 	for {
 		if n, err := os.Stdin.Read(b); err != nil {
 			fmt.Fprintf(os.Stderr, "Input stream error: %s\n", err)
@@ -151,9 +153,31 @@ func (tui *TUI) readInput() {
 		} else if n == 0 { // EOL
 			break
 		}
-		if tui.Keypress != nil {
-			tui.Keypress(b[0])
+		k := b[0]
+
+		// Catch arrow keys
+		if p == 91 {
+			if k == 65 {
+				// Arrow up
+				if tui.Model.offset > 0 {
+					tui.Model.offset--
+					tui.Update()
+				}
+			} else if k == 66 {
+				// Arrow down
+				if tui.Model.offset < len(tui.Model.jobs) {
+					tui.Model.offset++
+					tui.Update()
+				}
+			}
+		} else if k == 91 {
+			// Wait for next key, don't process keypress
+		} else {
+			if tui.Keypress != nil {
+				tui.Keypress(k)
+			}
 		}
+		p = k
 	}
 }
 
@@ -213,9 +237,12 @@ func (tui *TUI) hideJob(job gopenqa.Job) bool {
 
 // print all jobs unsorted
 func (tui *TUI) printJobs(width, height int) {
+	line := 0
 	for _, job := range tui.Model.jobs {
 		if !tui.hideJob(job) {
-			printJob(job, width)
+			if line++; line > tui.Model.offset {
+				printJob(job, width)
+			}
 		}
 	}
 }
@@ -249,15 +276,20 @@ func (tui *TUI) printJobsByGroup(width, height int) {
 	}
 	sort.Ints(grpIDs)
 	// Now print them sorted by group ID
+	line := 0
 	for _, id := range grpIDs {
 		grp := tui.Model.jobGroups[id]
 		jobs := groups[id]
 		statC := make(map[string]int, 0)
 		hidden := 0
-		fmt.Printf("===== %s ====================\n", grp.Name)
+		if line++; line > tui.Model.offset {
+			fmt.Printf("===== %s ====================\n", grp.Name)
+		}
 		for _, job := range jobs {
 			if !tui.hideJob(job) {
-				printJob(job, width)
+				if line++; line > tui.Model.offset {
+					printJob(job, width)
+				}
 			} else {
 				hidden++
 			}
@@ -269,16 +301,18 @@ func (tui *TUI) printJobsByGroup(width, height int) {
 				statC[status] = 1
 			}
 		}
-		fmt.Printf("Total: %d", len(jobs))
-		stats := sortedKeys(statC)
-		for _, s := range stats {
-			c := statC[s]
-			fmt.Printf(", %s: %d", s, c)
+		if line++; line > tui.Model.offset {
+			fmt.Printf("Total: %d", len(jobs))
+			stats := sortedKeys(statC)
+			for _, s := range stats {
+				c := statC[s]
+				fmt.Printf(", %s: %d", s, c)
+			}
+			if hidden > 0 {
+				fmt.Printf(" (hidden: %d)", hidden)
+			}
+			fmt.Println()
 		}
-		if hidden > 0 {
-			fmt.Printf(" (hidden: %d)", hidden)
-		}
-		fmt.Println()
 	}
 }
 
@@ -294,7 +328,7 @@ func (tui *TUI) Update() {
 	tui.Clear()
 	if tui.header != "" {
 		fmt.Println(tui.header)
-		fmt.Println("q:Quit   r:Refresh   h:Hide/Show jobs   m:Toggle RabbitMQ tracker   s:Switch sorting")
+		fmt.Println("q:Quit   r:Refresh   h:Hide/Show jobs   m:Toggle RabbitMQ tracker   s:Switch sorting    Arrows:Move up/down")
 		fmt.Println()
 	}
 
