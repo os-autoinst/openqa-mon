@@ -1,12 +1,9 @@
 github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
-github.com/grisu48/gopenqa v0.0.0-20210223105356-5af1cca43752 h1:KY6xRqLF24n9yzNcblADxTAz4UdxCJ5otaHLfGDVgbI=
-github.com/grisu48/gopenqa v0.0.0-20210223105356-5af1cca43752/go.mod h1:ZVDyBqnwiOAv+vm7FFB8/S94Rt+0da4lQD5TaZWl8oE=
-github.com/grisu48/gopenqa v0.0.0-20210224091343-56015c35bb00 h1:ifxSpjMBXSFOOnM/961UGEuusQE+acXuLIdne3cQfn0=
-github.com/grisu48/gopenqa v0.0.0-20210224091343-56015c35bb00/go.mod h1:ZVDyBqnwiOAv+vm7FFB8/S94Rt+0da4lQD5TaZWl8oE=
-github.com/grisu48/gopenqa v0.0.0-20210224103145-3af7967e45a9 h1:0aYLGi88EyUa+3bZTYqwxwFdW6GHsW513Xp1+pGka10=
-github.com/grisu48/gopenqa v0.0.0-20210224103145-3af7967e45a9/go.mod h1:ZVDyBqnwiOAv+vm7FFB8/S94Rt+0da4lQD5TaZWl8oE=
-github.com/grisu48/gopenqa v0.0.0-20210224104953-f86136cfe826 h1:K7QKq53SubQT1ZLJD4R8mfY2b1ssITG+Qo487Qkc8Bw=
 github.com/grisu48/gopenqa v0.0.0-20210224104953-f86136cfe826/go.mod h1:ZVDyBqnwiOAv+vm7FFB8/S94Rt+0da4lQD5TaZWl8oE=
+github.com/grisu48/gopenqa v0.0.0-20210301125648-f72f716c6bfb h1:Xvj1gHwROF2xIPETjhUW7TFXBeq29qoqYRLxu7E4J5w=
+github.com/grisu48/gopenqa v0.0.0-20210301125648-f72f716c6bfb/go.mod h1:ZVDyBqnwiOAv+vm7FFB8/S94Rt+0da4lQD5TaZWl8oE=
+github.com/grisu48/gopenqa v0.0.0-20210301131952-e781e21a6e9c h1:g8/Zih9pi182bkyGoa3Y/AFXS/qLhv5nTpoQjilwgHo=
+github.com/grisu48/gopenqa v0.0.0-20210301131952-e781e21a6e9c/go.mod h1:ZVDyBqnwiOAv+vm7FFB8/S94Rt+0da4lQD5TaZWl8oE=
 github.com/streadway/amqp v1.0.0 h1:kuuDrUJFZL1QYL9hUNuCxNObNzB0bV/ZG5jV3RWAQgo=
 github.com/streadway/amqp v1.0.0/go.mod h1:AZpEONHx3DKn8O/DFsRAY58/XVQiIPMTMB1SddzLXVw=
