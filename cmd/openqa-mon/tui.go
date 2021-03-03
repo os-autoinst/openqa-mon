@@ -188,7 +188,7 @@ func PrintJob(job gopenqa.Job, useColors bool, width int) {
 func (m *TUIModel) SetJobs(jobs []gopenqa.Job) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
-	m.jobs = jobs
+	m.jobs = uniqueJobs(jobs)
 }
 
 func (tui *TUI) Start() {

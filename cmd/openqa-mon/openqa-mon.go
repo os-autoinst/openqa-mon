@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"syscall"
@@ -343,8 +344,12 @@ func main() {
 		remote := Remote{URI: config.DefaultRemote}
 		remotes = append(remotes, remote)
 	}
+	// Remove duplicate IDs and sort by ID
 	for _, remote := range remotes {
 		remote.Jobs = unique(remote.Jobs)
+		sort.Slice(remote.Jobs, func(i, j int) bool {
+			return remote.Jobs[i] < remote.Jobs[j]
+		})
 	}
 
 	// Single listing mode, no TUI
@@ -372,7 +377,7 @@ func main() {
  * returns the (possibly modified) input remotes
  */
 func FetchJobs(remotes []Remote, callback func(int, gopenqa.Job)) ([]Remote, error) {
-	for _, remote := range remotes {
+	for i, remote := range remotes {
 		instance := gopenqa.CreateInstance(ensureHTTP(remote.URI))
 		// If no jobs are defined, fetch overview
 		if len(remote.Jobs) == 0 {
@@ -433,7 +438,12 @@ func FetchJobs(remotes []Remote, callback func(int, gopenqa.Job)) ([]Remote, err
 				}
 			}
 			if jobsModified {
-				remote.Jobs = unique(remote.Jobs)
+				// Ensure the job IDs are unique and sorted
+				jobs := unique(remote.Jobs)
+				sort.Slice(jobs, func(i, j int) bool {
+					return jobs[i] < jobs[j]
+				})
+				remotes[i].Jobs = jobs
 			}
 		}
 	}
@@ -509,8 +519,10 @@ func continuousMonitoring(remotes []Remote) {
 
 	tui.SetStatus("Initial job fetching ... ")
 	for {
+		exists := make(map[int]bool, 0) // Keep track of existing jobs
 		// Fetch new jobs. Update remotes (job id's) when necessary
 		remotes, err = FetchJobs(remotes, func(id int, job gopenqa.Job) {
+			exists[job.ID] = true
 			// Job received. Update existing job or add job if not yet present
 			for i, j := range jobs {
 				if j.ID == id { // Compare to given id as this is the original id (not the ID of a possible cloned job)
@@ -538,6 +550,14 @@ func continuousMonitoring(remotes []Remote) {
 			tui.Model.SetJobs(jobs)
 			tui.Update()
 		})
+		// Remove items which are not present anymore - (e.g. old children)
+		jobs = uniqueJobs(filterJobs(jobs, func(job gopenqa.Job) bool {
+			_, ok := exists[job.ID]
+			return ok
+		}))
+		tui.Model.SetJobs(jobs)
+		tui.Update()
+
 		if err != nil {
 			tui.SetStatus(fmt.Sprintf("Error fetching jobs: %s", err))
 		}

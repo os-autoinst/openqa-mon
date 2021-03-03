@@ -5,6 +5,8 @@ import (
 	"os/user"
 	"strconv"
 	"strings"
+
+	"github.com/grisu48/gopenqa"
 )
 
 // Removes fragment from url
@@ -140,4 +142,37 @@ func parseJobID(parseText string) int {
 	} else {
 		return num
 	}
+}
+
+// Filter a job slice based on a function
+func filterJobs(jobs []gopenqa.Job, f func(job gopenqa.Job) bool) []gopenqa.Job {
+	i := 0
+	for _, job := range jobs {
+		if f(job) {
+			jobs[i] = job
+			i++
+		}
+	}
+	return jobs[:i]
+}
+
+func findJob(jobs []gopenqa.Job, id int) (gopenqa.Job, bool) {
+	for _, job := range jobs {
+		if job.ID == id {
+			return job, true
+		}
+	}
+	var job gopenqa.Job
+	return job, false
+}
+
+// Remove duplicate entries based on the job ID. Only the first entries will be kept,
+func uniqueJobs(jobs []gopenqa.Job) []gopenqa.Job {
+	ret := make([]gopenqa.Job, 0)
+	for _, job := range jobs {
+		if _, ok := findJob(ret, job.ID); !ok {
+			ret = append(ret, job)
+		}
+	}
+	return ret
 }
