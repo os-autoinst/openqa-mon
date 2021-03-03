@@ -1,0 +1,70 @@
+## Review template file for PublicCloud test runs on OSD
+
+Instance = "https://openqa.suse.de"
+RabbitMQ = "amqps://suse:suse@rabbit.suse.de"
+RabbitMQTopic = "suse.openqa.job.done"
+HideStatus = [ "scheduled", "passed" ]
+Notify = true
+RefreshInterval = 60
+MaxJobs = 20
+GroupBy = "groups"
+
+
+
+[[Groups]]
+Name = "AZURE-Basic-Updates"
+Flavor = "AZURE-Basic-Updates"
+Params = { distri = "sle" }
+[[Groups]]
+Name = "AZURE-Basic-gen2-Updates"
+Flavor = "AZURE-Basic-gen2-Updates"
+Params = { distri = "sle" }
+
+[[Groups]]
+Name = "AZURE-Standard-Updates"
+Flavor = "AZURE-Standard-Updates"
+Params = { Distri = "sle" }
+[[Groups]]
+Name = "AZURE-Standard-gen2-Updates"
+Flavor = "AZURE-Standard-gen2-Updates"
+Params = { Distri = "sle" }
+
+[[Groups]]
+Name = "AZURE-BYOS-Updates"
+Flavor = "AZURE-BYOS-Updates"
+Params = { Distri = "sle" }
+[[Groups]]
+Name = "AZURE-BYOS-gen2-Updates"
+Flavor = "AZURE-BYOS-gen2-Updates"
+Params = { Distri = "sle" }
+
+[[Groups]]
+Name = "EC2-BYOS-Updates"
+Flavor = "EC2-BYOS-Updates"
+Params = { Distri = "sle" }
+
+[[Groups]]
+Name = "EC2-BYOS-ARM-Updates"
+Flavor = "EC2-BYOS-ARM-Updates"
+Params = { Distri = "sle" }
+
+[[Groups]]
+Name = "EC2-Updates"
+Flavor = "EC2-Updates"
+Params = { Distri = "sle" }
+
+[[Groups]]
+Name = "EC2-ARM-Updates"
+Flavor = "EC2-ARM-Updates"
+Params = { Distri = "sle" }
+
+[[Groups]]
+Name = "GCE-Updates"
+Flavor = "GCE-Updates"
+Params = { Distri = "sle" }
+
+[[Groups]]
+Name = "GCE-BYOS-Updates"
+Flavor = "GCE-BYOS-Updates"
+Params = { Distri = "sle" }
+
