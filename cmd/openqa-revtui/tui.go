@@ -76,6 +76,22 @@ type TUIModel struct {
 	offset    int                      // Line offset for printing
 }
 
+func (tui *TUI) visibleJobCount() int {
+	counter := 0
+	for _, job := range tui.Model.jobs {
+		if !tui.hideJob(job) {
+			counter++
+		}
+	}
+	return counter
+}
+
+func (tui *TUIModel) MoveHome() {
+	tui.mutex.Lock()
+	defer tui.mutex.Unlock()
+	tui.offset = 0
+}
+
 func (tui *TUIModel) Apply(jobs []gopenqa.Job) {
 	tui.mutex.Lock()
 	defer tui.mutex.Unlock()
@@ -145,7 +161,7 @@ func (tui *TUI) SetHeader(header string) {
 func (tui *TUI) readInput() {
 	// TODO: Find a way to read raw without ENTER
 	var b []byte = make([]byte, 1)
-	var p byte
+	var p = make([]byte, 3) // History, needed for special keys
 	for {
 		if n, err := os.Stdin.Read(b); err != nil {
 			fmt.Fprintf(os.Stderr, "Input stream error: %s\n", err)
@@ -155,29 +171,41 @@ func (tui *TUI) readInput() {
 		}
 		k := b[0]
 
-		// Catch arrow keys
-		if p == 91 {
-			if k == 65 {
-				// Arrow up
-				if tui.Model.offset > 0 {
-					tui.Model.offset--
-					tui.Update()
-				}
-			} else if k == 66 {
-				// Arrow down
-				if tui.Model.offset < len(tui.Model.jobs) {
-					tui.Model.offset++
-					tui.Update()
-				}
+		// Shift history, do it manually for now
+		p[2], p[1], p[0] = p[1], p[0], k
+
+		// Catch special keys
+		if p[1] == 91 && k == 65 { // Arrow up
+			if tui.Model.offset > 0 {
+				tui.Model.offset--
+				tui.Update()
 			}
-		} else if k == 91 {
-			// Wait for next key, don't process keypress
-		} else {
-			if tui.Keypress != nil {
-				tui.Keypress(k)
+		} else if p[1] == 91 && k == 66 { // Arrow down
+			if tui.Model.offset < len(tui.Model.jobs) {
+				tui.Model.offset++
+				tui.Update()
 			}
+		} else if p[2] == 27 && p[1] == 91 && p[0] == 72 { // home
+			tui.Model.offset = 0
+		} else if p[2] == 27 && p[1] == 91 && p[0] == 70 { // end
+			// This doesn't work right now:
+			//_, height := terminalSize()
+			//tui.Model.offset = max(0, (tui.visibleJobCount())-height)
+		} else if p[2] == 27 && p[1] == 91 && p[0] == 53 { // page up
+			_, height := terminalSize()
+			scroll := max(1, height-5)
+			tui.Model.offset = max(0, tui.Model.offset-scroll)
+		} else if p[2] == 27 && p[1] == 91 && p[0] == 54 { // page down
+			_, height := terminalSize()
+			scroll := max(1, height-5)
+			max := len(tui.Model.jobs) - scroll
+			tui.Model.offset = min(max, tui.Model.offset+scroll)
 		}
-		p = k
+
+		// Forward keypress to listener
+		if tui.Keypress != nil {
+			tui.Keypress(k)
+		}
 	}
 }
 
@@ -283,11 +311,17 @@ func (tui *TUI) printJobsByGroup(width, height int) {
 		statC := make(map[string]int, 0)
 		hidden := 0
 		if line++; line > tui.Model.offset {
+			if line-tui.Model.offset >= height {
+				return
+			}
 			fmt.Printf("===== %s ====================\n", grp.Name)
 		}
 		for _, job := range jobs {
 			if !tui.hideJob(job) {
 				if line++; line > tui.Model.offset {
+					if line-tui.Model.offset >= height {
+						return
+					}
 					printJob(job, width)
 				}
 			} else {
@@ -302,6 +336,9 @@ func (tui *TUI) printJobsByGroup(width, height int) {
 			}
 		}
 		if line++; line > tui.Model.offset {
+			if line-tui.Model.offset >= height {
+				return
+			}
 			fmt.Printf("Total: %d", len(jobs))
 			stats := sortedKeys(statC)
 			for _, s := range stats {
@@ -326,23 +363,39 @@ func (tui *TUI) Update() {
 	}
 
 	tui.Clear()
+	remainingHeight := height
 	if tui.header != "" {
 		fmt.Println(tui.header)
 		fmt.Println("q:Quit   r:Refresh   h:Hide/Show jobs   m:Toggle RabbitMQ tracker   s:Switch sorting    Arrows:Move up/down")
 		fmt.Println()
+		remainingHeight -= 3
+	}
+
+	// Take status+tracker into consideration for remaining height
+	shownStatus := false
+	if tui.showStatus && tui.status != "" {
+		remainingHeight -= 2
+		shownStatus = true
+	}
+	if tui.showTracker && tui.tracker != "" {
+		if !shownStatus {
+			remainingHeight -= 2
+		} else {
+			remainingHeight--
+		}
 	}
 
 	// Job listing depends on selected sorting method
 	switch tui.sorting {
 	case 1:
-		tui.printJobsByGroup(width, height)
+		tui.printJobsByGroup(width, remainingHeight)
 		break
 	default:
-		tui.printJobs(width, height)
+		tui.printJobs(width, remainingHeight)
 		break
 	}
 
-	shownStatus := false
+	shownStatus = false
 	if tui.showStatus && tui.status != "" {
 		fmt.Println()
 		fmt.Println(tui.status)
@@ -478,4 +531,18 @@ func spaces(n int) string {
 		ret += " "
 	}
 	return ret
+}
+
+func max(x, y int) int {
+	if x > y {
+		return x
+	}
+	return y
+}
+
+func min(x, y int) int {
+	if x < y {
+		return x
+	}
+	return y
 }
