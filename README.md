@@ -8,9 +8,10 @@ CLI monitoring client for [openQA](https://open.qa) written in plain simple go f
 
 ## Build/Run
 
-`openqa-mon` is written in plain go without any additional requirements. Build it with the provided `Makefile`
+`openqa-mon` is written in go with minimal requirements in mind. Build it with the provided `Makefile`
 
-    make
+    make requirements     # manually install requirements
+	make
     sudo make install     # install the binary to /usr/local/bin
     
     openqa-mon http://your-instance.suse.de/

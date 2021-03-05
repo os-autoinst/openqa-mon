@@ -10,6 +10,11 @@ openqa-mq: cmd/openqa-mq/openqa-mq.go
 openqa-review: cmd/openqa-review/openqa_review.go cmd/openqa-review/tui.go
 	go build $(GOARGS) -o $@ $^
 
+requirements:
+	go get github.com/BurntSushi/toml
+	go get github.com/grisu48/gopenqa
+	go get github.com/streadway/amqp
+
 install: openqa-mon openqa-mq openqa-review
 	install openqa-mon /usr/local/bin/
 	install openqa-mq /usr/local/bin/
