@@ -165,7 +165,7 @@ func loadDefaultConfig() error {
 	if err != nil {
 		return err
 	}
-	configFile := home + "/.openqa_review.toml"
+	configFile := home + "/.openqa-revtui.toml"
 	if fileExists(configFile) {
 		if err := cf.LoadToml(configFile); err != nil {
 			return err
@@ -342,6 +342,7 @@ func tui_main(tui *TUI, instance gopenqa.Instance) int {
 			tui.done <- true
 		} else if key == 'h' {
 			tui.SetHide(!tui.Hide())
+			tui.Model.MoveHome()
 			tui.Update()
 		} else if key == 'm' {
 			tui.SetShowTracker(!tui.showTracker)
@@ -350,9 +351,10 @@ func tui_main(tui *TUI, instance gopenqa.Instance) int {
 			// Shift through the sorting mechanism
 			tui.SetSorting((tui.Sorting() + 1) % 2)
 			tui.Update()
+		} else {
+			tui.Update()
 		}
 	}
-	tui.Start()
 	tui.EnterAltScreen()
 	tui.Clear()
 	tui.SetHeader("openqa Review - TUI Dashboard")
@@ -377,7 +379,9 @@ func tui_main(tui *TUI, instance gopenqa.Instance) int {
 		os.Exit(1)
 	}
 	knownJobs = jobs
+	tui.Start()
 	tui.Model.Apply(knownJobs)
+	tui.Update()
 
 	// Register RabbitMQ
 	if cf.RabbitMQ != "" {

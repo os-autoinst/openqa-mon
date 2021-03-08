@@ -1,6 +1,6 @@
 # Binaries
 /openqa-mon
-/openqa-review
+/openqa-revtui
 /openqa-mq
 # Temporary files
 /*.json

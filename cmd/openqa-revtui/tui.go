@@ -70,9 +70,27 @@ func CreateTUI() TUI {
 
 /* The model that will be displayed in the TUI*/
 type TUIModel struct {
-	jobs      []gopenqa.Job            // Jobs to be displayed
-	jobGroups map[int]gopenqa.JobGroup // Job Groups
-	mutex     sync.Mutex               // Access mutex to the model
+	jobs       []gopenqa.Job            // Jobs to be displayed
+	jobGroups  map[int]gopenqa.JobGroup // Job Groups
+	mutex      sync.Mutex               // Access mutex to the model
+	offset     int                      // Line offset for printing
+	printLines int                      // Lines that would need to be printed, needed for offset handling
+}
+
+func (tui *TUI) visibleJobCount() int {
+	counter := 0
+	for _, job := range tui.Model.jobs {
+		if !tui.hideJob(job) {
+			counter++
+		}
+	}
+	return counter
+}
+
+func (tui *TUIModel) MoveHome() {
+	tui.mutex.Lock()
+	defer tui.mutex.Unlock()
+	tui.offset = 0
 }
 
 func (tui *TUIModel) Apply(jobs []gopenqa.Job) {
@@ -144,6 +162,7 @@ func (tui *TUI) SetHeader(header string) {
 func (tui *TUI) readInput() {
 	// TODO: Find a way to read raw without ENTER
 	var b []byte = make([]byte, 1)
+	var p = make([]byte, 3) // History, needed for special keys
 	for {
 		if n, err := os.Stdin.Read(b); err != nil {
 			fmt.Fprintf(os.Stderr, "Input stream error: %s\n", err)
@@ -151,8 +170,42 @@ func (tui *TUI) readInput() {
 		} else if n == 0 { // EOL
 			break
 		}
+		k := b[0]
+
+		// Shift history, do it manually for now
+		p[2], p[1], p[0] = p[1], p[0], k
+
+		// Catch special keys
+		if p[1] == 91 && k == 65 { // Arrow up
+			if tui.Model.offset > 0 {
+				tui.Model.offset--
+				tui.Update()
+			}
+		} else if p[1] == 91 && k == 66 { // Arrow down
+			if tui.Model.offset < len(tui.Model.jobs) {
+				tui.Model.offset++
+				tui.Update()
+			}
+		} else if p[2] == 27 && p[1] == 91 && p[0] == 72 { // home
+			tui.Model.offset = 0
+		} else if p[2] == 27 && p[1] == 91 && p[0] == 70 { // end
+			// This doesn't work right now:
+			//_, height := terminalSize()
+			//tui.Model.offset = max(0, (tui.visibleJobCount())-height)
+		} else if p[2] == 27 && p[1] == 91 && p[0] == 53 { // page up
+			_, height := terminalSize()
+			scroll := max(1, height-5)
+			tui.Model.offset = max(0, tui.Model.offset-scroll)
+		} else if p[2] == 27 && p[1] == 91 && p[0] == 54 { // page down
+			_, height := terminalSize()
+			scroll := max(1, height-5)
+			max := tui.Model.printLines + 5
+			tui.Model.offset = min(max, tui.Model.offset+scroll)
+		}
+
+		// Forward keypress to listener
 		if tui.Keypress != nil {
-			tui.Keypress(b[0])
+			tui.Keypress(k)
 		}
 	}
 }
@@ -213,11 +266,15 @@ func (tui *TUI) hideJob(job gopenqa.Job) bool {
 
 // print all jobs unsorted
 func (tui *TUI) printJobs(width, height int) {
+	line := 0
 	for _, job := range tui.Model.jobs {
 		if !tui.hideJob(job) {
-			printJob(job, width)
+			if line++; line > tui.Model.offset {
+				fmt.Println(formatJobLine(job, width))
+			}
 		}
 	}
+	tui.Model.printLines = len(tui.Model.jobs)
 }
 
 func sortedKeys(vals map[string]int) []string {
@@ -249,15 +306,16 @@ func (tui *TUI) printJobsByGroup(width, height int) {
 	}
 	sort.Ints(grpIDs)
 	// Now print them sorted by group ID
+	lines := make([]string, 0)
 	for _, id := range grpIDs {
 		grp := tui.Model.jobGroups[id]
 		jobs := groups[id]
 		statC := make(map[string]int, 0)
 		hidden := 0
-		fmt.Printf("===== %s ====================\n", grp.Name)
+		lines = append(lines, fmt.Sprintf("===== %s ====================\n", grp.Name))
 		for _, job := range jobs {
 			if !tui.hideJob(job) {
-				printJob(job, width)
+				lines = append(lines, formatJobLine(job, width))
 			} else {
 				hidden++
 			}
@@ -269,16 +327,26 @@ func (tui *TUI) printJobsByGroup(width, height int) {
 				statC[status] = 1
 			}
 		}
-		fmt.Printf("Total: %d", len(jobs))
+		line := fmt.Sprintf("Total: %d", len(jobs))
 		stats := sortedKeys(statC)
 		for _, s := range stats {
 			c := statC[s]
-			fmt.Printf(", %s: %d", s, c)
+			line += fmt.Sprintf(", %s: %d", s, c)
 		}
 		if hidden > 0 {
-			fmt.Printf(" (hidden: %d)", hidden)
+			line += fmt.Sprintf(" (hidden: %d)", hidden)
 		}
-		fmt.Println()
+		lines = append(lines, line)
+	}
+
+	// Print relevant lines, taking the offset into consideration
+	tui.Model.printLines = len(lines)
+	for i := 0; i < height; i++ {
+		if (tui.Model.offset + i) >= len(lines) {
+			break
+		} else {
+			fmt.Println(lines[tui.Model.offset+i])
+		}
 	}
 }
 
@@ -292,23 +360,39 @@ func (tui *TUI) Update() {
 	}
 
 	tui.Clear()
+	remainingHeight := height
 	if tui.header != "" {
 		fmt.Println(tui.header)
-		fmt.Println("q:Quit   r:Refresh   h:Hide/Show jobs   m:Toggle RabbitMQ tracker   s:Switch sorting")
+		fmt.Println("q:Quit   r:Refresh   h:Hide/Show jobs   m:Toggle RabbitMQ tracker   s:Switch sorting    Arrows:Move up/down")
 		fmt.Println()
+		remainingHeight -= 3
+	}
+
+	// Take status+tracker into consideration for remaining height
+	shownStatus := false
+	if tui.showStatus && tui.status != "" {
+		remainingHeight -= 2
+		shownStatus = true
+	}
+	if tui.showTracker && tui.tracker != "" {
+		if !shownStatus {
+			remainingHeight -= 2
+		} else {
+			remainingHeight--
+		}
 	}
 
 	// Job listing depends on selected sorting method
 	switch tui.sorting {
 	case 1:
-		tui.printJobsByGroup(width, height)
+		tui.printJobsByGroup(width, remainingHeight)
 		break
 	default:
-		tui.printJobs(width, height)
+		tui.printJobs(width, remainingHeight)
 		break
 	}
 
-	shownStatus := false
+	shownStatus = false
 	if tui.showStatus && tui.status != "" {
 		fmt.Println()
 		fmt.Println(tui.status)
@@ -363,7 +447,7 @@ func getDateColorcode(t time.Time) string {
 	return ANSI_WHITE
 }
 
-func printJob(job gopenqa.Job, width int) {
+func formatJobLine(job gopenqa.Job, width int) string {
 	c1 := ANSI_WHITE // date color
 	tStr := ""       // Timestamp string
 
@@ -392,7 +476,7 @@ func printJob(job gopenqa.Job, width int) {
 		if width < 89+nName {
 			cname = cname[:width-89]
 		}
-		fmt.Printf("%s%20s%s    %8d %s%-12s%s %40s | %s\n", c1, tStr, ANSI_RESET, job.ID, c2, state, ANSI_RESET+ANSI_WHITE, job.Link, cname)
+		return fmt.Sprintf("%s%20s%s    %8d %s%-12s%s %40s | %s", c1, tStr, ANSI_RESET, job.ID, c2, state, ANSI_RESET+ANSI_WHITE, job.Link, cname)
 	} else if width > 60 {
 		// Just not enough space for the full line (>89 characters) ...
 		// We skip the timestamp and display only the link (or job number if not available)
@@ -408,7 +492,7 @@ func printJob(job gopenqa.Job, width int) {
 			// Ensure width > 58 with upper if!
 			cname = cname[:width-58]
 		}
-		fmt.Printf("%40s %s%-12s%s | %s\n", link, c2, state, ANSI_RESET+ANSI_WHITE, cname)
+		return fmt.Sprintf("%40s %s%-12s%s | %s", link, c2, state, ANSI_RESET+ANSI_WHITE, cname)
 	} else {
 		// Simpliest case: Just enough room for cropped name+state
 		cname := job.Name
@@ -420,7 +504,7 @@ func printJob(job gopenqa.Job, width int) {
 				cname = ""
 			}
 		}
-		fmt.Println(c2 + fmt.Sprintf("%-12s", state) + ANSI_RESET + " " + cname)
+		return fmt.Sprintf(c2 + fmt.Sprintf("%-12s", state) + ANSI_RESET + " " + cname)
 	}
 }
 
@@ -444,4 +528,18 @@ func spaces(n int) string {
 		ret += " "
 	}
 	return ret
+}
+
+func max(x, y int) int {
+	if x > y {
+		return x
+	}
+	return y
+}
+
+func min(x, y int) int {
+	if x < y {
+		return x
+	}
+	return y
 }
