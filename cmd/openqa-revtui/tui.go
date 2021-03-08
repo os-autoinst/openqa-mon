@@ -70,10 +70,11 @@ func CreateTUI() TUI {
 
 /* The model that will be displayed in the TUI*/
 type TUIModel struct {
-	jobs      []gopenqa.Job            // Jobs to be displayed
-	jobGroups map[int]gopenqa.JobGroup // Job Groups
-	mutex     sync.Mutex               // Access mutex to the model
-	offset    int                      // Line offset for printing
+	jobs       []gopenqa.Job            // Jobs to be displayed
+	jobGroups  map[int]gopenqa.JobGroup // Job Groups
+	mutex      sync.Mutex               // Access mutex to the model
+	offset     int                      // Line offset for printing
+	printLines int                      // Lines that would need to be printed, needed for offset handling
 }
 
 func (tui *TUI) visibleJobCount() int {
@@ -198,7 +199,7 @@ func (tui *TUI) readInput() {
 		} else if p[2] == 27 && p[1] == 91 && p[0] == 54 { // page down
 			_, height := terminalSize()
 			scroll := max(1, height-5)
-			max := len(tui.Model.jobs) - scroll
+			max := tui.Model.printLines + 5
 			tui.Model.offset = min(max, tui.Model.offset+scroll)
 		}
 
@@ -269,10 +270,11 @@ func (tui *TUI) printJobs(width, height int) {
 	for _, job := range tui.Model.jobs {
 		if !tui.hideJob(job) {
 			if line++; line > tui.Model.offset {
-				printJob(job, width)
+				fmt.Println(formatJobLine(job, width))
 			}
 		}
 	}
+	tui.Model.printLines = len(tui.Model.jobs)
 }
 
 func sortedKeys(vals map[string]int) []string {
@@ -304,26 +306,16 @@ func (tui *TUI) printJobsByGroup(width, height int) {
 	}
 	sort.Ints(grpIDs)
 	// Now print them sorted by group ID
-	line := 0
+	lines := make([]string, 0)
 	for _, id := range grpIDs {
 		grp := tui.Model.jobGroups[id]
 		jobs := groups[id]
 		statC := make(map[string]int, 0)
 		hidden := 0
-		if line++; line > tui.Model.offset {
-			if line-tui.Model.offset >= height {
-				return
-			}
-			fmt.Printf("===== %s ====================\n", grp.Name)
-		}
+		lines = append(lines, fmt.Sprintf("===== %s ====================\n", grp.Name))
 		for _, job := range jobs {
 			if !tui.hideJob(job) {
-				if line++; line > tui.Model.offset {
-					if line-tui.Model.offset >= height {
-						return
-					}
-					printJob(job, width)
-				}
+				lines = append(lines, formatJobLine(job, width))
 			} else {
 				hidden++
 			}
@@ -335,20 +327,25 @@ func (tui *TUI) printJobsByGroup(width, height int) {
 				statC[status] = 1
 			}
 		}
-		if line++; line > tui.Model.offset {
-			if line-tui.Model.offset >= height {
-				return
-			}
-			fmt.Printf("Total: %d", len(jobs))
-			stats := sortedKeys(statC)
-			for _, s := range stats {
-				c := statC[s]
-				fmt.Printf(", %s: %d", s, c)
-			}
-			if hidden > 0 {
-				fmt.Printf(" (hidden: %d)", hidden)
-			}
-			fmt.Println()
+		line := fmt.Sprintf("Total: %d", len(jobs))
+		stats := sortedKeys(statC)
+		for _, s := range stats {
+			c := statC[s]
+			line += fmt.Sprintf(", %s: %d", s, c)
+		}
+		if hidden > 0 {
+			line += fmt.Sprintf(" (hidden: %d)", hidden)
+		}
+		lines = append(lines, line)
+	}
+
+	// Print relevant lines, taking the offset into consideration
+	tui.Model.printLines = len(lines)
+	for i := 0; i < height; i++ {
+		if (tui.Model.offset + i) >= len(lines) {
+			break
+		} else {
+			fmt.Println(lines[tui.Model.offset+i])
 		}
 	}
 }
@@ -450,7 +447,7 @@ func getDateColorcode(t time.Time) string {
 	return ANSI_WHITE
 }
 
-func printJob(job gopenqa.Job, width int) {
+func formatJobLine(job gopenqa.Job, width int) string {
 	c1 := ANSI_WHITE // date color
 	tStr := ""       // Timestamp string
 
@@ -479,7 +476,7 @@ func printJob(job gopenqa.Job, width int) {
 		if width < 89+nName {
 			cname = cname[:width-89]
 		}
-		fmt.Printf("%s%20s%s    %8d %s%-12s%s %40s | %s\n", c1, tStr, ANSI_RESET, job.ID, c2, state, ANSI_RESET+ANSI_WHITE, job.Link, cname)
+		return fmt.Sprintf("%s%20s%s    %8d %s%-12s%s %40s | %s", c1, tStr, ANSI_RESET, job.ID, c2, state, ANSI_RESET+ANSI_WHITE, job.Link, cname)
 	} else if width > 60 {
 		// Just not enough space for the full line (>89 characters) ...
 		// We skip the timestamp and display only the link (or job number if not available)
@@ -495,7 +492,7 @@ func printJob(job gopenqa.Job, width int) {
 			// Ensure width > 58 with upper if!
 			cname = cname[:width-58]
 		}
-		fmt.Printf("%40s %s%-12s%s | %s\n", link, c2, state, ANSI_RESET+ANSI_WHITE, cname)
+		return fmt.Sprintf("%40s %s%-12s%s | %s", link, c2, state, ANSI_RESET+ANSI_WHITE, cname)
 	} else {
 		// Simpliest case: Just enough room for cropped name+state
 		cname := job.Name
@@ -507,7 +504,7 @@ func printJob(job gopenqa.Job, width int) {
 				cname = ""
 			}
 		}
-		fmt.Println(c2 + fmt.Sprintf("%-12s", state) + ANSI_RESET + " " + cname)
+		return fmt.Sprintf(c2 + fmt.Sprintf("%-12s", state) + ANSI_RESET + " " + cname)
 	}
 }
 
