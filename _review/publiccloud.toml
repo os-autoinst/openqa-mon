@@ -1,57 +1,50 @@
 ## Review template file for PublicCloud test runs on OSD
 
-Instance = "https://openqa.suse.de"
-RabbitMQ = "amqps://suse:suse@rabbit.suse.de"
-RabbitMQTopic = "suse.openqa.job.done"
-HideStatus = [ "scheduled", "passed" ]
-Notify = true
-RefreshInterval = 60
-MaxJobs = 20
-GroupBy = "groups"
-DefaultParams = { distri = "sle" }
+Instance = "https://openqa.suse.de"              # openQA instance to query
+RabbitMQ = "amqps://suse:suse@rabbit.suse.de"    # RabbitMQ instance to query
+RabbitMQTopic = "suse.openqa.job.done"           # RabbitMQ topic to query
+HideStatus = [ "scheduled", "passed" ]           # Hide scheduled and passed jobs
+Notify = false                                   # No notifications by default
+RefreshInterval = 60                             # Refresh from API once every minute
+MaxJobs = 20                                     # Max. job per group to display
+GroupBy = "groups"                               # Group by defined groups ("none" or "groups")
+DefaultParams = { distri = "sle" }               # Set of default parameters
 
 
+# Define publiccloud groups based on their flavor
 [[Groups]]
 Name = "AZURE-Basic-Updates"
 Params = { flavor = "AZURE-Basic-Updates" }
 [[Groups]]
 Name = "AZURE-Basic-gen2-Updates"
 Params = { flavor = "AZURE-Basic-gen2-Updates" }
-
 [[Groups]]
 Name = "AZURE-Standard-Updates"
 Params = { flavor = "AZURE-Standard-Updates" }
 [[Groups]]
 Name = "AZURE-Standard-gen2-Updates"
 Params = { flavor = "AZURE-Standard-gen2-Updates" }
-
 [[Groups]]
 Name = "AZURE-BYOS-Updates"
 Params = { flavor = "AZURE-BYOS-Updates" }
 [[Groups]]
 Name = "AZURE-BYOS-gen2-Updates"
 Params = { flavor = "AZURE-BYOS-gen2-Updates" }
-
 [[Groups]]
 Name = "EC2-BYOS-Updates"
 Params = { flavor = "EC2-BYOS-Updates" }
-
 [[Groups]]
 Name = "EC2-BYOS-ARM-Updates"
 Params = { flavor = "EC2-BYOS-ARM-Updates" }
-
 [[Groups]]
 Name = "EC2-Updates"
 Params = { flavor = "EC2-Updates" }
-
 [[Groups]]
 Name = "EC2-ARM-Updates"
 Params = { flavor = "EC2-ARM-Updates" }
-
 [[Groups]]
 Name = "GCE-Updates"
 Params = { flavor = "GCE-Updates" }
-
 [[Groups]]
 Name = "GCE-BYOS-Updates"
 Params = { flavor = "GCE-BYOS-Updates" }

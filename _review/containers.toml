@@ -1,0 +1,45 @@
+## Review template file for PublicCloud test runs on OSD
+
+Instance = "https://openqa.suse.de"              # openQA instance to query
+RabbitMQ = "amqps://suse:suse@rabbit.suse.de"    # RabbitMQ instance to query
+RabbitMQTopic = "suse.openqa.job.done"           # RabbitMQ topic to query
+HideStatus = [ "scheduled", "passed" ]           # Hide scheduled and passed jobs
+RefreshInterval = 60                             # Refresh from API once every minute
+MaxJobs = 20                                     # Max. job per group to display
+GroupBy = "groups"                               # Group by defined groups ("none" or "groups")
+
+
+## Define container groups by their group ID
+[[Groups]]
+Name = "Containers 15 SP2 Updates"
+Params = { groupid = "352" }
+
+[[Groups]]
+Name = "Containers 15 SP1 Updates"
+Params = { groupid = "353" }
+
+[[Groups]]
+Name = "Containers 15 GA Updates"
+Params = { groupid = "357" }
+
+[[Groups]]
+Name = "Containers 12 SP5 Updates"
+Params = { groupid = "355" }
+
+[[Groups]]
+Name = "Containers 12 SP4 Updates"
+Params = { groupid = "354" }
+
+[[Groups]]
+Name = "Containers 12 SP3 Updates"
+Params = { groupid = "358" }
+
+[[Groups]]
+Name = "Containers Latest"
+Params = { groupid = "313" }
+
+[[Groups]]
+Name = "Containers SLE Base Image Updates"
+Params = { groupid = "315" }
+
+
