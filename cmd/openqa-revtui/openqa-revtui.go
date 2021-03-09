@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/user"
 	"strings"
 	"time"
 
@@ -160,12 +161,16 @@ func fileExists(filename string) bool {
 	return true
 }
 
-func loadDefaultConfig() error {
-	home, err := os.UserHomeDir()
+func homeDir() string {
+	usr, err := user.Current()
 	if err != nil {
-		return err
+		panic(err)
 	}
-	configFile := home + "/.openqa-revtui.toml"
+	return usr.HomeDir
+}
+
+func loadDefaultConfig() error {
+	configFile := homeDir() + "/.openqa-revtui.toml"
 	if fileExists(configFile) {
 		if err := cf.LoadToml(configFile); err != nil {
 			return err
