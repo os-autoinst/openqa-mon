@@ -61,7 +61,7 @@ func CreateTUI() TUI {
 	tui.done = make(chan bool, 1)
 	tui.Keypress = nil
 	tui.hide = true
-	tui.showTracker = true
+	tui.showTracker = false
 	tui.showStatus = true
 	tui.Model.jobs = make([]gopenqa.Job, 0)
 	tui.Model.jobGroups = make(map[int]gopenqa.JobGroup, 0)

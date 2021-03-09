@@ -8,63 +8,51 @@ Notify = true
 RefreshInterval = 60
 MaxJobs = 20
 GroupBy = "groups"
-
+DefaultParams = { distri = "sle" }
 
 
 [[Groups]]
 Name = "AZURE-Basic-Updates"
-Flavor = "AZURE-Basic-Updates"
-Params = { distri = "sle" }
+Params = { flavor = "AZURE-Basic-Updates" }
 [[Groups]]
 Name = "AZURE-Basic-gen2-Updates"
-Flavor = "AZURE-Basic-gen2-Updates"
-Params = { distri = "sle" }
+Params = { flavor = "AZURE-Basic-gen2-Updates" }
 
 [[Groups]]
 Name = "AZURE-Standard-Updates"
-Flavor = "AZURE-Standard-Updates"
-Params = { Distri = "sle" }
+Params = { flavor = "AZURE-Standard-Updates" }
 [[Groups]]
 Name = "AZURE-Standard-gen2-Updates"
-Flavor = "AZURE-Standard-gen2-Updates"
-Params = { Distri = "sle" }
+Params = { flavor = "AZURE-Standard-gen2-Updates" }
 
 [[Groups]]
 Name = "AZURE-BYOS-Updates"
-Flavor = "AZURE-BYOS-Updates"
-Params = { Distri = "sle" }
+Params = { flavor = "AZURE-BYOS-Updates" }
 [[Groups]]
 Name = "AZURE-BYOS-gen2-Updates"
-Flavor = "AZURE-BYOS-gen2-Updates"
-Params = { Distri = "sle" }
+Params = { flavor = "AZURE-BYOS-gen2-Updates" }
 
 [[Groups]]
 Name = "EC2-BYOS-Updates"
-Flavor = "EC2-BYOS-Updates"
-Params = { Distri = "sle" }
+Params = { flavor = "EC2-BYOS-Updates" }
 
 [[Groups]]
 Name = "EC2-BYOS-ARM-Updates"
-Flavor = "EC2-BYOS-ARM-Updates"
-Params = { Distri = "sle" }
+Params = { flavor = "EC2-BYOS-ARM-Updates" }
 
 [[Groups]]
 Name = "EC2-Updates"
-Flavor = "EC2-Updates"
-Params = { Distri = "sle" }
+Params = { flavor = "EC2-Updates" }
 
 [[Groups]]
 Name = "EC2-ARM-Updates"
-Flavor = "EC2-ARM-Updates"
-Params = { Distri = "sle" }
+Params = { flavor = "EC2-ARM-Updates" }
 
 [[Groups]]
 Name = "GCE-Updates"
-Flavor = "GCE-Updates"
-Params = { Distri = "sle" }
+Params = { flavor = "GCE-Updates" }
 
 [[Groups]]
 Name = "GCE-BYOS-Updates"
-Flavor = "GCE-BYOS-Updates"
-Params = { Distri = "sle" }
+Params = { flavor = "GCE-BYOS-Updates" }
 

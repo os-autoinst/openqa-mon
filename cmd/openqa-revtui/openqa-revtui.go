@@ -14,30 +14,64 @@ import (
 /* Group is a single configurable monitoring unit. A group contains all parameters that will be queried from openQA */
 type Group struct {
 	Name   string
-	Flavor string            // Job flavor
 	Params map[string]string // Default parameters for query
 }
 
 /* Program configuration parameters */
 type Config struct {
-	Instance        string   // Instance URL to be used
-	RabbitMQ        string   // RabbitMQ url to be used
-	RabbitMQTopic   string   // Topic to subscribe to
-	DefaultDistri   string   // Default distri settings to be used
-	HideStatus      []string // Status to hide
-	Notify          bool     // Notify on job status change
-	RefreshInterval int64    // Periodic refresh delay in seconds
-	Groups          []Group  // Groups that will be monitord
-	MaxJobs         int      // Maximum number of jobs per flavor to consider
-	GroupBy         string   // Display group mode: "none", "groups"
+	Instance        string            // Instance URL to be used
+	RabbitMQ        string            // RabbitMQ url to be used
+	RabbitMQTopic   string            // Topic to subscribe to
+	DefaultParams   map[string]string // Default parameters
+	HideStatus      []string          // Status to hide
+	Notify          bool              // Notify on job status change
+	RefreshInterval int64             // Periodic refresh delay in seconds
+	Groups          []Group           // Groups that will be monitord
+	MaxJobs         int               // Maximum number of jobs per group to consider
+	GroupBy         string            // Display group mode: "none", "groups"
 }
 
 var cf Config
 var knownJobs []gopenqa.Job
 
 func (cf *Config) LoadToml(filename string) error {
-	_, err := toml.DecodeFile(filename, cf)
-	return err
+	if _, err := toml.DecodeFile(filename, cf); err != nil {
+		return err
+	}
+	// Apply default parameters to group after loading
+	for i, group := range cf.Groups {
+		for k, v := range cf.DefaultParams {
+			if _, exists := group.Params[k]; exists {
+				continue
+			} else {
+				group.Params[k] = v
+			}
+		}
+		// Apply parameter macros
+		for k, v := range group.Params {
+			param := parseParameter(v)
+			if strings.Contains(param, "%") {
+				return fmt.Errorf("invalid parameter macro in %s", param)
+			}
+			group.Params[k] = param
+		}
+		cf.Groups[i] = group
+	}
+	return nil
+}
+
+// Parse additional parameter macros
+func parseParameter(param string) string {
+	if strings.Contains(param, "%today%") {
+		today := time.Now().Format("20060102")
+		param = strings.ReplaceAll(param, "%today%", today)
+	}
+	if strings.Contains(param, "%yesterday%") {
+		today := time.Now().AddDate(0, 0, -1).Format("20060102")
+		param = strings.ReplaceAll(param, "%yesterday%", today)
+	}
+
+	return param
 }
 
 /* Create configuration instance and set default vaules */
@@ -49,18 +83,17 @@ func CreateConfig() Config {
 	cf.HideStatus = make([]string, 0)
 	cf.Notify = true
 	cf.RefreshInterval = 30
-	cf.DefaultDistri = "opensuse"
+	cf.DefaultParams = make(map[string]string, 0)
 	cf.Groups = make([]Group, 0)
 	cf.MaxJobs = 20
 	return cf
 }
 
 // CreateGroup creates a group with the default settings
-func CreateGroup(flavor string) Group {
+func CreateGroup() Group {
 	var grp Group
-	grp.Flavor = flavor
 	grp.Params = make(map[string]string, 0)
-	grp.Params["distri"] = cf.DefaultDistri
+	grp.Params = cf.DefaultParams
 	return grp
 }
 
@@ -95,7 +128,6 @@ func FetchJobs(instance gopenqa.Instance) ([]gopenqa.Job, error) {
 	ret := make([]gopenqa.Job, 0)
 	for _, group := range cf.Groups {
 		params := group.Params
-		params["flavor"] = group.Flavor
 		jobs, err := instance.GetOverview("", params)
 		if err != nil {
 			return ret, err
@@ -179,40 +211,79 @@ func loadDefaultConfig() error {
 	return nil
 }
 
+// Split a NAME=VALUE string
+func splitNV(v string) (string, string, error) {
+	i := strings.Index(v, "=")
+	if i < 0 {
+		return "", "", fmt.Errorf("no separator")
+	}
+	return v[:i], v[i+1:], nil
+}
+
 func parseProgramArgs() error {
 	n := len(os.Args)
 	for i := 1; i < n; i++ {
 		arg := os.Args[i]
 		if arg == "" {
 			continue
-		} else if arg == "-h" || arg == "--help" {
-			printUsage()
-			os.Exit(0)
-		} else if arg == "-c" || arg == "--config" {
-			if i++; i >= n {
-				return fmt.Errorf("Missing argument: %s", "config file")
+		}
+		if arg[0] == '-' {
+			if arg == "-h" || arg == "--help" {
+				printUsage()
+				os.Exit(0)
+			} else if arg == "-c" || arg == "--config" {
+				if i++; i >= n {
+					return fmt.Errorf("Missing argument: %s", "config file")
+				}
+				filename := os.Args[i]
+				if err := cf.LoadToml(filename); err != nil {
+					return fmt.Errorf("In %s: %s", filename, err)
+				}
+			} else if arg == "-r" || arg == "--remote" {
+				if i++; i >= n {
+					return fmt.Errorf("Missing argument: %s", "remote")
+				}
+				cf.Instance = os.Args[i]
+			} else if arg == "-q" || arg == "--rabbit" || arg == "--rabbitmq" {
+				if i++; i >= n {
+					return fmt.Errorf("Missing argument: %s", "RabbitMQ link")
+				}
+				cf.RabbitMQ = os.Args[i]
+			} else if arg == "-i" || arg == "--hide" || arg == "--hide-status" {
+				if i++; i >= n {
+					return fmt.Errorf("Missing argument: %s", "Status to hide")
+				}
+				cf.HideStatus = append(cf.HideStatus, strings.Split(os.Args[i], ",")...)
+			} else if arg == "-p" || arg == "--param" {
+				if i++; i >= n {
+					return fmt.Errorf("Missing argument: %s", "parameter")
+				}
+				if name, value, err := splitNV(os.Args[i]); err != nil {
+					return fmt.Errorf("argument parameter is invalid: %s", err)
+				} else {
+					cf.DefaultParams[name] = value
+				}
+			} else if arg == "-n" || arg == "--notify" || arg == "--notifications" {
+				cf.Notify = true
+			} else if arg == "-m" || arg == "--mute" || arg == "--silent" || arg == "--no-notify" {
+				cf.Notify = false
+			} else {
+				return fmt.Errorf("Illegal argument: %s", arg)
 			}
-			filename := os.Args[i]
-			if err := cf.LoadToml(filename); err != nil {
-				return fmt.Errorf("In %s: %s", filename, err)
-			}
-		} else if arg == "-r" || arg == "--remote" {
-			if i++; i >= n {
-				return fmt.Errorf("Missing argument: %s", "remote")
-			}
-			cf.Instance = os.Args[i]
-		} else if arg == "-q" || arg == "--rabbit" || arg == "--rabbitmq" {
-			if i++; i >= n {
-				return fmt.Errorf("Missing argument: %s", "RabbitMQ link")
-			}
-			cf.RabbitMQ = os.Args[i]
-		} else if arg == "-i" || arg == "--hide" || arg == "--hide-status" {
-			if i++; i >= n {
-				return fmt.Errorf("Missing argument: %s", "Status to hide")
-			}
-			cf.HideStatus = append(cf.HideStatus, strings.Split(os.Args[i], ",")...)
 		} else {
-			return fmt.Errorf("Illegal argument: %s", arg)
+			// Convenience logic. If it contains a = then assume it's a parameter, otherwise assume it's a config file
+			if strings.Contains(arg, "=") {
+				if name, value, err := splitNV(arg); err != nil {
+					return fmt.Errorf("argument parameter is invalid: %s", err)
+				} else {
+					cf.DefaultParams[name] = value
+				}
+			} else {
+				// Assume it's a config file
+				if err := cf.LoadToml(arg); err != nil {
+					return fmt.Errorf("In %s: %s", arg, err)
+				}
+			}
 		}
 	}
 	return nil
@@ -228,6 +299,9 @@ func printUsage() {
 	fmt.Println("    -r,--remote REMOTE                  Define openQA remote URL (e.g. 'https://openqa.opensuse.org')")
 	fmt.Println("    -q,--rabbit,--rabbitmq URL          Define RabbitMQ URL (e.g. 'amqps://opensuse:opensuse@rabbit.opensuse.org')")
 	fmt.Println("    -i,--hide,--hide-status STATUSES    Comma-separates list of job statuses which should be ignored")
+	fmt.Println("    -p,--param NAME=VALUE               Set a default parameter (e.g. \"distri=opensuse\")")
+	fmt.Println("    -n,--notify                         Enable notifications")
+	fmt.Println("    -m,--mute                           Disable notifications")
 	fmt.Println("")
 	fmt.Println("openqa-review is part of openqa-mon (https://github.com/grisu48/openqa-mon/)")
 }
@@ -250,7 +324,6 @@ func registerRabbitMQ(tui *TUI, remote, topic string) (gopenqa.RabbitMQ, error) 
 				// Update job, if present
 				if job, found := updateJobStatus(status); found {
 					tui.Model.Apply(knownJobs)
-					tui.SetStatus(fmt.Sprintf("Last update: [%s] Job %d-%s:%s %s", now.Format("15:04:05"), job.ID, status.Flavor, status.Build, status.Result))
 					tui.SetTracker(fmt.Sprintf("[%s] Job %d-%s:%s %s", now.Format("15:04:05"), job.ID, status.Flavor, status.Build, status.Result))
 					tui.Update()
 					NotifySend(job.String())
@@ -270,7 +343,6 @@ func registerRabbitMQ(tui *TUI, remote, topic string) (gopenqa.RabbitMQ, error) 
 
 func main() {
 	cf = CreateConfig()
-	cf.DefaultDistri = "opensuse"
 	if err := loadDefaultConfig(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error loading default config file: %s\n", err)
 		os.Exit(1)
@@ -394,7 +466,7 @@ func tui_main(tui *TUI, instance gopenqa.Instance) int {
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error establishing link to RabbitMQ %s: %s\n", rabbitRemote(cf.RabbitMQ), err)
 		}
-		// defer rabbitmq.Close()
+		defer rabbitmq.Close()
 	}
 
 	// Periodic refresh
