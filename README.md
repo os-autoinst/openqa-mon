@@ -2,20 +2,27 @@
 
 [![Build Status](https://travis-ci.com/grisu48/openqa-mon.svg?branch=master)](https://travis-ci.com/grisu48/openqa-mon)
 
-CLI monitoring client for [openQA](https://open.qa) written in plain simple go for periodic live monitoring in a terminal
+Simple CLI monitoring utilities for [openQA](https://open.qa).
+This project now consists of three programs:
 
-![Demo of openqa-mon in action](doc/demo.gif)
+* `openqa-mon` - live monitoring of openQA jobs
+* `openqa-mq` - Query [RabbitMQ instance](https://rabbit.opensuse.org/) for updates
+* `openqa-revtui` - (Experimental) openQA review dashboard
 
-## Build/Run
+Those utilities are intended as live monitor tool for your jobs. In contrast to the Browser interface they are smaller, more efficient on the resources and should make your life easier :-)
 
-`openqa-mon` is written in go with minimal requirements in mind. Build it with the provided `Makefile`
+## Building
+
+`openqa-mon` is written in go with some minimal requirements. The `Makefile` provides rules for installing the requirements and building the binaries.
 
     make requirements     # manually install requirements
 	make
-    sudo make install     # install the binary to /usr/local/bin
-    
-    openqa-mon http://your-instance.suse.de/
+    sudo make install     # install the binaries to /usr/local/bin
+    make install ~/bib    # install the binary to bin in your home folder
 
+# `openqa-mon`
+
+![Demo of openqa-mon in action](doc/demo.gif)
 
 ## Usage
 
@@ -101,9 +108,13 @@ Of course this also includes continuous monitoring for certain jobs
 
 If you comment out and set `DefaultRemote`, the tool will use this for defined job IDs or for displaying the job overview without specifying `REMOTE` as parameter.
 
+* * *
 
-# Purpose
+# `openqa-mq`
 
-This CLI is intended as live monitor of the state of your jobs. In contrast to the Browser interface it's smaller and probably also more efficient on the resources.
+## Usage
 
-![Screenshot of openqa-mon in action vs the Browser in the background](doc/Screenshot.png)
+    openqa-mq ooo           # Monitor the openSUSE RabbitMQ
+    openqa-mq osd           # Monitor the SUSE internal openQA instance
+
+`openqa-mq` connects to the given RabbitMQ server and prints all received messages. It might be useful to grep for status updates of certain jobs or whatever else you want to monitor.
