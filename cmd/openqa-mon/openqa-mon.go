@@ -206,7 +206,15 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error reading config '"+homeDir()+"/.openqa-mon.conf': %s\n", err)
 		os.Exit(1)
 	}
-
+	if len(remotes) == 0 {
+		// Apply default remote, if defined
+		if config.DefaultRemote == "" {
+			printHelp()
+			return
+		}
+		remote := Remote{URI: config.DefaultRemote}
+		remotes = append(remotes, remote)
+	}
 	// Manually parse program arguments, as the "flag" package is not sufficent for automatic parsing of job links and job numbers
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
@@ -224,16 +232,8 @@ func main() {
 					fmt.Fprintln(os.Stderr, "Missing job IDs")
 					os.Exit(1)
 				}
-				if len(remotes) == 0 {
-					fmt.Fprintf(os.Stderr, "Jobs need to be defined after a remote instance\n")
-					os.Exit(1)
-				}
 				jobIDs := parseJobIDs(args[i])
 				if len(jobIDs) > 0 {
-					if len(remotes) == 0 {
-						fmt.Fprintf(os.Stderr, "Jobs need to be defined after a remote instance\n")
-						os.Exit(1)
-					}
 					remote := &remotes[len(remotes)-1]
 					for _, jobID := range jobIDs {
 						remote.Jobs = append(remote.Jobs, jobID)
@@ -335,15 +335,6 @@ func main() {
 		}
 	}
 
-	if len(remotes) == 0 {
-		// Apply default remote, if defined
-		if config.DefaultRemote == "" {
-			printHelp()
-			return
-		}
-		remote := Remote{URI: config.DefaultRemote}
-		remotes = append(remotes, remote)
-	}
 	// Remove duplicate IDs and sort by ID
 	for _, remote := range remotes {
 		remote.Jobs = unique(remote.Jobs)
