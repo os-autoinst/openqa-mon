@@ -216,125 +216,7 @@ func main() {
 		remotes = append(remotes, remote)
 	}
 	// Manually parse program arguments, as the "flag" package is not sufficent for automatic parsing of job links and job numbers
-	for i := 0; i < len(args); i++ {
-		arg := args[i]
-		if arg == "" {
-			continue
-		}
-		if arg[0] == '-' {
-			switch arg {
-			case "--help":
-				printHelp()
-				return
-			case "--jobs":
-				i++
-				if i >= len(args) {
-					fmt.Fprintln(os.Stderr, "Missing job IDs")
-					os.Exit(1)
-				}
-				jobIDs := parseJobIDs(args[i])
-				if len(jobIDs) > 0 {
-					remote := &remotes[len(remotes)-1]
-					for _, jobID := range jobIDs {
-						remote.Jobs = append(remote.Jobs, jobID)
-						fmt.Println(jobID)
-					}
-				} else {
-					fmt.Fprintf(os.Stderr, "Illegal job identifier: %s\n", args[i])
-					os.Exit(1)
-				}
-			case "--continuous":
-				i++
-				if i >= len(args) {
-					fmt.Fprintln(os.Stderr, "Missing continous period")
-					os.Exit(1)
-				}
-				config.Continuous, err = strconv.Atoi(args[i])
-				if err != nil || config.Continuous < 0 {
-					fmt.Fprintln(os.Stderr, "Invalid continous period")
-					fmt.Println("Continous duration needs to be a positive, non-zero integer that determines the seconds between refreshes")
-					os.Exit(1)
-				}
-			case "--bell":
-				config.Bell = true
-			case "--notify":
-				config.Notify = true
-			case "--no-bell":
-				config.Bell = false
-			case "--no-notify":
-				config.Notify = false
-			case "--silent":
-				config.Bell = false
-				config.Notify = false
-			case "--monitor":
-				config.Bell = true
-				config.Notify = true
-			case "--follow":
-				config.Follow = true
-			case "--hierarchy":
-				config.Hierarchy = true
-			case "--config":
-				i++
-				if i >= len(args) {
-					fmt.Fprintln(os.Stderr, "Missing config file")
-					os.Exit(1)
-				}
-				err = readConfig(args[i], &config)
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "Error reading config '%s': %s\n", args[i], err)
-					os.Exit(1)
-				}
-			case "--hide-state", "--hide-job-state", "--hide":
-				i++
-				if i >= len(args) {
-					fmt.Fprintln(os.Stderr, "Missing job state")
-					os.Exit(1)
-				}
-				states := trimSplit(args[i], ",")
-				config.HideStates = append(config.HideStates, states...)
-			default:
-				fmt.Fprintf(os.Stderr, "Invalid argument: %s\n", arg)
-				fmt.Printf("Use %s --help to display available options\n", os.Args[0])
-				os.Exit(1)
-			}
-		} else {
-			// No argument, so it's either a job id, a job id range or a remote URI.
-			// If it's a uri, skip the job id test
-			if strings.HasPrefix(arg, "http://") || strings.HasPrefix(arg, "https://") {
-				// Try to parse as job run (e.g. http://phoenix-openqa.qam.suse.de/t1241)
-				match, url, jobIDs := matchTestURL(removeFragment(arg))
-				if match {
-					for _, jobID := range jobIDs {
-						remotes = appendRemote(remotes, url, jobID)
-					}
-				} else {
-					remotes = appendRemote(remotes, arg, 0)
-				}
-			} else {
-				// If the argument is a number only, assume it's a job ID otherwise it's a host
-				jobIDs := parseJobIDs(removeFragment(arg))
-				if len(jobIDs) > 0 {
-					if len(remotes) == 0 {
-						// Apply default remote, if defined
-						if config.DefaultRemote == "" {
-							fmt.Fprintf(os.Stderr, "Jobs need to be defined after a remote instance\n")
-							os.Exit(1)
-						}
-						remote := Remote{URI: config.DefaultRemote}
-						remotes = append(remotes, remote)
-					}
-					remote := &remotes[len(remotes)-1]
-					for _, jobID := range jobIDs {
-						remote.Jobs = append(remote.Jobs, jobID)
-					}
-				} else {
-					fmt.Fprintf(os.Stderr, "Illegal input: %s. Input must be either a REMOTE (starting with http:// or https://) or a JOB identifier\n", arg)
-					os.Exit(1)
-				}
-			}
-		}
-	}
-
+	parseArgs(args, &remotes)
 	// Remove duplicate IDs and sort by ID
 	for _, remote := range remotes {
 		remote.Jobs = unique(remote.Jobs)
@@ -361,6 +243,128 @@ func main() {
 	defer tui.LeaveAltScreen()
 	continuousMonitoring(remotes)
 	os.Exit(0)
+}
+
+func parseArgs(args []string, remotes *[]Remote) {
+     var err error
+     for i := 0; i < len(args); i++ {
+	arg := args[i]
+	if arg == "" {
+		continue
+	}
+	if arg[0] == '-' {
+		switch arg {
+		case "--help":
+			printHelp()
+			return
+		case "--jobs":
+			i++
+			if i >= len(args) {
+				fmt.Fprintln(os.Stderr, "Missing job IDs")
+				os.Exit(1)
+			}
+			jobIDs := parseJobIDs(args[i])
+			if len(jobIDs) > 0 {
+				remote := &(*remotes)[len((*remotes))-1]
+				for _, jobID := range jobIDs {
+					remote.Jobs = append(remote.Jobs, jobID)
+					fmt.Println(jobID)
+				}
+			} else {
+				fmt.Fprintf(os.Stderr, "Illegal job identifier: %s\n", arg)
+				os.Exit(1)
+			}
+		case "--continuous":
+			i++
+			if i >= len(args) {
+				fmt.Fprintln(os.Stderr, "Missing continous period")
+				os.Exit(1)
+			}
+			config.Continuous, err = strconv.Atoi(arg)
+			if err != nil || config.Continuous < 0 {
+				fmt.Fprintln(os.Stderr, "Invalid continous period")
+				fmt.Println("Continous duration needs to be a positive, non-zero integer that determines the econds between refreshes")
+				os.Exit(1)
+			}
+		case "--bell":
+			config.Bell = true
+		case "--notify":
+			config.Notify = true
+		case "--no-bell":
+			config.Bell = false
+		case "--no-notify":
+			config.Notify = false
+		case "--silent":
+			config.Bell = false
+			config.Notify = false
+		case "--monitor":
+			config.Bell = true
+			config.Notify = true
+		case "--follow":
+			config.Follow = true
+		case "--hierarchy":
+			config.Hierarchy = true
+		case "--config":
+			i++
+			if i >= len(args) {
+				fmt.Fprintln(os.Stderr, "Missing config file")
+				os.Exit(1)
+			}
+			err = readConfig(args[i], &config)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error reading config '%s': %s\n", args[i], err)
+				os.Exit(1)
+			}
+		case "--hide-state", "--hide-job-state", "--hide":
+			i++
+			if i >= len(args) {
+				fmt.Fprintln(os.Stderr, "Missing job state")
+				os.Exit(1)
+			}
+			states := trimSplit(args[i], ",")
+			config.HideStates = append(config.HideStates, states...)
+		default:
+			fmt.Fprintf(os.Stderr, "Invalid argument: %s\n", args[i])
+			fmt.Printf("Use %s --help to display available options\n", os.Args[0])
+			os.Exit(1)
+		}
+	} else {
+		// No argument, so it's either a job id, a job id range or a remote URI.
+		// If it's a uri, skip the job id test
+		if strings.HasPrefix(arg, "http://") || strings.HasPrefix(arg, "https://") {
+			// Try to parse as job run (e.g. http://phoenix-openqa.qam.suse.de/t1241)
+			match, url, jobIDs := matchTestURL(removeFragment(arg))
+			if match {
+				for _, jobID := range jobIDs {
+					(*remotes) = appendRemote((*remotes), url, jobID)
+				}
+			} else {
+				(*remotes) = appendRemote((*remotes), arg, 0)
+			}
+		} else {
+			// If the argument is a number only, assume it's a job ID otherwise it's a host
+			jobIDs := parseJobIDs(removeFragment(arg))
+			if len(jobIDs) > 0 {
+				if len((*remotes)) == 0 {
+					// Apply default remote, if defined
+					if config.DefaultRemote == "" {
+						fmt.Fprintf(os.Stderr, "Jobs need to be defined after a remote instance\n")
+						os.Exit(1)
+					}
+					remote := Remote{URI: config.DefaultRemote}
+					(*remotes) = append((*remotes), remote)
+				}
+				remote := &(*remotes)[len((*remotes))-1]
+				for _, jobID := range jobIDs {
+					remote.Jobs = append(remote.Jobs, jobID)
+				}
+			} else {
+				fmt.Fprintf(os.Stderr, "Illegal input: %s. Input must be either a REMOTE (starting wih http:// or https://) or a JOB identifier\n", arg)
+				os.Exit(1)
+				}
+			}
+		}
+	}
 }
 
 /* Get all jobs from the given remotes
