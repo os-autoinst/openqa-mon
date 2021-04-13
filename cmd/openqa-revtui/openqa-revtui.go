@@ -97,6 +97,16 @@ func CreateGroup() Group {
 	return grp
 }
 
+func hideJob(job gopenqa.Job) bool {
+	status := job.JobState()
+	for _, s := range cf.HideStatus {
+		if status == s {
+			return true
+		}
+	}
+	return false
+}
+
 func FetchJobGroups(instance gopenqa.Instance) (map[int]gopenqa.JobGroup, error) {
 	jobGroups := make(map[int]gopenqa.JobGroup)
 	groups, err := instance.GetJobGroups()
@@ -332,7 +342,9 @@ func registerRabbitMQ(tui *TUI, remote, topic string) (gopenqa.RabbitMQ, error) 
 					tui.Model.Apply(knownJobs)
 					tui.SetTracker(fmt.Sprintf("[%s] Job %d-%s:%s %s", now.Format("15:04:05"), job.ID, status.Flavor, status.Build, status.Result))
 					tui.Update()
-					NotifySend(job.String())
+					if cf.Notify && !hideJob(job) {
+						NotifySend(fmt.Sprintf("%s: %s %s", job.JobState(), job.Name, job.Test))
+					}
 				} else {
 					name := status.Flavor
 					if status.Build != "" {
@@ -400,7 +412,9 @@ func refreshJobs(tui *TUI, instance gopenqa.Instance) error {
 				status = fmt.Sprintf("Last update: [%s] Job %d-%s %s", time.Now().Format("15:04:05"), job.ID, job.Name, job.JobState())
 				tui.SetStatus(status)
 				tui.Update()
-				NotifySend(job.String())
+				if cf.Notify && !hideJob(job) {
+					NotifySend(fmt.Sprintf("%s: %s %s", job.JobState(), job.Name, job.Test))
+				}
 			}
 		}
 	}
@@ -411,6 +425,7 @@ func refreshJobs(tui *TUI, instance gopenqa.Instance) error {
 
 // main routine for the TUI instance
 func tui_main(tui *TUI, instance gopenqa.Instance) int {
+	title := "openqa Review TUI Dashboard"
 	var rabbitmq gopenqa.RabbitMQ
 	var err error
 
@@ -449,10 +464,13 @@ func tui_main(tui *TUI, instance gopenqa.Instance) int {
 	}
 	tui.EnterAltScreen()
 	tui.Clear()
-	tui.SetHeader("openqa Review - TUI Dashboard")
+	tui.SetHeader(title)
 	defer tui.LeaveAltScreen()
 
 	// Initial query instance via REST API
+
+	fmt.Println(title)
+	fmt.Println("")
 	fmt.Printf("Initial querying instance %s ... \n", cf.Instance)
 	fmt.Println("\tGet job groups ... ")
 	jobgroups, err := FetchJobGroups(instance)
