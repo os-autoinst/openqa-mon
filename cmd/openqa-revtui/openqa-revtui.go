@@ -97,6 +97,16 @@ func CreateGroup() Group {
 	return grp
 }
 
+func hideJob(job gopenqa.Job) bool {
+	status := job.JobState()
+	for _, s := range cf.HideStatus {
+		if status == s {
+			return true
+		}
+	}
+	return false
+}
+
 func FetchJobGroups(instance gopenqa.Instance) (map[int]gopenqa.JobGroup, error) {
 	jobGroups := make(map[int]gopenqa.JobGroup)
 	groups, err := instance.GetJobGroups()
@@ -158,18 +168,24 @@ func rabbitRemote(remote string) string {
 }
 
 /** Try to update the given job, if it exists and if not the same. Returns the found job and true, if an update was successful*/
-func updateJob(job gopenqa.Job) (gopenqa.Job, bool) {
+func updateJob(job gopenqa.Job, instance gopenqa.Instance) (gopenqa.Job, bool, error) {
 	for i, j := range knownJobs {
 		if j.ID == job.ID {
+			// Follow jobs
+			if job.CloneID != 0 && job.CloneID != job.ID {
+				job, err := instance.GetJob(job.CloneID)
+				knownJobs[i] = job
+				return knownJobs[i], true, err
+			}
 			if j.State != job.State || j.Result != job.Result {
 				knownJobs[i] = job
-				return knownJobs[i], true
+				return knownJobs[i], true, nil
 			} else {
-				return job, false
+				return job, false, nil
 			}
 		}
 	}
-	return job, false
+	return job, false, nil
 }
 
 /** Try to update the job with the given status, if present. Returns the found job and true if the job was present */
@@ -326,7 +342,9 @@ func registerRabbitMQ(tui *TUI, remote, topic string) (gopenqa.RabbitMQ, error) 
 					tui.Model.Apply(knownJobs)
 					tui.SetTracker(fmt.Sprintf("[%s] Job %d-%s:%s %s", now.Format("15:04:05"), job.ID, status.Flavor, status.Build, status.Result))
 					tui.Update()
-					NotifySend(job.String())
+					if cf.Notify && !hideJob(job) {
+						NotifySend(fmt.Sprintf("%s: %s %s", job.JobState(), job.Name, job.Test))
+					}
 				} else {
 					name := status.Flavor
 					if status.Build != "" {
@@ -377,27 +395,37 @@ func main() {
 	os.Exit(rc)
 }
 
-func refreshJobs(tui *TUI, instance gopenqa.Instance) {
+func refreshJobs(tui *TUI, instance gopenqa.Instance) error {
 	// Get fresh jobs
 	status := tui.Status()
 	tui.SetStatus("Refreshing jobs ... ")
 	tui.Update()
-	if jobs, err := FetchJobs(instance); err == nil {
+	if jobs, err := FetchJobs(instance); err != nil {
+		return err
+	} else {
 		for _, j := range jobs {
-			if job, found := updateJob(j); found {
+			job, found, err := updateJob(j, instance)
+			if err != nil {
+				return err
+			}
+			if found {
 				status = fmt.Sprintf("Last update: [%s] Job %d-%s %s", time.Now().Format("15:04:05"), job.ID, job.Name, job.JobState())
 				tui.SetStatus(status)
 				tui.Update()
-				NotifySend(job.String())
+				if cf.Notify && !hideJob(job) {
+					NotifySend(fmt.Sprintf("%s: %s %s", job.JobState(), job.Name, job.Test))
+				}
 			}
 		}
 	}
 	tui.SetStatus(status)
 	tui.Update()
+	return nil
 }
 
 // main routine for the TUI instance
 func tui_main(tui *TUI, instance gopenqa.Instance) int {
+	title := "openqa Review TUI Dashboard"
 	var rabbitmq gopenqa.RabbitMQ
 	var err error
 
@@ -408,7 +436,9 @@ func tui_main(tui *TUI, instance gopenqa.Instance) int {
 			if !refreshing {
 				refreshing = true
 				go func() {
-					refreshJobs(tui, instance)
+					if err := refreshJobs(tui, instance); err != nil {
+						tui.SetStatus(fmt.Sprintf("Error while refreshing: %s", err))
+					}
 					refreshing = false
 				}()
 				tui.Update()
@@ -434,10 +464,13 @@ func tui_main(tui *TUI, instance gopenqa.Instance) int {
 	}
 	tui.EnterAltScreen()
 	tui.Clear()
-	tui.SetHeader("openqa Review - TUI Dashboard")
+	tui.SetHeader(title)
 	defer tui.LeaveAltScreen()
 
 	// Initial query instance via REST API
+
+	fmt.Println(title)
+	fmt.Println("")
 	fmt.Printf("Initial querying instance %s ... \n", cf.Instance)
 	fmt.Println("\tGet job groups ... ")
 	jobgroups, err := FetchJobGroups(instance)
@@ -474,7 +507,9 @@ func tui_main(tui *TUI, instance gopenqa.Instance) int {
 		go func() {
 			for {
 				time.Sleep(time.Duration(cf.RefreshInterval) * time.Second)
-				refreshJobs(tui, instance)
+				if err := refreshJobs(tui, instance); err != nil {
+					tui.SetStatus(fmt.Sprintf("Error while refreshing: %s", err))
+				}
 			}
 		}()
 	}

@@ -182,16 +182,17 @@ func (tui *TUI) readInput() {
 				tui.Update()
 			}
 		} else if p[1] == 91 && k == 66 { // Arrow down
-			if tui.Model.offset < len(tui.Model.jobs) {
+			_, height := terminalSize()
+			max := max(0, (tui.Model.printLines - height + 7))
+			if tui.Model.offset < max {
 				tui.Model.offset++
 				tui.Update()
 			}
 		} else if p[2] == 27 && p[1] == 91 && p[0] == 72 { // home
 			tui.Model.offset = 0
 		} else if p[2] == 27 && p[1] == 91 && p[0] == 70 { // end
-			// This doesn't work right now:
-			//_, height := terminalSize()
-			//tui.Model.offset = max(0, (tui.visibleJobCount())-height)
+			_, height := terminalSize()
+			tui.Model.offset = max(0, (tui.Model.printLines - height + 7))
 		} else if p[2] == 27 && p[1] == 91 && p[0] == 53 { // page up
 			_, height := terminalSize()
 			scroll := max(1, height-5)
@@ -199,7 +200,7 @@ func (tui *TUI) readInput() {
 		} else if p[2] == 27 && p[1] == 91 && p[0] == 54 { // page down
 			_, height := terminalSize()
 			scroll := max(1, height-5)
-			max := tui.Model.printLines + 5
+			max := max(0, (tui.Model.printLines - height + 7))
 			tui.Model.offset = min(max, tui.Model.offset+scroll)
 		}
 
@@ -289,7 +290,7 @@ func sortedKeys(vals map[string]int) []string {
 	return ret
 }
 
-func (tui *TUI) printJobsByGroup(width, height int) {
+func (tui *TUI) printJobsByGroup(width, height int) int {
 	// Determine active groups first
 	groups := make(map[int][]gopenqa.Job, 0)
 	for _, job := range tui.Model.jobs {
@@ -339,14 +340,27 @@ func (tui *TUI) printJobsByGroup(width, height int) {
 		lines = append(lines, line)
 	}
 
-	// Print relevant lines, taking the offset into consideration
+	// For scrolling, remember the total number of lines
 	tui.Model.printLines = len(lines)
+
+	// Print relevant lines, taking the offset into consideration
+	counter := 0
 	for i := 0; i < height; i++ {
 		if (tui.Model.offset + i) >= len(lines) {
 			break
 		} else {
 			fmt.Println(lines[tui.Model.offset+i])
+			counter++
 		}
+	}
+	return counter
+}
+
+func cut(text string, n int) string {
+	if len(text) < n {
+		return text
+	} else {
+		return text[:n]
 	}
 }
 
@@ -359,30 +373,47 @@ func (tui *TUI) Update() {
 		return
 	}
 
+	remainingHeight := height // remaining rows in the current terminal
 	tui.Clear()
-	remainingHeight := height
 	if tui.header != "" {
 		fmt.Println(tui.header)
 		fmt.Println("q:Quit   r:Refresh   h:Hide/Show jobs   m:Toggle RabbitMQ tracker   s:Switch sorting    Arrows:Move up/down")
 		fmt.Println()
-		remainingHeight -= 3
+		remainingHeight -= 4
 	}
 
-	// Take status+tracker into consideration for remaining height
-	shownStatus := false
-	if tui.showStatus && tui.status != "" {
-		remainingHeight -= 2
-		shownStatus = true
-	}
-	if tui.showTracker && tui.tracker != "" {
-		if !shownStatus {
-			remainingHeight -= 2
+	// The footer is a bit more complex, build it here, so we know how many more rows are occupied
+	footer := make([]string, 0)
+	showStatus := tui.showStatus && tui.status != ""
+	showTracker := tui.showTracker && tui.tracker != ""
+	if showStatus && showTracker {
+		// Check if status + tracker can be merged
+		common := tui.status + spaces(5) + tui.tracker
+		if len(common) <= width {
+			footer = append(footer, common)
 		} else {
-			remainingHeight--
+			footer = append(footer, cut(tui.status, width))
+			if len(tui.tracker) <= width {
+				footer = append(footer, spaces(width-len(tui.tracker))+tui.tracker)
+			} else {
+				footer = append(footer, tui.tracker[:width])
+			}
 		}
+	} else if showStatus {
+		footer = append(footer, cut(tui.status, width))
+	} else if showTracker {
+		if len(tui.tracker) <= width {
+			footer = append(footer, spaces(width-len(tui.tracker))+tui.tracker)
+		} else {
+			footer = append(footer, tui.tracker[:width])
+		}
+	}
+	if len(footer) > 0 {
+		remainingHeight -= (len(footer) + 2)
 	}
 
 	// Job listing depends on selected sorting method
+	remainingHeight -= 2 // printJobs and printJobsByGroup terminate with a newline
 	switch tui.sorting {
 	case 1:
 		tui.printJobsByGroup(width, remainingHeight)
@@ -392,20 +423,10 @@ func (tui *TUI) Update() {
 		break
 	}
 
-	shownStatus = false
-	if tui.showStatus && tui.status != "" {
+	if len(footer) > 0 {
 		fmt.Println()
-		fmt.Println(tui.status)
-		shownStatus = true
-	}
-	if tui.showTracker && tui.tracker != "" {
-		if !shownStatus {
-			fmt.Println()
-		}
-		if len(tui.tracker) <= width {
-			fmt.Println(spaces(width-len(tui.tracker)) + tui.tracker)
-		} else {
-			fmt.Println(tui.tracker[:width])
+		for _, line := range footer {
+			fmt.Printf("\n%s", line)
 		}
 	}
 }
