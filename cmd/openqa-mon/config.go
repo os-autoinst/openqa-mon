@@ -16,6 +16,7 @@ type Config struct {
 	Follow        bool     // follow jobs by default
 	Hierarchy     bool     // show hierarchy
 	HideStates    []string // hide the following job states
+	Quit          bool     // quit program, once all jobs are completed
 }
 
 func strBool(text string) (bool, error) {
