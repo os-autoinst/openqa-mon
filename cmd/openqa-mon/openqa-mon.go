@@ -443,6 +443,7 @@ func parseArgs(args []string, remotes *[]Remote) {
 					fmt.Fprintln(os.Stderr, "Missing continous period")
 					os.Exit(1)
 				}
+				arg = args[i]
 				config.Continuous, err = strconv.Atoi(arg)
 				if err != nil || config.Continuous < 0 {
 					fmt.Fprintln(os.Stderr, "Invalid continous period")
