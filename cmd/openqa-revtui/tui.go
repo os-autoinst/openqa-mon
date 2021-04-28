@@ -65,6 +65,7 @@ func CreateTUI() TUI {
 	tui.showStatus = true
 	tui.Model.jobs = make([]gopenqa.Job, 0)
 	tui.Model.jobGroups = make(map[int]gopenqa.JobGroup, 0)
+	tui.Model.reviewed = make(map[int]bool, 0)
 	return tui
 }
 
@@ -75,6 +76,7 @@ type TUIModel struct {
 	mutex      sync.Mutex               // Access mutex to the model
 	offset     int                      // Line offset for printing
 	printLines int                      // Lines that would need to be printed, needed for offset handling
+	reviewed   map[int]bool             // Indicating if failed jobs are reviewed
 }
 
 func (tui *TUI) visibleJobCount() int {
@@ -87,6 +89,15 @@ func (tui *TUI) visibleJobCount() int {
 	return counter
 }
 
+func (model *TUIModel) SetReviewed(job int, reviewed bool) {
+	model.reviewed[job] = reviewed
+}
+
+func (model *TUIModel) isReviewed(job int) bool {
+	reviewed, found := model.reviewed[job]
+	return found && reviewed
+}
+
 func (tui *TUIModel) MoveHome() {
 	tui.mutex.Lock()
 	defer tui.mutex.Unlock()
@@ -97,6 +108,10 @@ func (tui *TUIModel) Apply(jobs []gopenqa.Job) {
 	tui.mutex.Lock()
 	defer tui.mutex.Unlock()
 	tui.jobs = jobs
+}
+
+func (model *TUIModel) Jobs() []gopenqa.Job {
+	return model.jobs
 }
 
 func (tui *TUIModel) SetJobGroups(grps map[int]gopenqa.JobGroup) {
@@ -271,7 +286,7 @@ func (tui *TUI) printJobs(width, height int) {
 	for _, job := range tui.Model.jobs {
 		if !tui.hideJob(job) {
 			if line++; line > tui.Model.offset {
-				fmt.Println(formatJobLine(job, width))
+				fmt.Println(tui.formatJobLine(job, width))
 			}
 		}
 	}
@@ -316,7 +331,7 @@ func (tui *TUI) printJobsByGroup(width, height int) int {
 		lines = append(lines, fmt.Sprintf("===== %s ====================\n", grp.Name))
 		for _, job := range jobs {
 			if !tui.hideJob(job) {
-				lines = append(lines, formatJobLine(job, width))
+				lines = append(lines, tui.formatJobLine(job, width))
 			} else {
 				hidden++
 			}
@@ -468,7 +483,7 @@ func getDateColorcode(t time.Time) string {
 	return ANSI_WHITE
 }
 
-func formatJobLine(job gopenqa.Job, width int) string {
+func (tui *TUI) formatJobLine(job gopenqa.Job, width int) string {
 	c1 := ANSI_WHITE // date color
 	tStr := ""       // Timestamp string
 
@@ -487,6 +502,15 @@ func formatJobLine(job gopenqa.Job, width int) string {
 	// If it is scheduled, it does not make any sense to display the starting time, since it's not set
 	if state != "scheduled" && timestamp.Unix() > 0 {
 		tStr = timestamp.Format("2006-01-02-15:04:05")
+	}
+	// For failed jobs check if they are reviewed
+	if state == "failed" {
+		if reviewed, found := tui.Model.reviewed[job.ID]; found {
+			if reviewed {
+				state = "reviewed"
+				c2 = ANSI_MAGENTA
+			}
+		}
 	}
 
 	// Full status line requires 89 characters (20+4+8+1+12+1+40+3) plus name
