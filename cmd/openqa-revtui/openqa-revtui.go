@@ -11,6 +11,8 @@ import (
 	"github.com/grisu48/gopenqa"
 )
 
+const VERSION = "0.2b"
+
 /* Group is a single configurable monitoring unit. A group contains all parameters that will be queried from openQA */
 type Group struct {
 	Name   string
@@ -107,6 +109,27 @@ func hideJob(job gopenqa.Job) bool {
 	return false
 }
 
+func isReviewed(job gopenqa.Job, instance gopenqa.Instance) (bool, error) {
+	comments, err := instance.GetComments(job.ID)
+	if err != nil {
+		return false, nil
+	}
+	for _, c := range comments {
+		if len(c.BugRefs) > 0 {
+			return true, nil
+		}
+		// Manually check for poo or bsc reference
+		if strings.Contains(c.Text, "poo#") || strings.Contains(c.Text, "bsc#") {
+			return true, nil
+		}
+		// Or for link to progress/bugzilla ticket
+		if strings.Contains(c.Text, "://progress.opensuse.org/issues/") || strings.Contains(c.Text, "://bugzilla.suse.com/show_bug.cgi?id=") {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 func FetchJobGroups(instance gopenqa.Instance) (map[int]gopenqa.JobGroup, error) {
 	jobGroups := make(map[int]gopenqa.JobGroup)
 	groups, err := instance.GetJobGroups()
@@ -121,17 +144,21 @@ func FetchJobGroups(instance gopenqa.Instance) (map[int]gopenqa.JobGroup, error)
 
 /* Get job or restarted current job of the given job ID */
 func FetchJob(id int, instance gopenqa.Instance) (gopenqa.Job, error) {
-	for {
-		job, err := instance.GetJob(id)
+	var job gopenqa.Job
+	for i := 0; i < 10; i++ { // Max recursion depth is 10
+		var err error
+		job, err = instance.GetJob(id)
 		if err != nil {
 			return job, err
 		}
-		if job.CloneID == 0 || job.CloneID == job.ID {
-			return job, nil
-		} else {
+		if job.CloneID != 0 && job.CloneID != job.ID {
 			id = job.CloneID
+			continue
+		} else {
+			return job, nil
 		}
 	}
+	return job, fmt.Errorf("max recursion depth reached")
 }
 
 func FetchJobs(instance gopenqa.Instance) ([]gopenqa.Job, error) {
@@ -142,7 +169,7 @@ func FetchJobs(instance gopenqa.Instance) ([]gopenqa.Job, error) {
 		if err != nil {
 			return ret, err
 		}
-		// Limit jobs to at most 100, otherwise it's too much
+		// Limit jobs to at most MaxJobs
 		if len(jobs) > cf.MaxJobs {
 			jobs = jobs[:cf.MaxJobs]
 		}
@@ -167,25 +194,19 @@ func rabbitRemote(remote string) string {
 	return remote
 }
 
-/** Try to update the given job, if it exists and if not the same. Returns the found job and true, if an update was successful*/
-func updateJob(job gopenqa.Job, instance gopenqa.Instance) (gopenqa.Job, bool, error) {
+/** Try to update the given job, if it exists and if not the same. Returns the found job and true, if an update was successful */
+func updateJob(orig_id int, job gopenqa.Job, instance gopenqa.Instance) (gopenqa.Job, bool) {
 	for i, j := range knownJobs {
-		if j.ID == job.ID {
-			// Follow jobs
-			if job.CloneID != 0 && job.CloneID != job.ID {
-				job, err := instance.GetJob(job.CloneID)
+		if j.ID == orig_id {
+			if j.ID != job.ID || j.State != job.State || j.Result != job.Result {
 				knownJobs[i] = job
-				return knownJobs[i], true, err
-			}
-			if j.State != job.State || j.Result != job.Result {
-				knownJobs[i] = job
-				return knownJobs[i], true, nil
+				return knownJobs[i], true
 			} else {
-				return job, false, nil
+				return job, false
 			}
 		}
 	}
-	return job, false, nil
+	return job, false
 }
 
 /** Try to update the job with the given status, if present. Returns the found job and true if the job was present */
@@ -400,24 +421,35 @@ func refreshJobs(tui *TUI, instance gopenqa.Instance) error {
 	status := tui.Status()
 	tui.SetStatus("Refreshing jobs ... ")
 	tui.Update()
-	if jobs, err := FetchJobs(instance); err != nil {
-		return err
-	} else {
-		for _, j := range jobs {
-			job, found, err := updateJob(j, instance)
+	jobs := tui.Model.Jobs()
+	for i, job := range jobs {
+		orig_id := job.ID
+		job, err := FetchJob(job.ID, instance)
+		if err != nil {
+			return err
+		}
+		job, found := updateJob(orig_id, job, instance)
+		if found {
+			status = fmt.Sprintf("Last update: [%s] Job %d-%s %s", time.Now().Format("15:04:05"), job.ID, job.Name, job.JobState())
+			tui.SetStatus(status)
+			jobs[i] = job
+			tui.Model.Apply(jobs)
+			tui.Update()
+			if cf.Notify && !hideJob(job) {
+				NotifySend(fmt.Sprintf("%s: %s %s", job.JobState(), job.Name, job.Test))
+			}
+		}
+		// Failed jobs will be also scanned for comments
+		if job.JobState() == "failed" {
+			reviewed, err := isReviewed(job, instance)
 			if err != nil {
 				return err
 			}
-			if found {
-				status = fmt.Sprintf("Last update: [%s] Job %d-%s %s", time.Now().Format("15:04:05"), job.ID, job.Name, job.JobState())
-				tui.SetStatus(status)
-				tui.Update()
-				if cf.Notify && !hideJob(job) {
-					NotifySend(fmt.Sprintf("%s: %s %s", job.JobState(), job.Name, job.Test))
-				}
-			}
+			tui.Model.SetReviewed(job.ID, reviewed)
+			tui.Update()
 		}
 	}
+	tui.Model.Apply(jobs)
 	tui.SetStatus(status)
 	tui.Update()
 	return nil
@@ -425,7 +457,7 @@ func refreshJobs(tui *TUI, instance gopenqa.Instance) error {
 
 // main routine for the TUI instance
 func tui_main(tui *TUI, instance gopenqa.Instance) int {
-	title := "openqa Review TUI Dashboard"
+	title := "openqa Review TUI Dashboard v" + VERSION
 	var rabbitmq gopenqa.RabbitMQ
 	var err error
 
@@ -488,9 +520,20 @@ func tui_main(tui *TUI, instance gopenqa.Instance) int {
 		fmt.Fprintf(os.Stderr, "Error fetching jobs: %s\n", err)
 		os.Exit(1)
 	}
+	// Failed jobs will be also scanned for comments
+	for _, job := range jobs {
+		if job.JobState() == "failed" {
+			reviewed, err := isReviewed(job, instance)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error fetching job comment: %s\n", err)
+				os.Exit(1)
+			}
+			tui.Model.SetReviewed(job.ID, reviewed)
+		}
+	}
 	knownJobs = jobs
-	tui.Start()
 	tui.Model.Apply(knownJobs)
+	tui.Start()
 	tui.Update()
 
 	// Register RabbitMQ
