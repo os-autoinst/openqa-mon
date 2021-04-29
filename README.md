@@ -20,6 +20,10 @@ Those utilities are intended as live monitor tool for your jobs. In contrast to 
     sudo make install     # install the binaries to /usr/local/bin
     make install ~/bib    # install the binary to bin in your home folder
 
+Static builds
+
+     make -B -j4 GOARGS="-buildmode pie"
+
 # `openqa-mon`
 
 ![Demo of openqa-mon in action](doc/demo.gif)
