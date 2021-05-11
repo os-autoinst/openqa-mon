@@ -1,0 +1,30 @@
+## Review template file for PublicCloud test runs on OSD
+
+Instance = "https://openqa.opensuse.org"                      # openQA instance to query
+RabbitMQ = "amqps://opensuse:opensuse@rabbit.opensuse.org"    # RabbitMQ instance to query
+RabbitMQTopic = "opensuse.openqa.job.done"                    # RabbitMQ topic to query
+HideStatus = [ "scheduled","passed","assigned" ]              # Hide scheduled, passed and assigned jobs
+RefreshInterval = 60                                          # Refresh from API once every minute
+MaxJobs = 20                                                  # Max. job per group to display
+GroupBy = "groups"                                            # Group by defined groups ("none" or "groups")
+DefaultParams = { distri="opensuse", version = "Tumbleweed" } # Set of default parameters
+
+## Define container groups by their group ID
+[[Groups]]
+Name = "openSUSE Tumbleweed DVD"
+Params = { flavor = "DVD" }
+
+[[Groups]]
+Name = "openSUSE Tumbleweed Network"
+Params = { flavor = "NET" }
+
+[[Groups]]
+Name = "openSUSE Tumbleweed JeOS"
+Params = { flavor = "JeOS-for-kvm-and-xen" }
+
+[[Groups]]
+Name = "openSUSE Tumbleweed Gnome-Live"
+Params = { flavor = "GNOME-Live" }
+[[Groups]]
+Name = "openSUSE Tumbleweed KDE-Live"
+Params = { flavor = "KDE-Live" }
