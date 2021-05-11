@@ -19,7 +19,7 @@ jobs:
       - name: Build openqa-mon
         run: make openqa-mon
 
-openqa-mq:
+  openqa-mq:
     name: openqa-mq
     runs-on: ubuntu-latest
     steps:
@@ -34,8 +34,8 @@ openqa-mq:
       - name: Build openqa-mq
         run: make openqa-mq
 
-  openqa-review:
-    name: openqa-review
+  openqa-revtui:
+    name: openqa-revtui
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -45,10 +45,9 @@ openqa-mq:
         with:
           go-version: '1.14'
       - name: Install requirements
-        run: go get github.com/streadway/amqp
-        run: go get github.com/BurntSushi/toml
-        run: go get github.com/grisu48/gopenqa
+        run: |
+          go get github.com/streadway/amqp
+          go get github.com/BurntSushi/toml
+          go get github.com/grisu48/gopenqa
       - name: Build openqa-review
-        run: make openqa-review
-
-
+        run: make openqa-revtui
