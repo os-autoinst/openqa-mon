@@ -268,6 +268,9 @@ func parseProgramArgs() error {
 			if arg == "-h" || arg == "--help" {
 				printUsage()
 				os.Exit(0)
+			} else if arg == "--version" {
+				fmt.Println("openqa-revtui version " + VERSION)
+				os.Exit(0)
 			} else if arg == "-c" || arg == "--config" {
 				if i++; i >= n {
 					return fmt.Errorf("Missing argument: %s", "config file")

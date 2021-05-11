@@ -15,6 +15,8 @@ import (
 	"github.com/grisu48/gopenqa"
 )
 
+const VERSION = "0.5"
+
 // Remote instance
 type Remote struct {
 	URI  string
@@ -29,6 +31,7 @@ func printHelp() {
 	fmt.Println("OPTIONS")
 	fmt.Println("")
 	fmt.Println("  -h, --help                       Print this help message")
+	fmt.Println("  --version                        Display program version")
 	fmt.Println("  -j, --jobs JOBS                  Display information only for the given JOBS")
 	fmt.Println("                                   JOBS can be a single job id, a comma separated list (e.g. 42,43,1337)")
 	fmt.Println("                                   or a job range (1335..1339 or 1335+4)")
@@ -249,6 +252,9 @@ func main() {
 			switch arg {
 			case "--help":
 				printHelp()
+				return
+			case "--version":
+				fmt.Println("openqa-mon version " + VERSION)
 				return
 			case "--jobs":
 				i++
@@ -612,12 +618,25 @@ func FetchJobs(remotes []Remote, callback func(int, gopenqa.Job)) ([]Remote, err
 }
 
 // Fires a job notification, if notifications are enabled
-func NotifyJobChanged(j gopenqa.Job) {
+func NotifyJobsChanged(jobs []gopenqa.Job) {
 	if config.Bell {
 		bell()
 	}
 	if config.Notify {
-		notifySend(fmt.Sprintf("[%s] - Job %d %s", j.JobState(), j.ID, j.Name))
+		notification := ""
+		if len(jobs) == 1 {
+			j := jobs[0]
+			notification = fmt.Sprintf("[%s] - Job %d %s", j.JobState(), j.ID, j.Name)
+		} else {
+			for _, j := range jobs {
+				notification += fmt.Sprintf("[%s] %s\n", j.JobState(), j.Name)
+			}
+		}
+		notification = strings.TrimSpace(notification)
+
+		if notification != "" {
+			notifySend(notification)
+		}
 	}
 }
 
@@ -680,7 +699,8 @@ func continuousMonitoring(remotes []Remote) {
 
 	tui.SetStatus("Initial job fetching ... ")
 	for {
-		exists := make(map[int]bool, 0) // Keep track of existing jobs
+		exists := make(map[int]bool, 0)      // Keep track of existing jobs
+		notifyJobs := make([]gopenqa.Job, 0) // jobs which fire a notification
 		// Fetch new jobs. Update remotes (job id's) when necessary
 		remotes, err = FetchJobs(remotes, func(id int, job gopenqa.Job) {
 			exists[job.ID] = true
@@ -692,13 +712,13 @@ func continuousMonitoring(remotes []Remote) {
 					if j.JobState() == job.JobState() {
 						return
 					}
-					// Ignore trivial changes (uploading, assigned)
+					// Ignore trivial changes (uploading, assigned) and skipped jobs
 					state := job.JobState()
-					if state == "uploading" || state == "assigned" {
+					if state == "uploading" || state == "assigned" || state == "skipped" || state == "cancelled" {
 						return
 					}
 					// Notify about job update
-					NotifyJobChanged(job)
+					notifyJobs = append(notifyJobs, job)
 					// Refresh tui after each job update
 					tui.Model.SetJobs(jobs)
 					tui.Update()
@@ -711,6 +731,10 @@ func continuousMonitoring(remotes []Remote) {
 			tui.Model.SetJobs(jobs)
 			tui.Update()
 		})
+		if len(notifyJobs) > 0 {
+			NotifyJobsChanged(notifyJobs)
+		}
+
 		// Remove items which are not present anymore - (e.g. old children)
 		jobs = uniqueJobs(filterJobs(jobs, func(job gopenqa.Job) bool {
 			_, ok := exists[job.ID]
