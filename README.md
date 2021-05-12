@@ -22,7 +22,7 @@ Those utilities are intended as live monitor tool for your jobs. In contrast to 
 
 Static builds
 
-     make -B -j4 GOARGS="-buildmode pie"
+     CGO_ENABLED=0 make -B -j4 GOARGS="-buildmode pie"
 
 # `openqa-mon`
 
