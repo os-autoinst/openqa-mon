@@ -10,6 +10,8 @@ import (
 	"github.com/streadway/amqp"
 )
 
+const VERSION = "1.0"
+
 func printUsage() {
 	fmt.Printf("Usage: %s [REMOTE] [KEY]\n", os.Args[0])
 	fmt.Println("  REMOTE - RabbitMQ address (e.g. amqps://opensuse:opensuse@rabbit.opensuse.org)")
@@ -37,6 +39,9 @@ func main() {
 
 		if remote == "-h" || remote == "--help" {
 			printUsage()
+			os.Exit(0)
+		} else if remote == "--version" {
+			fmt.Println("openqa-mq version " + VERSION)
 			os.Exit(0)
 		}
 
