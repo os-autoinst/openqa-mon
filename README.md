@@ -24,6 +24,10 @@ Static builds
 
      CGO_ENABLED=0 make -B -j4 GOARGS="-buildmode pie"
 
+	 or
+
+	 make static
+
 # `openqa-mon`
 
 ![Demo of openqa-mon in action](doc/demo.gif)
