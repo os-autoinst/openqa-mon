@@ -546,6 +546,7 @@ func parseArgs(args []string, remotes *[]Remote) {
 func FetchJobs(remotes []Remote, callback func(int, gopenqa.Job)) ([]Remote, error) {
 	for i, remote := range remotes {
 		instance := gopenqa.CreateInstance(ensureHTTP(remote.URI))
+		instance.SetMaxRecursionDepth(100) // Certain jobs (e.g. verification runs) can have a lot of clones
 		// If no jobs are defined, fetch overview
 		if len(remote.Jobs) == 0 {
 			overview, err := instance.GetOverview("", gopenqa.EmptyParams())
@@ -567,7 +568,8 @@ func FetchJobs(remotes []Remote, callback func(int, gopenqa.Job)) ([]Remote, err
 					job, err = instance.GetJob(id)
 				}
 				if err != nil {
-					return remotes, err
+					// It's better to ignore a single failure than to suppress following jobs as well
+					continue
 				}
 				if job.ID != id {
 					remote.Jobs[i] = job.ID
