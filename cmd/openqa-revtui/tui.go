@@ -462,7 +462,7 @@ func getStateColorcode(state string) string {
 		return ANSI_GREEN
 	} else if state == "softfail" || state == "softfailed" {
 		return ANSI_YELLOW
-	} else if state == "fail" || state == "failed" {
+	} else if state == "fail" || state == "failed" || state == "incomplete" {
 		return ANSI_RED
 	} else if state == "cancelled" || state == "user_cancelled" {
 		return ANSI_MAGENTA
@@ -504,7 +504,7 @@ func (tui *TUI) formatJobLine(job gopenqa.Job, width int) string {
 		tStr = timestamp.Format("2006-01-02-15:04:05")
 	}
 	// For failed jobs check if they are reviewed
-	if state == "failed" {
+	if state == "failed" || state == "incomplete" {
 		if reviewed, found := tui.Model.reviewed[job.ID]; found {
 			if reviewed {
 				state = "reviewed"
