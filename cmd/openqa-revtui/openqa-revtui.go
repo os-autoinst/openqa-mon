@@ -11,7 +11,7 @@ import (
 	"github.com/grisu48/gopenqa"
 )
 
-const VERSION = "0.2b"
+const VERSION = "0.3"
 
 /* Group is a single configurable monitoring unit. A group contains all parameters that will be queried from openQA */
 type Group struct {
@@ -153,6 +153,7 @@ func FetchJob(id int, instance gopenqa.Instance) (gopenqa.Job, error) {
 		}
 		if job.CloneID != 0 && job.CloneID != job.ID {
 			id = job.CloneID
+			time.Sleep(100 * time.Millisecond) // Don't spam the instance
 			continue
 		} else {
 			return job, nil
@@ -443,7 +444,8 @@ func refreshJobs(tui *TUI, instance gopenqa.Instance) error {
 			}
 		}
 		// Failed jobs will be also scanned for comments
-		if job.JobState() == "failed" {
+		state := job.JobState()
+		if state == "failed" || state == "incomplete" {
 			reviewed, err := isReviewed(job, instance)
 			if err != nil {
 				return err
@@ -525,7 +527,8 @@ func tui_main(tui *TUI, instance gopenqa.Instance) int {
 	}
 	// Failed jobs will be also scanned for comments
 	for _, job := range jobs {
-		if job.JobState() == "failed" {
+		state := job.JobState()
+		if state == "failed" || state == "incomplete" {
 			reviewed, err := isReviewed(job, instance)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error fetching job comment: %s\n", err)

@@ -504,12 +504,9 @@ func (tui *TUI) formatJobLine(job gopenqa.Job, width int) string {
 		tStr = timestamp.Format("2006-01-02-15:04:05")
 	}
 	// For failed jobs check if they are reviewed
-	if state == "failed" || state == "incomplete" {
-		if reviewed, found := tui.Model.reviewed[job.ID]; found {
-			if reviewed {
-				state = "reviewed"
-				c2 = ANSI_MAGENTA
-			}
+	if job.Result == "failed" || job.Result == "incomplete" {
+		if reviewed, found := tui.Model.reviewed[job.ID]; found && reviewed {
+			c2 = ANSI_MAGENTA
 		}
 	}
 
