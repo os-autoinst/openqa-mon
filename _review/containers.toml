@@ -11,6 +11,10 @@ GroupBy = "groups"                               # Group by defined groups ("non
 
 ## Define container groups by their group ID
 [[Groups]]
+Name = "Containers 15 SP3 Updates"
+Params = { groupid = "369" }
+
+[[Groups]]
 Name = "Containers 15 SP2 Updates"
 Params = { groupid = "352" }
 
@@ -39,7 +43,36 @@ Name = "Containers Latest"
 Params = { groupid = "313" }
 
 [[Groups]]
-Name = "Containers SLE Base Image Updates"
-Params = { groupid = "315" }
+Name = "Containers SLE Base Image Updates 15-SP3"
+Params = { groupid = "378" }
+
+[[Groups]]
+Name = "Containers SLE Base Image Updates 15-SP2"
+Params = { groupid = "379" }
+
+[[Groups]]
+Name = "Containers SLE Base Image Updates 15-SP1"
+Params = { groupid = "380" }
+
+[[Groups]]
+Name = "Containers SLE Base Image Updates 15 GA"
+Params = { groupid = "381" }
+
+[[Groups]]
+Name = "Containers SLE Base Image Updates 12-SP5"
+Params = { groupid = "382" }
+
+[[Groups]]
+Name = "Containers SLE Base Image Updates 12-SP4"
+Params = { groupid = "383" }
+
+[[Groups]]
+Name = "Containers SLE Base Image Updates 12-SP3"
+Params = { groupid = "384" }
+
+[[Groups]]
+Name = "Containers Create_hdd_stable_hosts"
+Params = { groupid = "377" }
+
 
 
