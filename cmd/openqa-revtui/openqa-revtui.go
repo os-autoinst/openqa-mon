@@ -401,6 +401,7 @@ func main() {
 	}
 
 	instance := gopenqa.CreateInstance(cf.Instance)
+	instance.SetUserAgent("openqa-mon/revtui")
 
 	// Run TUI and use the return code
 	tui := CreateTUI()

@@ -15,7 +15,7 @@ import (
 	"github.com/grisu48/gopenqa"
 )
 
-const VERSION = "0.5"
+const VERSION = "0.5.1"
 
 // Remote instance
 type Remote struct {
@@ -546,6 +546,7 @@ func parseArgs(args []string, remotes *[]Remote) {
 func FetchJobs(remotes []Remote, callback func(int, gopenqa.Job)) ([]Remote, error) {
 	for i, remote := range remotes {
 		instance := gopenqa.CreateInstance(ensureHTTP(remote.URI))
+		instance.SetUserAgent("openqa-mon")
 		instance.SetMaxRecursionDepth(100) // Certain jobs (e.g. verification runs) can have a lot of clones
 		// If no jobs are defined, fetch overview
 		if len(remote.Jobs) == 0 {
