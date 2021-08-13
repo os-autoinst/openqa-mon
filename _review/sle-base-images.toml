@@ -11,30 +11,30 @@ GroupBy = "groups"                                                        # Grou
 
 ## Define container groups by their group ID
 [[Groups]]
-Name = "Containers 15 SP3 Updates"
-Params = { groupid = "369" }
+Name = "Containers SLE Base Image Updates 15-SP3"
+Params = { groupid = "378" }
 
 [[Groups]]
-Name = "Containers 15 SP2 Updates"
-Params = { groupid = "352" }
+Name = "Containers SLE Base Image Updates 15-SP2"
+Params = { groupid = "379" }
 
 [[Groups]]
-Name = "Containers 15 SP1 Updates"
-Params = { groupid = "353" }
+Name = "Containers SLE Base Image Updates 15-SP1"
+Params = { groupid = "380" }
 
 [[Groups]]
-Name = "Containers 15 GA Updates"
-Params = { groupid = "357" }
+Name = "Containers SLE Base Image Updates 15 GA"
+Params = { groupid = "381" }
 
 [[Groups]]
-Name = "Containers 12 SP5 Updates"
-Params = { groupid = "355" }
+Name = "Containers SLE Base Image Updates 12-SP5"
+Params = { groupid = "382" }
 
 [[Groups]]
-Name = "Containers 12 SP4 Updates"
-Params = { groupid = "354" }
+Name = "Containers SLE Base Image Updates 12-SP4"
+Params = { groupid = "383" }
 
 [[Groups]]
-Name = "Containers 12 SP3 Updates"
-Params = { groupid = "358" }
+Name = "Containers SLE Base Image Updates 12-SP3"
+Params = { groupid = "384" }
 
