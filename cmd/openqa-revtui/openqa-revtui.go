@@ -11,7 +11,7 @@ import (
 	"github.com/grisu48/gopenqa"
 )
 
-const VERSION = "0.2b"
+const VERSION = "0.3"
 
 /* Group is a single configurable monitoring unit. A group contains all parameters that will be queried from openQA */
 type Group struct {
@@ -145,7 +145,7 @@ func FetchJobGroups(instance gopenqa.Instance) (map[int]gopenqa.JobGroup, error)
 /* Get job or restarted current job of the given job ID */
 func FetchJob(id int, instance gopenqa.Instance) (gopenqa.Job, error) {
 	var job gopenqa.Job
-	for i := 0; i < 10; i++ { // Max recursion depth is 10
+	for i := 0; i < 25; i++ { // Max recursion depth is 25
 		var err error
 		job, err = instance.GetJob(id)
 		if err != nil {
@@ -153,10 +153,10 @@ func FetchJob(id int, instance gopenqa.Instance) (gopenqa.Job, error) {
 		}
 		if job.CloneID != 0 && job.CloneID != job.ID {
 			id = job.CloneID
+			time.Sleep(100 * time.Millisecond) // Don't spam the instance
 			continue
-		} else {
-			return job, nil
 		}
+		return job, nil
 	}
 	return job, fmt.Errorf("max recursion depth reached")
 }
@@ -414,9 +414,12 @@ func main() {
 		os.Exit(1)
 	}
 	tui.SetHideStatus(cf.HideStatus)
-	rc := tui_main(&tui, instance)
+	err := tui_main(&tui, instance)
 	tui.LeaveAltScreen() // Ensure we leave alt screen
-	os.Exit(rc)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+		os.Exit(1)
+	}
 }
 
 func refreshJobs(tui *TUI, instance gopenqa.Instance) error {
@@ -443,7 +446,8 @@ func refreshJobs(tui *TUI, instance gopenqa.Instance) error {
 			}
 		}
 		// Failed jobs will be also scanned for comments
-		if job.JobState() == "failed" {
+		state := job.JobState()
+		if state == "failed" || state == "incomplete" {
 			reviewed, err := isReviewed(job, instance)
 			if err != nil {
 				return err
@@ -459,7 +463,7 @@ func refreshJobs(tui *TUI, instance gopenqa.Instance) error {
 }
 
 // main routine for the TUI instance
-func tui_main(tui *TUI, instance gopenqa.Instance) int {
+func tui_main(tui *TUI, instance gopenqa.Instance) error {
 	title := "openqa Review TUI Dashboard v" + VERSION
 	var rabbitmq gopenqa.RabbitMQ
 	var err error
@@ -510,8 +514,7 @@ func tui_main(tui *TUI, instance gopenqa.Instance) int {
 	fmt.Println("\tGet job groups ... ")
 	jobgroups, err := FetchJobGroups(instance)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error fetching job groups: %s\n", err)
-		return 1
+		return fmt.Errorf("Error fetching job groups: %s", err)
 	}
 	if len(jobgroups) == 0 {
 		fmt.Fprintf(os.Stderr, "Warn: No job groups\n")
@@ -520,16 +523,15 @@ func tui_main(tui *TUI, instance gopenqa.Instance) int {
 	fmt.Printf("\tGet jobs for %d groups ... \n", len(cf.Groups))
 	jobs, err := FetchJobs(instance)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error fetching jobs: %s\n", err)
-		os.Exit(1)
+		return fmt.Errorf("Error fetching jobs: %s", err)
 	}
 	// Failed jobs will be also scanned for comments
 	for _, job := range jobs {
-		if job.JobState() == "failed" {
+		state := job.JobState()
+		if state == "failed" || state == "incomplete" {
 			reviewed, err := isReviewed(job, instance)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error fetching job comment: %s\n", err)
-				os.Exit(1)
+				return fmt.Errorf("Error fetching job comment: %s", err)
 			}
 			tui.Model.SetReviewed(job.ID, reviewed)
 		}
@@ -565,5 +567,5 @@ func tui_main(tui *TUI, instance gopenqa.Instance) int {
 	if cf.RabbitMQ != "" {
 		rabbitmq.Close()
 	}
-	return 0
+	return nil
 }

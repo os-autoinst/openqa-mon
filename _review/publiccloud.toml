@@ -1,14 +1,14 @@
 ## Review template file for PublicCloud test runs on OSD
 
-Instance = "https://openqa.suse.de"              # openQA instance to query
-RabbitMQ = "amqps://suse:suse@rabbit.suse.de"    # RabbitMQ instance to query
-RabbitMQTopic = "suse.openqa.job.done"           # RabbitMQ topic to query
-HideStatus = [ "scheduled", "passed" ]           # Hide scheduled and passed jobs
-Notify = false                                   # No notifications by default
-RefreshInterval = 60                             # Refresh from API once every minute
-MaxJobs = 20                                     # Max. job per group to display
-GroupBy = "groups"                               # Group by defined groups ("none" or "groups")
-DefaultParams = { distri = "sle" }               # Set of default parameters
+Instance = "https://openqa.suse.de"                                       # openQA instance to query
+RabbitMQ = "amqps://suse:suse@rabbit.suse.de"                             # RabbitMQ instance to query
+RabbitMQTopic = "suse.openqa.job.done"                                    # RabbitMQ topic to query
+HideStatus = [ "scheduled","passed","running","softfailed","assigned" ]   # Hide scheduled and passed jobs
+Notify = false                                                            # No notifications by default
+RefreshInterval = 60                                                      # Refresh from API once every minute
+MaxJobs = 20                                                              # Max. job per group to display
+GroupBy = "groups"                                                        # Group by defined groups ("none" or "groups")
+DefaultParams = { distri = "sle" }                                        # Set of default parameters
 
 
 # Define publiccloud groups based on their flavor
