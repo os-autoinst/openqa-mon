@@ -165,13 +165,10 @@ func FetchJobs(instance gopenqa.Instance) ([]gopenqa.Job, error) {
 	ret := make([]gopenqa.Job, 0)
 	for _, group := range cf.Groups {
 		params := group.Params
+		params["limit"] = fmt.Sprintf("%d", cf.MaxJobs)
 		jobs, err := instance.GetOverview("", params)
 		if err != nil {
 			return ret, err
-		}
-		// Limit jobs to at most MaxJobs
-		if len(jobs) > cf.MaxJobs {
-			jobs = jobs[:cf.MaxJobs]
 		}
 		// Get detailed job instances
 		for _, job := range jobs {
