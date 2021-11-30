@@ -1,0 +1,23 @@
+#/bin/bash
+FILE=$(readlink -nf "${BASH_SOURCE[${#BASH_SOURCE[@]} - 1]}")
+DIR=$(dirname $FILE)
+DATE=$(date '+%G_%V')
+
+if [[ "$TERM" =~ ^screen ]]; then
+
+    pushd $DIR
+        screen -t notes $EDITOR ${DATE}_review_notes.txt
+
+        files="containers.toml opensuse-microos.toml publiccloud.toml"
+        for f in $files; do
+          screen -t $f openqa-revtui $_review_dir$f
+        done
+    popd
+    
+    screen -t bash
+    sleep 1; # avoid reusage of window 0
+
+else 
+    screen -S "$(basename $FILE)_${DATE}" $@ $FILE
+fi
+
