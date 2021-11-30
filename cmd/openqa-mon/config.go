@@ -17,6 +17,7 @@ type Config struct {
 	Hierarchy     bool     // show hierarchy
 	HideStates    []string // hide the following job states
 	Quit          bool     // quit program, once all jobs are completed
+	Paused        bool     // Continuous monitoring pased
 }
 
 func strBool(text string) (bool, error) {

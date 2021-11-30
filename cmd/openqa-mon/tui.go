@@ -89,6 +89,13 @@ func spaces(n int) string {
 	return ret
 }
 
+func PrintLine(line string, maxWidth int) {
+	if maxWidth > 0 && len(line) > maxWidth {
+		line = line[:maxWidth]
+	}
+	fmt.Println(line)
+}
+
 func CreateTUI() TUI {
 	var tui TUI
 	tui.done = make(chan bool, 1)
@@ -297,16 +304,16 @@ func (tui *TUI) Update() {
 	tui.Clear()
 	lines := 0
 	if tui.header != "" {
-		fmt.Println(tui.header)
+		PrintLine(tui.header, width)
 		lines++
 	}
 	if tui.showHelp {
-
-		fmt.Print("?:Toggle help    r: Refresh")
+		help := "?:Toggle help    r: Refresh    d:Toggle notifications    b:Toggle bell    +/-:Increase/Decrease refresh time"
 		if len(tui.Model.HideStates) > 0 {
-			fmt.Print("    h:Toggle hide")
+			help += "    h:Toggle hide"
 		}
-		fmt.Println("    q:Quit")
+		help += "    q:Quit"
+		PrintLine(help, width)
 		lines++
 	}
 	fmt.Println()

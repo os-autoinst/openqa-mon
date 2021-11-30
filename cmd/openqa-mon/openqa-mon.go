@@ -15,7 +15,7 @@ import (
 	"github.com/grisu48/gopenqa"
 )
 
-const VERSION = "0.5.1"
+const VERSION = "0.6.0"
 
 // Remote instance
 type Remote struct {
@@ -218,6 +218,29 @@ func getJobHierarchy(job gopenqa.Job, follow bool) ([]gopenqa.Job, error) {
 var config Config
 var tui TUI
 
+func SetStatus() {
+	if config.Paused {
+		tui.SetStatus("Paused")
+		return
+	}
+	if config.Continuous > 0 {
+		status := fmt.Sprintf("(continuous monitoring) | %d seconds |", config.Continuous)
+		if config.Bell || config.Notify {
+			status += " ("
+			if config.Bell {
+				status += "b"
+			}
+			if config.Notify {
+				status += "n"
+			}
+			status += ")"
+		}
+		tui.SetStatus(status)
+	} else {
+		tui.SetStatus("")
+	}
+}
+
 func main() {
 	var err error
 	args := expandArguments(os.Args[1:])
@@ -406,7 +429,7 @@ func main() {
 	if len(remotes) == 1 {
 		remotesString = remotes[0].URI
 	}
-	tui.SetHeader(fmt.Sprintf("openqa-mon - Monitoring %s | Refreshing every %d seconds", remotesString, config.Continuous))
+	tui.SetHeader(fmt.Sprintf("openqa-mon - Monitoring %s", remotesString))
 	tui.Model.HideStates = config.HideStates
 	tui.Update()
 	defer tui.LeaveAltScreen()
@@ -684,14 +707,43 @@ func continuousMonitoring(remotes []Remote) {
 		} else if b == 'r' {
 			// Refresh
 			refreshSignal <- 1
+			return
 		} else if b == '?' {
 			tui.SetShowHelp(!tui.DoShowHelp())
 		} else if b == 'h' {
 			tui.SetHideStates(!tui.DoHideStates())
-		} else {
-			// Ignore keypress and update tui
-			tui.Update()
+		} else if b == 'p' {
+			config.Paused = !config.Paused
+			if config.Paused {
+				SetStatus()
+			} else {
+				refreshSignal <- 1
+			}
+			return
+		} else if b == 'd' || b == 'n' {
+			config.Notify = !config.Notify
+			SetStatus()
+		} else if b == 'b' {
+			config.Bell = !config.Bell
+			SetStatus()
+		} else if b == 'm' {
+			config.Notify = false
+			config.Bell = false
+			SetStatus()
+		} else if b == 'l' {
+			config.Notify = true
+			config.Bell = true
+			SetStatus()
+		} else if b == '+' {
+			config.Continuous++
+			SetStatus()
+		} else if b == '-' {
+			if config.Continuous > 1 {
+				config.Continuous--
+			}
+			SetStatus()
 		}
+		tui.Update()
 	}
 
 	// Start TUI handlers (keypress, ecc)
@@ -702,66 +754,70 @@ func continuousMonitoring(remotes []Remote) {
 
 	tui.SetStatus("Initial job fetching ... ")
 	for {
-		exists := make(map[int]bool, 0)      // Keep track of existing jobs
-		notifyJobs := make([]gopenqa.Job, 0) // jobs which fire a notification
-		// Fetch new jobs. Update remotes (job id's) when necessary
-		remotes, err = FetchJobs(remotes, func(id int, job gopenqa.Job) {
-			exists[job.ID] = true
-			// Job received. Update existing job or add job if not yet present
-			for i, j := range jobs {
-				if j.ID == id { // Compare to given id as this is the original id (not the ID of a possible cloned job)
-					jobs[i] = job
-					// Ignore if job status remains the same
-					if j.JobState() == job.JobState() {
+		if config.Paused {
+			SetStatus()
+		} else {
+			exists := make(map[int]bool, 0)      // Keep track of existing jobs
+			notifyJobs := make([]gopenqa.Job, 0) // jobs which fire a notification
+			// Fetch new jobs. Update remotes (job id's) when necessary
+			remotes, err = FetchJobs(remotes, func(id int, job gopenqa.Job) {
+				exists[job.ID] = true
+				// Job received. Update existing job or add job if not yet present
+				for i, j := range jobs {
+					if j.ID == id { // Compare to given id as this is the original id (not the ID of a possible cloned job)
+						jobs[i] = job
+						// Ignore if job status remains the same
+						if j.JobState() == job.JobState() {
+							return
+						}
+						// Ignore trivial changes (uploading, assigned) and skipped jobs
+						state := job.JobState()
+						if state == "uploading" || state == "assigned" || state == "skipped" || state == "cancelled" {
+							return
+						}
+						// Notify about job update
+						notifyJobs = append(notifyJobs, job)
+						// Refresh tui after each job update
+						tui.Model.SetJobs(jobs)
+						tui.Update()
 						return
 					}
-					// Ignore trivial changes (uploading, assigned) and skipped jobs
-					state := job.JobState()
-					if state == "uploading" || state == "assigned" || state == "skipped" || state == "cancelled" {
-						return
-					}
-					// Notify about job update
-					notifyJobs = append(notifyJobs, job)
-					// Refresh tui after each job update
-					tui.Model.SetJobs(jobs)
-					tui.Update()
-					return
 				}
+
+				// Append new job
+				jobs = append(jobs, job)
+				tui.Model.SetJobs(jobs)
+				tui.Update()
+			})
+			if len(notifyJobs) > 0 {
+				NotifyJobsChanged(notifyJobs)
 			}
 
-			// Append new job
-			jobs = append(jobs, job)
+			// Remove items which are not present anymore - (e.g. old children)
+			jobs = uniqueJobs(filterJobs(jobs, func(job gopenqa.Job) bool {
+				_, ok := exists[job.ID]
+				return ok
+			}))
 			tui.Model.SetJobs(jobs)
-			tui.Update()
-		})
-		if len(notifyJobs) > 0 {
-			NotifyJobsChanged(notifyJobs)
-		}
-
-		// Remove items which are not present anymore - (e.g. old children)
-		jobs = uniqueJobs(filterJobs(jobs, func(job gopenqa.Job) bool {
-			_, ok := exists[job.ID]
-			return ok
-		}))
-		tui.Model.SetJobs(jobs)
-		if err != nil {
-			tui.SetStatus(fmt.Sprintf("Error fetching jobs: %s", err))
-		} else {
-			tui.SetStatus("")
-		}
-		tui.Update()
-		// Terminate if all jobs are done
-		if config.Quit && jobsDone(jobs) {
-			tui.LeaveAltScreen()
-			failed := getFailedJobs(jobs)
-			if len(failed) > 0 {
-				fmt.Fprintf(os.Stderr, "%d job(s) completed with errors\n", len(failed))
-				for _, job := range failed {
-					fmt.Fprintf(os.Stderr, "%s\n", job.String())
-				}
-				os.Exit(1)
+			if err != nil {
+				tui.SetStatus(fmt.Sprintf("Error fetching jobs: %s", err))
 			} else {
-				os.Exit(0)
+				SetStatus()
+			}
+			tui.Update()
+			// Terminate if all jobs are done
+			if config.Quit && jobsDone(jobs) {
+				tui.LeaveAltScreen()
+				failed := getFailedJobs(jobs)
+				if len(failed) > 0 {
+					fmt.Fprintf(os.Stderr, "%d job(s) completed with errors\n", len(failed))
+					for _, job := range failed {
+						fmt.Fprintf(os.Stderr, "%s\n", job.String())
+					}
+					os.Exit(1)
+				} else {
+					os.Exit(0)
+				}
 			}
 		}
 
