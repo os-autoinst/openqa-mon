@@ -1,13 +1,11 @@
-# openqa-mon
-
 [![Build Status](https://travis-ci.com/grisu48/openqa-mon.svg?branch=master)](https://travis-ci.com/grisu48/openqa-mon)
 
 Simple CLI monitoring utilities for [openQA](https://open.qa).
 This project now consists of three programs:
 
-* `openqa-mon` - live monitoring of openQA jobs
-* `openqa-mq` - Query [RabbitMQ instance](https://rabbit.opensuse.org/) for updates
-* `openqa-revtui` - (Experimental) openQA review dashboard
+* [openqa-mon](#openqa-mon) - live monitoring of openQA jobs
+* [openqa-mq](#openqa-mq) - Query [RabbitMQ instance](https://rabbit.opensuse.org/) for updates
+* [openqa-revtui](#openqa-revtui) - (Experimental) openQA review dashboard
 
 Those utilities are intended as live monitor tool for your jobs. In contrast to the Browser interface they are smaller, more efficient on the resources and should make your life easier :-)
 
@@ -126,3 +124,16 @@ If you comment out and set `DefaultRemote`, the tool will use this for defined j
     openqa-mq osd           # Monitor the SUSE internal openQA instance
 
 `openqa-mq` connects to the given RabbitMQ server and prints all received messages. It might be useful to grep for status updates of certain jobs or whatever else you want to monitor.
+
+# `openqa-revtui`
+
+## Usage
+
+    openqa-revtui [OPTIONS] [FLAVORS]
+    openqa-revtui -c config.toml
+
+`openqa-revtui` is a terminal user interface for helping the user to review the jobs of whole job groups. The typical usage is to run `openqa-revtui` with a predefined configuration toml file. The configuration file defines the remote openQA instance to monitor, job groups and additional query parameters, as well as settings to hide jobs that are not interesting for you (e.g. passing jobs).
+
+![Screenshot of a terminal running openqa-revtui showing four failed jobs in purple and a couple of empty job groups](doc/openqa-revtui.png)
+
+You find a set of example configurations in the [review](_review) subfolder.
