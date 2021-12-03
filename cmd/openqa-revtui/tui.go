@@ -276,6 +276,12 @@ func (tui *TUI) hideJob(job gopenqa.Job) bool {
 		if state == s {
 			return true
 		}
+		// Special reviewed keyword
+		if s == "reviewed" && state == "failed" {
+			if reviewed, found := tui.Model.reviewed[job.ID]; found && reviewed {
+				return true
+			}
+		}
 	}
 	return false
 }
