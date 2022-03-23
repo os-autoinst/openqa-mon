@@ -11,12 +11,13 @@ import (
 	"github.com/grisu48/gopenqa"
 )
 
-const VERSION = "0.3.1"
+const VERSION = "0.3.2"
 
 /* Group is a single configurable monitoring unit. A group contains all parameters that will be queried from openQA */
 type Group struct {
-	Name   string
-	Params map[string]string // Default parameters for query
+	Name        string
+	Params      map[string]string // Default parameters for query
+	MaxLifetime int64             // Ignore entries that are older than this value in seconds from now
 }
 
 /* Program configuration parameters */
@@ -96,6 +97,7 @@ func CreateGroup() Group {
 	var grp Group
 	grp.Params = make(map[string]string, 0)
 	grp.Params = cf.DefaultParams
+	grp.MaxLifetime = 0
 	return grp
 }
 
@@ -107,6 +109,21 @@ func hideJob(job gopenqa.Job) bool {
 		}
 	}
 	return false
+}
+
+func isJobTooOld(job gopenqa.Job, maxlifetime int64) bool {
+	if maxlifetime <= 0 {
+		return false
+	}
+	if job.Tfinished == "" {
+		return false
+	}
+	tfinished, err := time.Parse("2006-01-02T15:04:05", job.Tfinished)
+	if err != nil {
+		return false
+	}
+	deltaT := time.Now().Unix() - tfinished.Unix()
+	return deltaT > maxlifetime
 }
 
 func isReviewed(job gopenqa.Job, instance gopenqa.Instance) (bool, error) {
@@ -178,7 +195,10 @@ func FetchJobs(instance gopenqa.Instance) ([]gopenqa.Job, error) {
 			if job, err = FetchJob(job.ID, instance); err != nil {
 				return ret, err
 			} else {
-				ret = append(ret, job)
+				// Filter too old jobs
+				if !isJobTooOld(job, group.MaxLifetime) {
+					ret = append(ret, job)
+				}
 			}
 		}
 	}

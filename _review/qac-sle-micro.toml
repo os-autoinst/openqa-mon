@@ -1,0 +1,33 @@
+## Review template file for SLE micro test runs on OSD
+
+Instance = "https://openqa.suse.de"              # openQA instance to query
+RabbitMQ = "amqps://suse:suse@rabbit.suse.de"    # RabbitMQ instance to query
+RabbitMQTopic = "suse.openqa.job.done"           # RabbitMQ topic to query
+HideStatus = [ "scheduled", "passed", "softfailed", "running", "reviewed" ]           # Hide scheduled and passed jobs
+RefreshInterval = 60                             # Refresh from API once every minute
+MaxJobs = 20                                     # Max. job per group to display
+GroupBy = "groups"                               # Group by defined groups ("none" or "groups")
+
+
+## Latest JeOS images
+[[Groups]]
+Name = "Lastest SLE Micro"
+Params = { groupid = "410" }
+MaxLifetime = 86400
+[[Groups]]
+Name = "SLE Micro Staging"
+Params = { groupid = "329" }
+MaxLifetime = 86400
+
+## Maintenance updates
+
+[[Groups]]
+Name = "SLE Micro Maintenance Updates 5.1"
+Params = { groupid = "420", build = "%today%-1", version = "5.1" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "SLE Micro  Maintenance Updates 5.0"
+Params = { groupid = "420", build = "%today%-1", version = "5.0" }
+MaxLifetime = 86400
+
