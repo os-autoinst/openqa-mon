@@ -1,0 +1,93 @@
+## Review template file for container test runs on OSD
+
+Instance = "https://openqa.suse.de"              # openQA instance to query
+RabbitMQ = "amqps://suse:suse@rabbit.suse.de"    # RabbitMQ instance to query
+RabbitMQTopic = "suse.openqa.job.done"           # RabbitMQ topic to query
+HideStatus = [ "scheduled", "passed", "softfailed", "running", "reviewed" ]           # Hide scheduled and passed jobs
+RefreshInterval = 60                             # Refresh from API once every minute
+MaxJobs = 20                                     # Max. job per group to display
+GroupBy = "groups"                               # Group by defined groups ("none" or "groups")
+
+
+## Latest container test runs (Product-QA)
+[[Groups]]
+Name = "Lastest Host (15-SP4)"
+Params = { groupid = "313", build = "" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "Latest Image (15-SP4)"
+Params = { groupid = "395", build = "" }
+MaxLifetime = 86400
+
+## Maintenance updates
+
+[[Groups]]
+Name = "Containers Maintenance Updates 15-SP3"
+Params = { groupid = "417", build = "%today%-1", version = "15-SP3" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "Containers Maintenance Updates 15-SP2"
+Params = { groupid = "417", build = "%today%-1", version = "15-SP2" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "Containers Maintenance Updates 15-SP1"
+Params = { groupid = "417", build = "%today%-1", version = "15-SP1" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "Containers Maintenance Updates 12-SP5"
+Params = { groupid = "417", build = "%today%-1", version = "12-SP5" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "Containers Maintenance Updates 12-SP4"
+Params = { groupid = "417", build = "%today%-1", version = "12-SP4" }
+MaxLifetime = 86400
+
+## BCI
+
+[[Groups]]
+Name = "BCI 15-SP3"
+Params = { groupid = "409", build = "" }
+MaxLifetime = 86400
+
+## SLE Base Images
+
+[[Groups]]
+Name = "SLE Base Image Updates 15-SP3"
+Params = { groupid = "358", build = "" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "SLE Base Image Updates 15-SP2"
+Params = { groupid = "379", build = "" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "SLE Base Image Updates 15-SP1"
+Params = { groupid = "380", build = "" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "SLE Base Image Updates 15"
+Params = { groupid = "381", build = "" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "SLE Base Image Updates 12-SP5"
+Params = { groupid = "382", build = "" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "SLE Base Image Updates 12-SP4"
+Params = { groupid = "383", build = "" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "SLE Base Image Updates 12-SP3"
+Params = { groupid = "384", build = "" }
+MaxLifetime = 86400
+

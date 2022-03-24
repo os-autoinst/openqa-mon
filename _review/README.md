@@ -5,11 +5,15 @@ This directory contains example configuration files for `openqa-revtui`
 * [opensuse-microos.toml](opensuse-microos.toml) - Review template for openSUSE MicroOS test runs
 * [opensuse-tumbleweed.toml](opensuse-tumbleweed.toml) - Review template for openSUSE Tumbleweed test runs
 
-## SLES templates
+## SLES templates for QAC
 
-* [publiccloud.toml](publiccloud.toml) - Review template for SLES PublicCloud test runs
-* [containers.yoml](containers.toml) - Review template for SLES container test runs
-* [sle-base-images.toml](sle-base-images.toml) - Review template for SLE Base image test runs
+Find a selection of templates for the QAC squad
+
+* [qac-publiccloud.toml](qac-publiccloud.toml) - Review template for SLES PublicCloud test runs
+* [qac-containers.toml](qac-containers.toml) - Review template for SLES container test runs (including BCI)
+* [qac-jeos.toml](qac-jeos.toml) - Review template for SLE JeOS images
+* [qac-sle-micro.toml](qac-sle-micro.toml) - Review template for SLE Micro
+* [qac-sle-wsl.toml](qac-sle-wsl.toml) - Review template for SLE WSL images
 
 ## Create a TODO template
 
