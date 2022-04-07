@@ -22,6 +22,11 @@ MaxLifetime = 86400
 ## Maintenance updates
 
 [[Groups]]
+Name = "SLE Micro Maintenance Updates 5.2"
+Params = { groupid = "420", build = "%today%-1", version = "5.2" }
+MaxLifetime = 86400
+
+[[Groups]]
 Name = "SLE Micro Maintenance Updates 5.1"
 Params = { groupid = "420", build = "%today%-1", version = "5.1" }
 MaxLifetime = 86400
