@@ -11,12 +11,12 @@ GroupBy = "groups"                               # Group by defined groups ("non
 
 ## Latest container test runs (Product-QA)
 [[Groups]]
-Name = "Lastest Host (15-SP4)"
+Name = "Containers/SLE15 (15-SP4)"
 Params = { groupid = "313", build = "" }
 MaxLifetime = 86400
 
 [[Groups]]
-Name = "Latest Image (15-SP4)"
+Name = "Containers/BCI (15-SP4)"
 Params = { groupid = "395", build = "" }
 MaxLifetime = 86400
 
@@ -24,33 +24,38 @@ MaxLifetime = 86400
 
 [[Groups]]
 Name = "Containers Maintenance Updates 15-SP3"
-Params = { groupid = "417", build = "%today%-1", version = "15-SP3" }
+Params = { groupid = "417", build = "%yesterday%-1", version="15-SP3" }
 MaxLifetime = 86400
 
 [[Groups]]
 Name = "Containers Maintenance Updates 15-SP2"
-Params = { groupid = "417", build = "%today%-1", version = "15-SP2" }
+Params = { groupid = "417", build = "%yesterday%-1", version="15-SP2" }
 MaxLifetime = 86400
 
 [[Groups]]
 Name = "Containers Maintenance Updates 15-SP1"
-Params = { groupid = "417", build = "%today%-1", version = "15-SP1" }
+Params = { groupid = "417", build = "%yesterday%-1", version="15-SP1" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "Containers Maintenance Updates 15"
+Params = { groupid = "417", build = "%yesterday%-1", version="15" }
 MaxLifetime = 86400
 
 [[Groups]]
 Name = "Containers Maintenance Updates 12-SP5"
-Params = { groupid = "417", build = "%today%-1", version = "12-SP5" }
+Params = { groupid = "417", build = "%yesterday%-1", version="12-SP5" }
 MaxLifetime = 86400
 
 [[Groups]]
 Name = "Containers Maintenance Updates 12-SP4"
-Params = { groupid = "417", build = "%today%-1", version = "12-SP4" }
+Params = { groupid = "417", build = "%yesterday%-1", version="12-SP4" }
 MaxLifetime = 86400
 
 ## BCI
 
 [[Groups]]
-Name = "BCI 15-SP3"
+Name = "BCI"
 Params = { groupid = "409", build = "" }
 MaxLifetime = 86400
 
