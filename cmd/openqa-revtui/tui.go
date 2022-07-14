@@ -522,7 +522,7 @@ func (tui *TUI) formatJobLine(job gopenqa.Job, width int) string {
 		cname := job.Name
 		nName := len(cname)
 		if width < 89+nName {
-			cname = cname[:width-89]
+			cname = cname[:width-90]
 		}
 		return fmt.Sprintf("%s%20s%s    %8d %s%-12s%s %40s | %s", c1, tStr, ANSI_RESET, job.ID, c2, state, ANSI_RESET+ANSI_WHITE, job.Link, cname)
 	} else if width > 60 {
