@@ -11,16 +11,56 @@ GroupBy = "groups"                               # Group by defined groups ("non
 
 ## Latest container test runs (Product-QA)
 [[Groups]]
-Name = "Containers/SLE15 (15-SP4)"
+Name = "SLE 15 / Containers"
 Params = { groupid = "313", build = "" }
 MaxLifetime = 86400
 
 [[Groups]]
-Name = "Containers/BCI (15-SP4)"
+Name = "Containers / SLE Base Image Updates 15-SP4"
 Params = { groupid = "395", build = "" }
 MaxLifetime = 86400
 
+[[Groups]]
+Name = "Containers / SLE Base Image Updates 15-SP3"
+Params = { groupid = "378", build = "" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "Containers / SLE Base Image Updates 15-SP2"
+Params = { groupid = "379", build = "" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "Containers / SLE Base Image Updates 15-SP1"
+Params = { groupid = "380", build = "" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "Containers / SLE Base Image Updates 15"
+Params = { groupid = "381", build = "" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "Containers / SLE Base Image Updates 12-SP5"
+Params = { groupid = "382", build = "" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "Containers / SLE Base Image Updates 12-SP4"
+Params = { groupid = "383", build = "" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "Containers / SLE Base Image Updates 12-SP3"
+Params = { groupid = "384", build = "" }
+MaxLifetime = 86400
+
 ## Maintenance updates
+
+[[Groups]]
+Name = "Containers Maintenance Updates 15-SP4"
+Params = { groupid = "417", build = "%yesterday%-1", version="15-SP4" }
+MaxLifetime = 86400
 
 [[Groups]]
 Name = "Containers Maintenance Updates 15-SP3"
@@ -55,15 +95,40 @@ MaxLifetime = 86400
 ## BCI
 
 [[Groups]]
-Name = "BCI"
-Params = { groupid = "409", build = "" }
+Name = "Containers / Base Images 15-SP4"
+Params = { groupid = "443", build = "" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "Containers / Base Images 15-SP3"
+Params = { groupid = "442", build = "" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "Containers / Language Images"
+Params = { groupid = "444", build = "" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "Containers / Application Images"
+Params = { groupid = "445", build = "" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "Containers / BCI Repo"
+Params = { groupid = "428", build = "" }
 MaxLifetime = 86400
 
 ## SLE Base Images
 
 [[Groups]]
+Name = "SLE Base Image Updates 15-SP4"
+Params = { groupid = "395", build = "" }
+MaxLifetime = 86400
+
+[[Groups]]
 Name = "SLE Base Image Updates 15-SP3"
-Params = { groupid = "358", build = "" }
+Params = { groupid = "378", build = "" }
 MaxLifetime = 86400
 
 [[Groups]]
@@ -96,3 +161,14 @@ Name = "SLE Base Image Updates 12-SP3"
 Params = { groupid = "384", build = "" }
 MaxLifetime = 86400
 
+[[Groups]]
+Name = "SLE Micro for Rancher image"
+Params = { groupid = "449", build = "" }
+MaxLifetime = 86400
+
+# Create HDD
+
+[[Groups]]
+Name = "Containers / Create HDD"
+Params = { groupid = "377", build = "" }
+MaxLifetime = 86400

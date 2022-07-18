@@ -11,27 +11,29 @@ GroupBy = "groups"                                                        # Grou
 DefaultParams = { distri = "sle" }                                        # Set of default parameters
 
 # Define publiccloud groups based on their flavor
+# Maintenance Updates
+
 [[Groups]]
 Name = "AZURE-Basic-Updates"
 Params = { flavor = "AZURE-Basic-Updates", build = "%yesterday%-1" }
 [[Groups]]
-Name = "AZURE-Basic-gen2-Updates"
-Params = { flavor = "AZURE-Basic-gen2-Updates", build = "%yesterday%-1" }
-[[Groups]]
 Name = "AZURE-Standard-Updates"
 Params = { flavor = "AZURE-Standard-Updates", build = "%yesterday%-1" }
-[[Groups]]
-Name = "AZURE-Standard-gen2-Updates"
-Params = { flavor = "AZURE-Standard-gen2-Updates", build = "%yesterday%-1" }
 [[Groups]]
 Name = "AZURE-BYOS-Updates"
 Params = { flavor = "AZURE-BYOS-Updates", build = "%yesterday%-1" }
 [[Groups]]
-Name = "AZURE-BYOS-gen2-Updates"
-Params = { flavor = "AZURE-BYOS-gen2-Updates", build = "%yesterday%-1" }
+Name = "AZURE-CHOST-BYOS-Updates"
+Params = { flavor = "AZURE-CHOST-BYOS-Updates", build = "%yesterday%-1" }
 [[Groups]]
 Name = "EC2-BYOS-Updates"
 Params = { flavor = "EC2-BYOS-Updates", build = "%yesterday%-1" }
+[[Groups]]
+Name = "EC2-CHOST-BYOS-Updates"
+Params = { flavor = "EC2-CHOST-BYOS-Updates", build = "%yesterday%-1" }
+[[Groups]]
+Name = "EC2-BYOS-BAREMETAL-Updates"
+Params = { flavor = "EC2-BYOS-BAREMETAL-Updates", build = "%yesterday%-1" }
 [[Groups]]
 Name = "EC2-BYOS-ARM-Updates"
 Params = { flavor = "EC2-BYOS-ARM-Updates", build = "%yesterday%-1" }
@@ -47,4 +49,72 @@ Params = { flavor = "GCE-Updates", build = "%yesterday%-1" }
 [[Groups]]
 Name = "GCE-BYOS-Updates"
 Params = { flavor = "GCE-BYOS-Updates", build = "%yesterday%-1" }
+[[Groups]]
+Name = "GCE-CHOST-BYOS-Updates"
+Params = { flavor = "GCE-CHOST-BYOS-Updates", build = "%yesterday%-1" }
 
+# CLI Tools
+
+[[Groups]]
+Name = "Publiccloud CLI Tools"
+Params = { flavor ="Server-DVD-Updates", groupid = "427", build = "" }
+MaxLifetime = 86400
+
+# Incidents
+
+[[Groups]]
+Name = "Azure-BYOS-Incidents"
+Params = { flavor = "Azure-BYOS-Incidents", build = "" }
+MaxLifetime = 86400
+[[Groups]]
+Name = "Azure-Incidents"
+Params = { flavor = "Azure-Incidents", build = "" }
+MaxLifetime = 86400
+[[Groups]]
+Name = "EC2-Incidents"
+Params = { flavor = "EC2-Incidents", build = "" }
+MaxLifetime = 86400
+[[Groups]]
+Name = "EC2-BYOS-Incidents"
+Params = { flavor = "EC2-BYOS-Incidents", build = "" }
+MaxLifetime = 86400
+[[Groups]]
+Name = "EC2-ARM-Incidents"
+Params = { flavor = "EC2-ARM-Incidents", build = "" }
+MaxLifetime = 86400
+[[Groups]]
+Name = "EC2-ARM-BYOS-Incidents"
+Params = { flavor = "EC2-ARM-BYOS-Incidents", build = "" }
+MaxLifetime = 86400
+[[Groups]]
+Name = "GCE-Incidents"
+Params = { flavor = "GCE-Incidents", build = "" }
+MaxLifetime = 86400
+[[Groups]]
+Name = "GCE-BYOS-Incidents"
+Params = { flavor = "GCE-BYOS-Incidents", build = "" }
+MaxLifetime = 86400
+
+# Latest
+
+[[Groups]]
+Name = "Azure Latest"
+Params = { groupid = "219", build = "" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "GCE Latest"
+Params = { groupid = "275", build = "" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "EC2 Latest"
+Params = { groupid = "274", build = "" }
+MaxLifetime = 86400
+
+# Create HDD
+
+[[Groups]]
+Name = "Create HDD"
+Params = { groupid = "276", build = "" }
+MaxLifetime = 86400
