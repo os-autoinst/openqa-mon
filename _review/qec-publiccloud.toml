@@ -47,4 +47,15 @@ Params = { flavor = "GCE-Updates", build = "%yesterday%-1" }
 [[Groups]]
 Name = "GCE-BYOS-Updates"
 Params = { flavor = "GCE-BYOS-Updates", build = "%yesterday%-1" }
-
+[[Groups]]
+Name = "Azure-BYOS-Incidents"
+Params = { flavor = "Azure-BYOS-Incidents", build = "" }
+[[Groups]]
+Name = "EC2-ARM-BYOS-Incidents"
+Params = { flavor = "EC2-ARM-BYOS-Incidents", build = "" }
+[[Groups]]
+Name = "EC2-BYOS-Incidents"
+Params = { flavor = "EC2-BYOS-Incidents", build = "" }
+[[Groups]]
+Name = "GCE-BYOS-Incidents"
+Params = { flavor = "GCE-BYOS-Incidents", build = "" }
