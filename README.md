@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.com/grisu48/openqa-mon.svg?branch=master)](https://travis-ci.com/grisu48/openqa-mon)
+[![openqa-mon](https://github.com/grisu48/openqa-mon/actions/workflows/openqa-mon.yml/badge.svg)](https://github.com/grisu48/openqa-mon/actions/workflows/openqa-mon.yml)
 
 Simple CLI monitoring utilities for [openQA](https://open.qa).
 This project now consists of three programs:
