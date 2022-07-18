@@ -19,9 +19,7 @@ openqa-revtui-static: cmd/openqa-revtui/openqa-revtui.go cmd/openqa-revtui/tui.g
 	CGO_ENABLED=0 go build -a -ldflags '-extldflags "-static"' -o openqa-revtui $^
 
 requirements:
-	go get github.com/BurntSushi/toml
-	go get github.com/grisu48/gopenqa
-	go get github.com/streadway/amqp
+	go get ./...
 
 install: openqa-mon openqa-mq openqa-revtui
 	install openqa-mon $(PREFIX)
