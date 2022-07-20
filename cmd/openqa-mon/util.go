@@ -53,6 +53,18 @@ func unique(a []int) []int {
 	return list
 }
 
+func unique64(a []int64) []int64 {
+	keys := make(map[int64]bool)
+	list := []int64{}
+	for _, entry := range a {
+		if _, value := keys[entry]; !value {
+			keys[entry] = true
+			list = append(list, entry)
+		}
+	}
+	return list
+}
+
 func containsInt(a []int, cmp int) bool {
 	for _, i := range a {
 		if i == cmp {
@@ -90,9 +102,17 @@ func createIntRange(min int, max int, offset int) []int {
 	return ret
 }
 
+func createInt64Range(min int64, max int64, offset int64) []int64 {
+	ret := make([]int64, 0)
+	for i := min; i <= max; i++ {
+		ret = append(ret, i+offset)
+	}
+	return ret
+}
+
 // parseJobIDs parses the given text for a valid job id ("[#]INTEGER[:]" and INTEGER > 0) or job id ranges (MIN..MAX). Returns the job id if valid or 0 on error
-func parseJobIDs(parseText string) []int {
-	ret := make([]int, 0)
+func parseJobIDs(parseText string) []int64 {
+	ret := make([]int64, 0)
 	// Search for range
 	i := strings.Index(parseText, "..")
 	if i > 0 {
@@ -104,7 +124,7 @@ func parseJobIDs(parseText string) []int {
 		if min > max {
 			min, max = max, min
 		}
-		return createIntRange(min, max, 0)
+		return createInt64Range(min, max, 0)
 	}
 	// Search for + (usage: jobID+3 returns [jobID,jobID+3])
 	i = strings.Index(parseText, "+")
@@ -115,13 +135,13 @@ func parseJobIDs(parseText string) []int {
 			return ret
 		}
 		steps, _ := strconv.Atoi(upper) // On errors it returns conveniently 0, so don't do error checking here
-		return createIntRange(0, steps, start)
+		return createInt64Range(0, int64(steps), start)
 	}
 
 	// Assume job ID set, which also covers single jobs IDs
 	split := strings.Split(parseText, ",")
 	for _, s := range split {
-		i = parseJobID(s)
+		i := parseJobID(s)
 		if i > 0 {
 			ret = append(ret, i)
 		}
@@ -130,7 +150,7 @@ func parseJobIDs(parseText string) []int {
 }
 
 // parseJobID parses the given text for a valid job id ("[.*#]INTEGER[:]" and INTEGER > 0). Returns the job id if valid or 0 on error
-func parseJobID(parseText string) int {
+func parseJobID(parseText string) int64 {
 	// Remove possible fragment in case the user dumped a part of a url
 	parseText = removeFragment(parseText)
 	// Remove : at the end
@@ -140,7 +160,7 @@ func parseJobID(parseText string) int {
 	if num, err := strconv.Atoi(parseText); err != nil || num <= 0 {
 		return 0
 	} else {
-		return num
+		return int64(num)
 	}
 }
 
@@ -156,7 +176,7 @@ func filterJobs(jobs []gopenqa.Job, f func(job gopenqa.Job) bool) []gopenqa.Job 
 	return jobs[:i]
 }
 
-func findJob(jobs []gopenqa.Job, id int) (gopenqa.Job, bool) {
+func findJob(jobs []gopenqa.Job, id int64) (gopenqa.Job, bool) {
 	for _, job := range jobs {
 		if job.ID == id {
 			return job, true

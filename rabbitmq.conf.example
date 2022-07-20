@@ -1,0 +1,23 @@
+## RabbitMQ configuration file
+## 
+## Configure hosts here for usage of RabbitMQ.
+## Instead of status pulling, openqa-mon will monitor status changes via RabbitMQ
+## 
+## This file should be in one of the following locations:
+## * /etc/openqa/openqamon-rabbitmq.conf (system-wide configuration)
+## * ~/.config/openqa/openqamon-rabbitmq.conf (custom configuration)
+##
+
+
+[openqa.opensuse.org]
+Remote = amqps://rabbit.opensuse.org
+Queue = opensuse.openqa
+Username = opensuse
+Password = opensuse
+
+[openqa.suse.de]
+Remote = amqps://rabbit.suse.de
+Queue = suse.openqa
+Username = suse
+Password = suse
+

@@ -11,6 +11,7 @@ import (
 	"unsafe"
 
 	"github.com/grisu48/gopenqa"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 // Declare ANSI color codes
@@ -199,8 +200,12 @@ func (m *TUIModel) SetJobs(jobs []gopenqa.Job) {
 }
 
 func (tui *TUI) Start() {
-	// disable input buffering
-	exec.Command("stty", "-F", "/dev/tty", "cbreak", "min", "1").Run()
+	// disable input buffering, if tty
+	if terminal.IsTerminal(int(os.Stdin.Fd())) {
+		exec.Command("stty", "-F", "/dev/tty", "cbreak", "min", "1").Run()
+	} else {
+		fmt.Fprintf(os.Stderr, "warning: running tui on a non-tty terminal\n")
+	}
 	go tui.readInput()
 	// Listen for terminal changes signal
 	go func() {
@@ -308,7 +313,7 @@ func (tui *TUI) Update() {
 		lines++
 	}
 	if tui.showHelp {
-		help := "?:Toggle help    r: Refresh    d:Toggle notifications    b:Toggle bell    +/-:Increase/Decrease refresh time"
+		help := "?:Toggle help    r: Refresh    d:Toggle notifications    b:Toggle bell    +/-:Modify refresh time    p:Toggle pause"
 		if len(tui.Model.HideStates) > 0 {
 			help += "    h:Toggle hide"
 		}

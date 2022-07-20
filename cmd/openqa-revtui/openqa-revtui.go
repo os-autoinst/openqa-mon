@@ -11,7 +11,7 @@ import (
 	"github.com/grisu48/gopenqa"
 )
 
-const VERSION = "0.3.3"
+const VERSION = "0.3.4"
 
 /* Group is a single configurable monitoring unit. A group contains all parameters that will be queried from openQA */
 type Group struct {
@@ -160,7 +160,7 @@ func FetchJobGroups(instance gopenqa.Instance) (map[int]gopenqa.JobGroup, error)
 }
 
 /* Get job or restarted current job of the given job ID */
-func FetchJob(id int, instance gopenqa.Instance) (gopenqa.Job, error) {
+func FetchJob(id int64, instance gopenqa.Instance) (gopenqa.Job, error) {
 	var job gopenqa.Job
 	for i := 0; i < 25; i++ { // Max recursion depth is 25
 		var err error
@@ -215,7 +215,7 @@ func rabbitRemote(remote string) string {
 }
 
 /** Try to update the given job, if it exists and if not the same. Returns the found job and true, if an update was successful */
-func updateJob(orig_id int, job gopenqa.Job, instance gopenqa.Instance) (gopenqa.Job, bool) {
+func updateJob(orig_id int64, job gopenqa.Job, instance gopenqa.Instance) (gopenqa.Job, bool) {
 	for i, j := range knownJobs {
 		if j.ID == orig_id {
 			if j.ID != job.ID || j.State != job.State || j.Result != job.Result {
@@ -235,7 +235,7 @@ func updateJobStatus(status gopenqa.JobStatus) (gopenqa.Job, bool) {
 	for i, j := range knownJobs {
 		if j.ID == status.ID {
 			knownJobs[i].State = "done"
-			knownJobs[i].Result = status.Result
+			knownJobs[i].Result = fmt.Sprintf("%s", status.Result)
 			return knownJobs[i], true
 		}
 	}
