@@ -9,31 +9,26 @@ MaxJobs = 20                                     # Max. job per group to display
 GroupBy = "groups"                               # Group by defined groups ("none" or "groups")
 
 
-## Latest JeOS images
+## Latest SLE Micro images
 [[Groups]]
-Name = "Lastest SLE Micro"
+Name = "Lastest SLE Micro (5.3)"
 Params = { groupid = "410" }
 MaxLifetime = 86400
-[[Groups]]
-Name = "SLE Micro Staging"
-Params = { groupid = "329" }
-MaxLifetime = 86400
-
 
 [[Groups]]
 Name = "SLEM 5.2 on Publiccloud"
 Params = { groupid = "413" }
 MaxLifetime = 86400
 
+[[Groups]]
+Name = "SLE Micro Toolbox updates"
+Params = { groupid = "451" }
+MaxLifetime = 86400
+
 ## Maintenance updates
 [[Groups]]
 Name = "SLE Micro Maintenance Updates 5.2"
 Params = { groupid = "420", build = "%yesterday%-1", version = "5.2" }
-MaxLifetime = 86400
-
-[[Groups]]
-Name = "SLE Micro Maintenance Updates 5.2"
-Params = { groupid = "420", build = "%today%-1", version = "5.2" }
 MaxLifetime = 86400
 
 [[Groups]]
