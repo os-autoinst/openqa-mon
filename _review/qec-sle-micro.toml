@@ -21,6 +21,11 @@ Params = { groupid = "413" }
 MaxLifetime = 86400
 
 [[Groups]]
+Name = "SLEM 5.3 on Publiccloud"
+Params = { groupid = "455" }
+MaxLifetime = 86400
+
+[[Groups]]
 Name = "SLE Micro Toolbox updates"
 Params = { groupid = "451" }
 MaxLifetime = 86400

@@ -35,14 +35,8 @@ Params = { flavor = "EC2-CHOST-BYOS-Updates", build = "%yesterday%-1" }
 Name = "EC2-BYOS-BAREMETAL-Updates"
 Params = { flavor = "EC2-BYOS-BAREMETAL-Updates", build = "%yesterday%-1" }
 [[Groups]]
-Name = "EC2-BYOS-ARM-Updates"
-Params = { flavor = "EC2-BYOS-ARM-Updates", build = "%yesterday%-1" }
-[[Groups]]
 Name = "EC2-Updates"
 Params = { flavor = "EC2-Updates", build = "%yesterday%-1" }
-[[Groups]]
-Name = "EC2-ARM-Updates"
-Params = { flavor = "EC2-ARM-Updates", build = "%yesterday%-1" }
 [[Groups]]
 Name = "GCE-Updates"
 Params = { flavor = "GCE-Updates", build = "%yesterday%-1" }
