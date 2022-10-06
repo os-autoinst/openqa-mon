@@ -157,8 +157,10 @@ func expandArguments(args []string) []string {
 				case 'c':
 					ret = append(ret, "--continuous")
 					// The next argument will be the number of seconds, add them here
-					ret = append(ret, args[i+1])
-					args[i+1] = ""
+					if i+1 < len(args) {
+						ret = append(ret, args[i+1])
+						args[i+1] = ""
+					}
 				case 'f':
 					ret = append(ret, "--follow")
 				case 'b':
