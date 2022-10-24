@@ -1,0 +1,45 @@
+## Review template file for QE-Core job groups in O3
+# See: https://confluence.suse.com/display/qasle/Bugbusters+and+Review+Shifts#BugbustersandReviewShifts-Links
+
+Instance = "https://openqa.opensuse.org"                                              # openQA instance to query
+RabbitMQ = "amqps://opensuse:opensuse@rabbit.opensuse.org"                            # RabbitMQ instance to query
+RabbitMQTopic = "opensuse.openqa.job.done"                                            # RabbitMQ topic to query
+HideStatus = [ "scheduled", "passed", "softfailed", "running", "reviewed" ]           # Hide scheduled and passed jobs
+RefreshInterval = 60                             # Refresh from API once every minute
+MaxJobs = 20                                     # Max. job per group to display
+GroupBy = "groups"                               # Group by defined groups ("none" or "groups")
+
+# Leap 15.4
+
+[[Groups]]
+Name = "openSUSE Leap 15.4 Updates"
+Params = { groupid = "98", build = "" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "openSUSE Leap 15.4 Incidents"
+Params = { groupid = "97", build = "" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "openSUSE Leap 15.4 Backports"
+Params = { groupid = "99", build = "" }
+MaxLifetime = 86400
+
+# Leap 15.3
+
+[[Groups]]
+Name = "openSUSE Leap 15.3 Updates"
+Params = { groupid = "80", build = "" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "openSUSE Leap 15.3 Incidents"
+Params = { groupid = "81", build = "" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "openSUSE Leap 15.3 Backports"
+Params = { groupid = "84", build = "" }
+MaxLifetime = 86400
+
