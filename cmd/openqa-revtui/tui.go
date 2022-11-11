@@ -334,7 +334,7 @@ func (tui *TUI) printJobsByGroup(width, height int) int {
 		jobs := groups[id]
 		statC := make(map[string]int, 0)
 		hidden := 0
-		lines = append(lines, fmt.Sprintf("===== %s ====================\n", grp.Name))
+		lines = append(lines, fmt.Sprintf("\n===== %s ====================", grp.Name))
 		for _, job := range jobs {
 			if !tui.hideJob(job) {
 				lines = append(lines, tui.formatJobLine(job, width))
