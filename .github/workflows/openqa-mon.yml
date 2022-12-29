@@ -13,9 +13,9 @@ jobs:
       - name: Setup go
         uses: actions/setup-go@v2
         with:
-          go-version: '1.14'
+          go-version: '1.19'
       - name: Install requirements
-        run: echo "No requirements"
+        run: go mod download
       - name: Build openqa-mon
         run: make openqa-mon
 
@@ -28,9 +28,9 @@ jobs:
       - name: Setup go
         uses: actions/setup-go@v2
         with:
-          go-version: '1.14'
+          go-version: '1.19'
       - name: Install requirements
-        run: go get github.com/streadway/amqp
+        run: go mod download
       - name: Build openqa-mq
         run: make openqa-mq
 
@@ -43,11 +43,8 @@ jobs:
       - name: Setup go
         uses: actions/setup-go@v2
         with:
-          go-version: '1.14'
+          go-version: '1.19'
       - name: Install requirements
-        run: |
-          go get github.com/streadway/amqp
-          go get github.com/BurntSushi/toml
-          go get github.com/grisu48/gopenqa
+        run: go mod download
       - name: Build openqa-review
         run: make openqa-revtui

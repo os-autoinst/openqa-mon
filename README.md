@@ -114,6 +114,29 @@ Of course this also includes continuous monitoring for certain jobs
 
 If you comment out and set `DefaultRemote`, the tool will use this for defined job IDs or for displaying the job overview without specifying `REMOTE` as parameter.
 
+## RabbitMQ
+
+Since version 0.7.0, `openqa-mon` has experimental RabbitMQ support. When monitoring jobs from a host with a configured RabbitMQ server, `openqa-mon` will subscribe to the RabbitMQ and listen for job updates there instead of pulling job updates from the instance itself. This feature is by default disabled, unless activated via `--rabbitmq` or via the `RabbitMQ = true` setting in `~/.openqa-mon.conf`.
+
+For RabbitMQ to work, the RabbitMQ servers need to be configured in one of the following files:
+
+* `/etc/openqa/openqamon-rabbitmq.conf` (recommended for system-wide configurations, e.g. OSD and O3)
+* `~/.config/openqa/openqamon-rabbitmq.conf` (recommended for custom configurations, e.g. your own openQA instance)
+
+Alternatively, a custom file can be used using the `--rabbit FILE` program argument.
+
+A RabbitMQ configuration file is a ini-style file with the following syntax:
+
+```ini
+[openqa.opensuse.org]
+Remote = amqps://rabbit.opensuse.org
+Queue = opensuse.openqa
+Username = opensuse
+Password = opensuse
+```
+
+When RabbitMQ is enabled, `openqa-mon` will connect to all configured hosts. If all defined jobs have a corresponding RabbitMQ server, then the continuous monitoring will be paused  to avoid pulling. If at least one job has no corresponding RabbitMQ server configured, then polling will be still enabled.
+
 * * *
 
 # `openqa-mq`

@@ -65,7 +65,7 @@ func CreateTUI() TUI {
 	tui.showStatus = true
 	tui.Model.jobs = make([]gopenqa.Job, 0)
 	tui.Model.jobGroups = make(map[int]gopenqa.JobGroup, 0)
-	tui.Model.reviewed = make(map[int]bool, 0)
+	tui.Model.reviewed = make(map[int64]bool, 0)
 	return tui
 }
 
@@ -76,7 +76,7 @@ type TUIModel struct {
 	mutex      sync.Mutex               // Access mutex to the model
 	offset     int                      // Line offset for printing
 	printLines int                      // Lines that would need to be printed, needed for offset handling
-	reviewed   map[int]bool             // Indicating if failed jobs are reviewed
+	reviewed   map[int64]bool           // Indicating if failed jobs are reviewed
 }
 
 func (tui *TUI) visibleJobCount() int {
@@ -89,11 +89,11 @@ func (tui *TUI) visibleJobCount() int {
 	return counter
 }
 
-func (model *TUIModel) SetReviewed(job int, reviewed bool) {
+func (model *TUIModel) SetReviewed(job int64, reviewed bool) {
 	model.reviewed[job] = reviewed
 }
 
-func (model *TUIModel) isReviewed(job int) bool {
+func (model *TUIModel) isReviewed(job int64) bool {
 	reviewed, found := model.reviewed[job]
 	return found && reviewed
 }
