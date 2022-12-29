@@ -1,93 +1,59 @@
 ## Review template file for PublicCloud test runs on OSD
 
-Instance = "https://openqa.suse.de"                                       # openQA instance to query
-RabbitMQ = "amqps://suse:suse@rabbit.suse.de"                             # RabbitMQ instance to query
-RabbitMQTopic = "suse.openqa.job.done"                                    # RabbitMQ topic to query
+Instance = "https://openqa.suse.de"              # openQA instance to query
+RabbitMQ = "amqps://suse:suse@rabbit.suse.de"    # RabbitMQ instance to query
+RabbitMQTopic = "suse.openqa.job.done"           # RabbitMQ topic to query
 HideStatus = [ "scheduled", "passed", "softfailed", "cancelled", "skipped", "running", "reviewed" ]           # Hide scheduled and passed jobs
-Notify = false                                                            # No notifications by default
-RefreshInterval = 60                                                      # Refresh from API once every minute
-MaxJobs = 20                                                              # Max. job per group to display
-GroupBy = "groups"                                                        # Group by defined groups ("none" or "groups")
-DefaultParams = { distri = "sle" }                                        # Set of default parameters
+Notify = false                                   # No notifications by default
+RefreshInterval = 60                             # Refresh from API once every minute
+MaxJobs = 20                                     # Max. job per group to display
+GroupBy = "groups"                               # Group by defined groups ("none" or "groups")
+DefaultParams = { distri = "sle" }               # Set of default parameters
 
-# Define publiccloud groups based on their flavor
-# Maintenance Updates
+# Incidents
 
+[[Groups]]
+Name = "Public Cloud Incident test runs"
+Params = { groupid = "430" }
+MaxLifetime = 86400
+
+# Define publiccloud aggregate runs based on their flavor
 [[Groups]]
 Name = "AZURE-Basic-Updates"
 Params = { flavor = "AZURE-Basic-Updates", build = "%yesterday%-1" }
 [[Groups]]
+Name = "AZURE-Basic-gen2-Updates"
+Params = { flavor = "AZURE-Basic-gen2-Updates", build = "%yesterday%-1" }
+[[Groups]]
 Name = "AZURE-Standard-Updates"
 Params = { flavor = "AZURE-Standard-Updates", build = "%yesterday%-1" }
+[[Groups]]
+Name = "AZURE-Standard-gen2-Updates"
+Params = { flavor = "AZURE-Standard-gen2-Updates", build = "%yesterday%-1" }
 [[Groups]]
 Name = "AZURE-BYOS-Updates"
 Params = { flavor = "AZURE-BYOS-Updates", build = "%yesterday%-1" }
 [[Groups]]
-Name = "AZURE-CHOST-BYOS-Updates"
-Params = { flavor = "AZURE-CHOST-BYOS-Updates", build = "%yesterday%-1" }
+Name = "AZURE-BYOS-gen2-Updates"
+Params = { flavor = "AZURE-BYOS-gen2-Updates", build = "%yesterday%-1" }
 [[Groups]]
 Name = "EC2-BYOS-Updates"
 Params = { flavor = "EC2-BYOS-Updates", build = "%yesterday%-1" }
 [[Groups]]
-Name = "EC2-CHOST-BYOS-Updates"
-Params = { flavor = "EC2-CHOST-BYOS-Updates", build = "%yesterday%-1" }
-[[Groups]]
-Name = "EC2-BYOS-BAREMETAL-Updates"
-Params = { flavor = "EC2-BYOS-BAREMETAL-Updates", build = "%yesterday%-1" }
+Name = "EC2-BYOS-ARM-Updates"
+Params = { flavor = "EC2-BYOS-ARM-Updates", build = "%yesterday%-1" }
 [[Groups]]
 Name = "EC2-Updates"
 Params = { flavor = "EC2-Updates", build = "%yesterday%-1" }
+[[Groups]]
+Name = "EC2-ARM-Updates"
+Params = { flavor = "EC2-ARM-Updates", build = "%yesterday%-1" }
 [[Groups]]
 Name = "GCE-Updates"
 Params = { flavor = "GCE-Updates", build = "%yesterday%-1" }
 [[Groups]]
 Name = "GCE-BYOS-Updates"
 Params = { flavor = "GCE-BYOS-Updates", build = "%yesterday%-1" }
-[[Groups]]
-Name = "GCE-CHOST-BYOS-Updates"
-Params = { flavor = "GCE-CHOST-BYOS-Updates", build = "%yesterday%-1" }
-
-# CLI Tools
-
-[[Groups]]
-Name = "Publiccloud CLI Tools"
-Params = { flavor ="Server-DVD-Updates", groupid = "427", build = "" }
-MaxLifetime = 86400
-
-# Incidents
-
-[[Groups]]
-Name = "Azure-BYOS-Incidents"
-Params = { flavor = "Azure-BYOS-Incidents", build = "" }
-MaxLifetime = 86400
-[[Groups]]
-Name = "Azure-Incidents"
-Params = { flavor = "Azure-Incidents", build = "" }
-MaxLifetime = 86400
-[[Groups]]
-Name = "EC2-Incidents"
-Params = { flavor = "EC2-Incidents", build = "" }
-MaxLifetime = 86400
-[[Groups]]
-Name = "EC2-BYOS-Incidents"
-Params = { flavor = "EC2-BYOS-Incidents", build = "" }
-MaxLifetime = 86400
-[[Groups]]
-Name = "EC2-ARM-Incidents"
-Params = { flavor = "EC2-ARM-Incidents", build = "" }
-MaxLifetime = 86400
-[[Groups]]
-Name = "EC2-ARM-BYOS-Incidents"
-Params = { flavor = "EC2-ARM-BYOS-Incidents", build = "" }
-MaxLifetime = 86400
-[[Groups]]
-Name = "GCE-Incidents"
-Params = { flavor = "GCE-Incidents", build = "" }
-MaxLifetime = 86400
-[[Groups]]
-Name = "GCE-BYOS-Incidents"
-Params = { flavor = "GCE-BYOS-Incidents", build = "" }
-MaxLifetime = 86400
 
 # Latest
 
@@ -112,3 +78,4 @@ MaxLifetime = 86400
 Name = "Create HDD"
 Params = { groupid = "276", build = "" }
 MaxLifetime = 86400
+
