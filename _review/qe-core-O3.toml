@@ -9,6 +9,13 @@ RefreshInterval = 60                             # Refresh from API once every m
 MaxJobs = 20                                     # Max. job per group to display
 GroupBy = "groups"                               # Group by defined groups ("none" or "groups")
 
+# Tumbleweed
+
+[[Groups]]
+Name = "Tumbleweed"
+Params = { groupid = "1", build = "" }
+MaxLifetime = 86400
+
 # Leap 15.4
 
 [[Groups]]
@@ -24,22 +31,5 @@ MaxLifetime = 86400
 [[Groups]]
 Name = "openSUSE Leap 15.4 Backports"
 Params = { groupid = "99", build = "" }
-MaxLifetime = 86400
-
-# Leap 15.3
-
-[[Groups]]
-Name = "openSUSE Leap 15.3 Updates"
-Params = { groupid = "80", build = "" }
-MaxLifetime = 86400
-
-[[Groups]]
-Name = "openSUSE Leap 15.3 Incidents"
-Params = { groupid = "81", build = "" }
-MaxLifetime = 86400
-
-[[Groups]]
-Name = "openSUSE Leap 15.3 Backports"
-Params = { groupid = "84", build = "" }
 MaxLifetime = 86400
 
