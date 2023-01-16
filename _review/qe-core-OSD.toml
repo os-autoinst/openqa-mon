@@ -19,22 +19,22 @@ MaxLifetime = 86400
 # Maintenance Single Incidents
 
 [[Groups]]
-Name = "Maintenance: SLE 15 SP4 Incidents"
+Name = "Maintenance: SLE 15-SP4 Incidents"
 Params = { groupid = "439", build = "" }
 MaxLifetime = 86400
 
 [[Groups]]
-Name = "Maintenance: SLE 15 SP3 Incidents"
+Name = "Maintenance: SLE 15-SP3 Incidents"
 Params = { groupid = "367", build = "" }
 MaxLifetime = 86400
 
 [[Groups]]
-Name = "Maintenance: SLE 15 SP2 Incidents"
+Name = "Maintenance: SLE 15-SP2 Incidents"
 Params = { groupid = "306", build = "" }
 MaxLifetime = 86400
 
 [[Groups]]
-Name = "Maintenance: SLE 15 SP1 Incidents"
+Name = "Maintenance: SLE 15-SP1 Incidents"
 Params = { groupid = "233", build = "" }
 MaxLifetime = 86400
 
@@ -44,22 +44,22 @@ Params = { groupid = "159", build = "" }
 MaxLifetime = 86400
 
 [[Groups]]
-Name = "Maintenance: SLE 12 SP5 Incidents"
+Name = "Maintenance: SLE 12-SP5 Incidents"
 Params = { groupid = "282", build = "" }
 MaxLifetime = 86400
 
 [[Groups]]
-Name = "Maintenance: SLE 12 SP4 Incidents"
+Name = "Maintenance: SLE 12-SP4 Incidents"
 Params = { groupid = "215", build = "" }
 MaxLifetime = 86400
 
 [[Groups]]
-Name = "Maintenance: SLE 12 SP3 Incidents"
+Name = "Maintenance: SLE 12-SP3 Incidents"
 Params = { groupid = "106", build = "" }
 MaxLifetime = 86400
 
 [[Groups]]
-Name = "Maintenance: SLE 12 SP2 Incidents"
+Name = "Maintenance: SLE 12-SP2 Incidents"
 Params = { groupid = "53", build = "" }
 MaxLifetime = 86400
 
