@@ -1,15 +1,15 @@
-## Review template file for PublicCloud test runs on OSD
+## Review template file for MicroOS test runs on O3
 
-Instance = "https://openqa.opensuse.org"                      # openQA instance to query
-RabbitMQ = "amqps://opensuse:opensuse@rabbit.opensuse.org"    # RabbitMQ instance to query
-RabbitMQTopic = "opensuse.openqa.job.done"                    # RabbitMQ topic to query
-HideStatus = [ "scheduled","passed","assigned" ]              # Hide scheduled, passed and assigned jobs
-RefreshInterval = 60                                          # Refresh from API once every minute
-MaxJobs = 20                                                  # Max. job per group to display
-GroupBy = "groups"                                            # Group by defined groups ("none" or "groups")
-DefaultParams = { distri="microos", version = "Tumbleweed" }  # Set of default parameters
+Instance = "https://openqa.opensuse.org"                                              # openQA instance to query
+RabbitMQ = "amqps://opensuse:opensuse@rabbit.opensuse.org"                            # RabbitMQ instance to query
+RabbitMQTopic = "opensuse.openqa.job.done"                                            # RabbitMQ topic to query
+HideStatus = [ "scheduled","passed","assigned","running","softfailed","reviewed" ]    # Hide scheduled, passed, assigned and reviewed jobs
+RefreshInterval = 60                                                                  # Refresh from API once every minute
+MaxJobs = 20                                                                          # Max. job per group to display
+GroupBy = "groups"                                                                    # Group by defined groups ("none" or "groups")
+DefaultParams = { distri="microos", version = "Tumbleweed" }                          # Set of default parameters
 
-## Define container groups by their group ID
+## Define job groups
 [[Groups]]
 Name = "MicroOS Image"
 Params = { flavor = "MicroOS-Image" }
