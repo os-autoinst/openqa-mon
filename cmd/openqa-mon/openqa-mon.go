@@ -41,7 +41,7 @@ func printHelp() {
 	fmt.Println("  -j, --jobs JOBS                  Display information only for the given JOBS")
 	fmt.Println("                                   JOBS can be a single job id, a comma separated list (e.g. 42,43,1337)")
 	fmt.Println("                                   or a job range (1335..1339 or 1335+4)")
-	fmt.Println("  -c,--continous SECONDS           Continously display stats, use rabbitmq if available otherwise status pulling")
+	fmt.Println("  -c,--continuous SECONDS          Continuously display stats, use rabbitmq if available otherwise status pulling")
 	fmt.Println("  -e,--exit                        Exit openqa-mon when all jobs are done (only in continuous mode)")
 	fmt.Println("                                   Return code is 0 if all jobs are passed or softfailing, 1 otherwise.")
 	fmt.Println("  -b,--bell                        Bell notification on job status changes")
