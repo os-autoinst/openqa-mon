@@ -102,18 +102,19 @@ func jobsDone(jobs []gopenqa.Job) bool {
 	return true
 }
 
-/* checks if the set of jobs contains failed jobs */
+/* checks if the set of jobs contains failed jobs. This includes incomplete jobs */
 func getFailedJobs(jobs []gopenqa.Job) []gopenqa.Job {
 	ret := make([]gopenqa.Job, 0)
 	for _, job := range jobs {
 		// We only consider completed jobs
 		if job.State == "cancelled" {
 			ret = append(ret, job)
-		} else if job.State != "done" {
+		} else if job.State == "done" {
 			// Assume a job is failed, if it is not passed or softfailed
 			if job.Result != "passed" && job.Result != "softfail" {
 				ret = append(ret, job)
 			}
+			// Note: incomplete jobs also have state "done". They are also considered failed
 		}
 	}
 	return ret
