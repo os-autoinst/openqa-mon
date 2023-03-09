@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 	"unicode"
@@ -360,14 +361,34 @@ func registerRabbitMQ(tui *TUI, openqaURI string, remote string, topics []string
 	if err != nil {
 		return rmq, fmt.Errorf("RabbitMQ connection error: %s", err)
 	}
+
+	var reconnectMutex sync.Mutex
+
 	for _, topic := range topics {
 		sub, err := rmq.Subscribe(topic)
 		if err != nil {
 			return rmq, fmt.Errorf("RabbitMQ subscribe error: %s", err)
 		}
 		// Receive function
-		go func() {
+		go func(topic string) {
 			for {
+				// Reconnect to RabbitMQ, if the connection is lost
+				if !rmq.Connected() {
+					reconnectMutex.Lock()
+					// check again after aquiring the mutex
+					if !rmq.Connected() {
+						// Reconnect
+						if err := rmq.Reconnect(); err == nil {
+							sub, _ = rmq.Subscribe(topic)
+						}
+					}
+					reconnectMutex.Unlock()
+					if !rmq.Connected() {
+						time.Sleep(1 * time.Second) // Prevent hogging
+						continue
+					}
+				}
+
 				if status, err := sub.ReceiveJobStatus(); err != nil {
 					// Receive failed
 					tui.SetStatus(fmt.Sprintf("rabbitmq recv error: %s", err))
@@ -402,7 +423,7 @@ func registerRabbitMQ(tui *TUI, openqaURI string, remote string, topics []string
 					}
 				}
 			}
-		}()
+		}(topic)
 	}
 	return rmq, nil
 }

@@ -378,6 +378,20 @@ func registerRabbitMQ(tui *TUI, remote, topic string) (gopenqa.RabbitMQ, error) 
 	// Receive function
 	go func() {
 		for {
+			// Reconnect to RabbitMQ, if the connection is lost
+			if !rmq.Connected() {
+				// Reconnect
+				if err := rmq.Reconnect(); err == nil {
+					sub, _ = rmq.Subscribe(topic)
+				}
+
+				// Verify
+				if !rmq.Connected() {
+					time.Sleep(1 * time.Second) // Prevent hogging
+					continue
+				}
+			}
+
 			if status, err := sub.ReceiveJobStatus(); err == nil {
 				now := time.Now()
 				// Update job, if present
