@@ -577,6 +577,13 @@ func (tui *TUI) formatJobLine(job gopenqa.Job, width int) string {
 		}
 	}
 
+	// Crop the state field, if necessary
+	if state == "timeout_exceeded" {
+		state = "timeout"
+	} else if len(state) > 12 {
+		state = state[0:12]
+	}
+
 	// Full status line requires 89 characters (20+4+8+1+12+1+40+3) plus name
 	if width > 90 {
 		// Crop the name, if necessary

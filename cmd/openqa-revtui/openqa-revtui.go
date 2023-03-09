@@ -350,7 +350,6 @@ func parseProgramArgs() error {
 }
 
 func printUsage() {
-	// TODO: Write this
 	fmt.Printf("Usage: %s [OPTIONS] [FLAVORS]\n", os.Args[0])
 	fmt.Println("")
 	fmt.Println("OPTIONS")
