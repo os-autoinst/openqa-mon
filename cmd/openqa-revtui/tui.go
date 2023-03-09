@@ -54,6 +54,8 @@ type TUI struct {
 	showTracker bool     // Show tracker
 	showStatus  bool     // Show status line
 	sorting     int      // Sorting method - 0: none, 1 - by job group
+
+	screensize int // Lines per screen
 }
 
 func CreateTUI() TUI {
@@ -175,7 +177,6 @@ func (tui *TUI) SetHeader(header string) {
 }
 
 func (tui *TUI) readInput() {
-	// TODO: Find a way to read raw without ENTER
 	var b []byte = make([]byte, 1)
 	var p = make([]byte, 3) // History, needed for special keys
 	for {
@@ -197,8 +198,7 @@ func (tui *TUI) readInput() {
 				tui.Update()
 			}
 		} else if p[1] == 91 && k == 66 { // Arrow down
-			_, height := terminalSize()
-			max := max(0, (tui.Model.printLines - height + 7))
+			max := max(0, (tui.Model.printLines - tui.screensize))
 			if tui.Model.offset < max {
 				tui.Model.offset++
 				tui.Update()
@@ -206,17 +206,14 @@ func (tui *TUI) readInput() {
 		} else if p[2] == 27 && p[1] == 91 && p[0] == 72 { // home
 			tui.Model.offset = 0
 		} else if p[2] == 27 && p[1] == 91 && p[0] == 70 { // end
-			_, height := terminalSize()
-			tui.Model.offset = max(0, (tui.Model.printLines - height + 7))
+			tui.Model.offset = max(0, (tui.Model.printLines - tui.screensize))
 		} else if p[2] == 27 && p[1] == 91 && p[0] == 53 { // page up
-			_, height := terminalSize()
-			scroll := max(1, height-5)
-			tui.Model.offset = max(0, tui.Model.offset-scroll)
+			// Always leave one line overlap for better orientation
+			tui.Model.offset = max(0, tui.Model.offset-tui.screensize+1)
 		} else if p[2] == 27 && p[1] == 91 && p[0] == 54 { // page down
-			_, height := terminalSize()
-			scroll := max(1, height-5)
-			max := max(0, (tui.Model.printLines - height + 7))
-			tui.Model.offset = min(max, tui.Model.offset+scroll)
+			max := max(0, (tui.Model.printLines - tui.screensize))
+			// Always leave one line overlap for better orientation
+			tui.Model.offset = min(max, tui.Model.offset+tui.screensize-1)
 		}
 
 		// Forward keypress to listener
@@ -287,16 +284,14 @@ func (tui *TUI) hideJob(job gopenqa.Job) bool {
 }
 
 // print all jobs unsorted
-func (tui *TUI) printJobs(width, height int) {
-	line := 0
+func (tui *TUI) buildJobsScreen(width int) []string {
+	lines := make([]string, 0)
 	for _, job := range tui.Model.jobs {
 		if !tui.hideJob(job) {
-			if line++; line > tui.Model.offset {
-				fmt.Println(tui.formatJobLine(job, width))
-			}
+			lines = append(lines, tui.formatJobLine(job, width))
 		}
 	}
-	tui.Model.printLines = len(tui.Model.jobs)
+	return lines
 }
 
 func sortedKeys(vals map[string]int) []string {
@@ -311,7 +306,9 @@ func sortedKeys(vals map[string]int) []string {
 	return ret
 }
 
-func (tui *TUI) printJobsByGroup(width, height int) int {
+func (tui *TUI) buildJobsScreenByGroup(width int) []string {
+	lines := make([]string, 0)
+
 	// Determine active groups first
 	groups := make(map[int][]gopenqa.Job, 0)
 	for _, job := range tui.Model.jobs {
@@ -327,14 +324,20 @@ func (tui *TUI) printJobsByGroup(width, height int) int {
 		grpIDs = append(grpIDs, k)
 	}
 	sort.Ints(grpIDs)
+
 	// Now print them sorted by group ID
-	lines := make([]string, 0)
+	first := true
 	for _, id := range grpIDs {
 		grp := tui.Model.jobGroups[id]
 		jobs := groups[id]
 		statC := make(map[string]int, 0)
 		hidden := 0
-		lines = append(lines, fmt.Sprintf("\n===== %s ====================", grp.Name))
+		if first {
+			first = false
+		} else {
+			lines = append(lines, "")
+		}
+		lines = append(lines, fmt.Sprintf("===== %s ====================", grp.Name))
 		for _, job := range jobs {
 			if !tui.hideJob(job) {
 				lines = append(lines, tui.formatJobLine(job, width))
@@ -360,21 +363,7 @@ func (tui *TUI) printJobsByGroup(width, height int) int {
 		}
 		lines = append(lines, line)
 	}
-
-	// For scrolling, remember the total number of lines
-	tui.Model.printLines = len(lines)
-
-	// Print relevant lines, taking the offset into consideration
-	counter := 0
-	for i := 0; i < height; i++ {
-		if (tui.Model.offset + i) >= len(lines) {
-			break
-		} else {
-			fmt.Println(lines[tui.Model.offset+i])
-			counter++
-		}
-	}
-	return counter
+	return lines
 }
 
 func cut(text string, n int) string {
@@ -384,26 +373,42 @@ func cut(text string, n int) string {
 		return text[:n]
 	}
 }
-
-/* Redraw screen */
-func (tui *TUI) Update() {
-	tui.Model.mutex.Lock()
-	defer tui.Model.mutex.Unlock()
-	width, height := terminalSize()
-	if width < 0 || height < 0 {
-		return
+func trimEmptyTail(lines []string) []string {
+	// Crop empty elements at the end of the array
+	for n := len(lines) - 1; n > 0; n-- {
+		if lines[n] != "" {
+			return lines[0 : n+1]
+		}
 	}
+	return lines[0:0]
+}
 
-	remainingHeight := height // remaining rows in the current terminal
-	tui.Clear()
+func trimEmptyHead(lines []string) []string {
+	// Crop empty elements at the end of the array
+	for i := 0; i < len(lines); i++ {
+		if lines[i] != "" {
+			return lines[i:]
+		}
+	}
+	return lines[0:0]
+}
+
+func trimEmpty(lines []string) []string {
+	lines = trimEmptyHead(lines)
+	lines = trimEmptyTail(lines)
+	return lines
+}
+
+func (tui *TUI) buildHeader(width int) []string {
+	lines := make([]string, 0)
 	if tui.header != "" {
-		fmt.Println(tui.header)
-		fmt.Println("q:Quit   r:Refresh   h:Hide/Show jobs   m:Toggle RabbitMQ tracker   s:Switch sorting    Arrows:Move up/down")
-		fmt.Println()
-		remainingHeight -= 4
+		lines = append(lines, tui.header)
+		lines = append(lines, "q:Quit   r:Refresh   h:Hide/Show jobs   m:Toggle RabbitMQ tracker   s:Switch sorting    Arrows:Move up/down")
 	}
+	return lines
+}
 
-	// The footer is a bit more complex, build it here, so we know how many more rows are occupied
+func (tui *TUI) buildFooter(width int) []string {
 	footer := make([]string, 0)
 	showStatus := tui.showStatus && tui.status != ""
 	showTracker := tui.showTracker && tui.tracker != ""
@@ -429,25 +434,81 @@ func (tui *TUI) Update() {
 			footer = append(footer, tui.tracker[:width])
 		}
 	}
-	if len(footer) > 0 {
-		remainingHeight -= (len(footer) + 2)
-	}
+	return footer
+}
 
-	// Job listing depends on selected sorting method
-	remainingHeight -= 2 // printJobs and printJobsByGroup terminate with a newline
+// Build the full screen
+func (tui *TUI) buildScreen(width int) []string {
+	lines := make([]string, 0)
+
 	switch tui.sorting {
 	case 1:
-		tui.printJobsByGroup(width, remainingHeight)
-		break
+		lines = append(lines, tui.buildJobsScreenByGroup(width)...)
 	default:
-		tui.printJobs(width, remainingHeight)
-		break
+		lines = append(lines, tui.buildJobsScreen(width)...)
+	}
+	lines = trimEmpty(lines)
+
+	tui.Model.printLines = len(lines)
+	return lines
+}
+
+/* Redraw screen */
+func (tui *TUI) Update() {
+	tui.Model.mutex.Lock()
+	defer tui.Model.mutex.Unlock()
+	width, height := terminalSize()
+	if width < 0 || height < 0 {
+		return
 	}
 
+	// Header and footer are separate. We only scroll through the "screen"
+	screen := tui.buildScreen(width)
+	header := tui.buildHeader(width)
+	footer := tui.buildFooter(width)
+
+	remainingLines := height
+	tui.Clear()
+
+	// Print header
+	if len(header) > 0 {
+		header = append(header, "") // Add additional line after header
+
+		for _, line := range header {
+			fmt.Println(line)
+			remainingLines--
+			if remainingLines <= 0 {
+				return // crap. no need to continue
+			}
+		}
+	}
+
+	// Reserve lines for footer, but spare footer if there is no space left
+	if len(footer) > remainingLines {
+		footer = make([]string, 0)
+	} else {
+		remainingLines -= (len(footer) + 1)
+	}
+
+	// Print screen
+	screensize := 0
+	for elem := tui.Model.offset; remainingLines > 0; remainingLines-- {
+		if elem >= len(screen) {
+			fmt.Println("") // Fill screen with empty lines for alignment
+		} else {
+			//fmt.Println(strings.TrimSpace(screen[elem])) // XXX
+			fmt.Println(screen[elem])
+			elem++
+		}
+		screensize++
+	}
+	tui.screensize = screensize
+
+	// Print footer
 	if len(footer) > 0 {
-		fmt.Println()
+		fmt.Println("")
 		for _, line := range footer {
-			fmt.Printf("\n%s", line)
+			fmt.Println(line)
 		}
 	}
 }
