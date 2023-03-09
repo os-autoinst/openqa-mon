@@ -2,6 +2,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"os/signal"
@@ -16,7 +17,7 @@ import (
 	"github.com/grisu48/gopenqa"
 )
 
-const VERSION = "0.7.0"
+const VERSION = "0.8.0"
 
 var config Config
 var tui TUI
@@ -30,9 +31,9 @@ type Remote struct {
 var remotes []Remote
 
 func printHelp() {
-	fmt.Printf("Usage: %s [OPTIONS] REMOTE\n  REMOTE is the base URL of the openQA server (e.g. https://openqa.opensuse.org)\n\n", os.Args[0])
-	fmt.Println("                             REMOTE can be the directlink to a test (e.g. https://openqa.opensuse.org/t123)")
-	fmt.Println("                             or a job range (e.g. https://openqa.opensuse.org/t123..125 or https://openqa.opensuse.org/t123+2)")
+	fmt.Printf("Usage: %s [OPTIONS] REMOTE\n", os.Args[0])
+	fmt.Println("  REMOTE can be the directlink to a test (e.g. https://openqa.opensuse.org/t123)")
+	fmt.Println("  or a job range (e.g. https://openqa.opensuse.org/t123..125 or https://openqa.opensuse.org/t123+2)")
 	fmt.Println("")
 	fmt.Println("OPTIONS")
 	fmt.Println("")
@@ -60,8 +61,9 @@ func printHelp() {
 	fmt.Println("  --hide-state STATES              Hide jobs with that are in the given state (e.g. 'running,assigned')")
 	fmt.Println("")
 	fmt.Println("  --config FILE                    Read additional config file FILE")
+	fmt.Println("  -i, --input FILE                 Read jobs from FILE (additionally to stdin)")
 	fmt.Println("")
-	fmt.Println("2022, https://github.com/grisu48/openqa-mon")
+	fmt.Println("2023, https://github.com/grisu48/openqa-mon")
 }
 
 /** Try to match the url to be a test url. On success, return the remote and the job id */
@@ -205,6 +207,8 @@ func expandArguments(args []string) ([]string, error) {
 					ret = append(ret, "--silent")
 				case 'e':
 					ret = append(ret, "--exit")
+				case 'i':
+					ret = append(ret, "--input")
 				}
 			}
 		} else {
@@ -403,6 +407,43 @@ func registerRabbitMQ(tui *TUI, openqaURI string, remote string, topics []string
 	return rmq, nil
 }
 
+func readJobs(filename string) ([]Remote, error) {
+	remotes := make([]Remote, 0)
+
+	fIn, err := os.OpenFile(filename, os.O_RDONLY, 0400)
+	if err != nil {
+		return remotes, err
+	}
+	defer fIn.Close()
+	scanner := bufio.NewScanner(fIn)
+	iLine := 0
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		iLine++
+		// Ignore empty lines or comments
+		if line == "" || line[0] == '#' {
+			continue
+		}
+
+		// Only accept URLs here
+		if strings.HasPrefix(line, "http://") || strings.HasPrefix(line, "https://") {
+			// Try to parse as job run (e.g. http://phoenix-openqa.qam.suse.de/t1241)
+			match, url, jobIDs := matchTestURL(removeFragment(line))
+			if match {
+				for _, jobID := range jobIDs {
+					remotes = appendRemote(remotes, url, jobID)
+				}
+			} else {
+				remotes = appendRemote(remotes, line, 0)
+			}
+		} else {
+			return remotes, fmt.Errorf("invalid job link (line %d)", iLine)
+		}
+	}
+
+	return remotes, scanner.Err()
+}
+
 func SetStatus() {
 	if config.Paused {
 		if config.RabbitMQ {
@@ -530,6 +571,22 @@ func parseProgramArguments() error {
 				config.HideStates = append(config.HideStates, states...)
 			case "--quit", "--exit":
 				config.Quit = true
+			case "--input":
+				i++
+				if i >= len(args) {
+					return fmt.Errorf("missing input file")
+				}
+				// Read input file and add jobs
+				if jobs, err := readJobs(args[i]); err != nil {
+					return fmt.Errorf("error reading jobs: %s", err)
+				} else {
+					// Append all found jobs
+					for _, remote := range jobs {
+						for _, job := range remote.Jobs {
+							remotes = appendRemote(remotes, remote.URI, job)
+						}
+					}
+				}
 			default:
 				return fmt.Errorf("invalid argument: %s", arg)
 			}
