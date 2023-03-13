@@ -11,7 +11,7 @@ import (
 	"github.com/grisu48/gopenqa"
 )
 
-const VERSION = "0.3.4"
+const VERSION = "0.4.0"
 
 /* Group is a single configurable monitoring unit. A group contains all parameters that will be queried from openQA */
 type Group struct {
@@ -350,7 +350,6 @@ func parseProgramArgs() error {
 }
 
 func printUsage() {
-	// TODO: Write this
 	fmt.Printf("Usage: %s [OPTIONS] [FLAVORS]\n", os.Args[0])
 	fmt.Println("")
 	fmt.Println("OPTIONS")
@@ -559,6 +558,7 @@ func tui_main(tui *TUI, instance gopenqa.Instance) error {
 	}
 	knownJobs = jobs
 	tui.Model.Apply(knownJobs)
+	fmt.Println("Initial fetching completed. Entering main loop ... ")
 	tui.Start()
 	tui.Update()
 
