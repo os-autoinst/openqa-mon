@@ -1,13 +1,13 @@
 ## Review template file for Tumbleweed test runs on O3
 
-Instance = "https://openqa.opensuse.org"                                              # openQA instance to query
-RabbitMQ = "amqps://opensuse:opensuse@rabbit.opensuse.org"                            # RabbitMQ instance to query
-RabbitMQTopic = "opensuse.openqa.job.done"                                            # RabbitMQ topic to query
-HideStatus = [ "scheduled","passed","assigned","running","softfailed","reviewed" ]    # Hide scheduled, passed, assigned and reviewed jobs
-RefreshInterval = 60                                                                  # Refresh from API once every minute
-MaxJobs = 20                                                                          # Max. job per group to display
-GroupBy = "groups"                                                                    # Group by defined groups ("none" or "groups")
-DefaultParams = { distri="opensuse", version = "Tumbleweed" }                         # Set of default parameters
+Instance = "https://openqa.opensuse.org"                        # openQA instance to query
+RabbitMQ = "amqps://opensuse:opensuse@rabbit.opensuse.org"      # RabbitMQ instance to query
+RabbitMQTopic = "opensuse.openqa.job.done"                      # RabbitMQ topic to query
+HideStatus = ["scheduled", "passed", "softfailed", "cancelled", "skipped", "running", "uploading", "parallel_failed", "reviewed" ]           # Hide scheduled and passed jobs
+RefreshInterval = 60                                            # Refresh from API once every minute
+MaxJobs = 20                                                    # Max. job per group to display
+GroupBy = "groups"                                              # Group by defined groups ("none" or "groups")
+DefaultParams = { distri="opensuse", version = "Tumbleweed" }   # Set of default parameters
 
 ## Define job groups
 
