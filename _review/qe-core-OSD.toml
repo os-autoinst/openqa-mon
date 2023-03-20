@@ -63,6 +63,18 @@ Name = "Maintenance: SLE 12-SP2 Incidents"
 Params = { groupid = "53", build = "" }
 MaxLifetime = 86400
 
+# Quarterly Refresh
+
+[[Groups]]
+Name = "Maintenance: QR SLE 15-SP4"
+Params = { groupid = "458", build = "" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "Maintenance: QR SLE 15-SP3"
+Params = { groupid = "373", build = "" }
+MaxLifetime = 86400
+
 # Functional
 
 [[Groups]]
