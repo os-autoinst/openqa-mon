@@ -11,7 +11,7 @@ import (
 	"github.com/grisu48/gopenqa"
 )
 
-const VERSION = "0.4.0"
+const VERSION = "0.5.0"
 
 /* Group is a single configurable monitoring unit. A group contains all parameters that will be queried from openQA */
 type Group struct {
@@ -126,8 +126,29 @@ func isJobTooOld(job gopenqa.Job, maxlifetime int64) bool {
 	return deltaT > maxlifetime
 }
 
-func isReviewed(job gopenqa.Job, instance gopenqa.Instance) (bool, error) {
-	comments, err := instance.GetComments(job.ID)
+func isReviewed(job gopenqa.Job, instance gopenqa.Instance, checkParallel bool) (bool, error) {
+	reviewed, err := checkReviewed(job.ID, instance)
+	if err != nil || reviewed {
+		return reviewed, err
+	}
+
+	// If not reviewed but "parallel_failed", check parallel jobs if they are reviewed
+	if checkParallel {
+		for _, childID := range job.Children.Parallel {
+			reviewed, err := checkReviewed(childID, instance)
+			if err != nil {
+				return reviewed, err
+			}
+			if reviewed {
+				return true, nil
+			}
+		}
+	}
+	return false, nil
+}
+
+func checkReviewed(job int64, instance gopenqa.Instance) (bool, error) {
+	comments, err := instance.GetComments(job)
 	if err != nil {
 		return false, nil
 	}
@@ -136,11 +157,11 @@ func isReviewed(job gopenqa.Job, instance gopenqa.Instance) (bool, error) {
 			return true, nil
 		}
 		// Manually check for poo or bsc reference
-		if strings.Contains(c.Text, "poo#") || strings.Contains(c.Text, "bsc#") {
+		if strings.Contains(c.Text, "poo#") || strings.Contains(c.Text, "bsc#") || strings.Contains(c.Text, "boo#") {
 			return true, nil
 		}
 		// Or for link to progress/bugzilla ticket
-		if strings.Contains(c.Text, "://progress.opensuse.org/issues/") || strings.Contains(c.Text, "://bugzilla.suse.com/show_bug.cgi?id=") {
+		if strings.Contains(c.Text, "://progress.opensuse.org/issues/") || strings.Contains(c.Text, "://bugzilla.suse.com/show_bug.cgi?id=") || strings.Contains(c.Text, "://bugzilla.opensuse.org/show_bug.cgi?id=") {
 			return true, nil
 		}
 	}
@@ -467,11 +488,12 @@ func refreshJobs(tui *TUI, instance gopenqa.Instance) error {
 		}
 		// Failed jobs will be also scanned for comments
 		state := job.JobState()
-		if state == "failed" || state == "incomplete" {
-			reviewed, err := isReviewed(job, instance)
+		if state == "failed" || state == "incomplete" || state == "parallel_failed" {
+			reviewed, err := isReviewed(job, instance, state == "parallel_failed")
 			if err != nil {
 				return err
 			}
+
 			tui.Model.SetReviewed(job.ID, reviewed)
 			tui.Update()
 		}
@@ -548,8 +570,8 @@ func tui_main(tui *TUI, instance gopenqa.Instance) error {
 	// Failed jobs will be also scanned for comments
 	for _, job := range jobs {
 		state := job.JobState()
-		if state == "failed" || state == "incomplete" {
-			reviewed, err := isReviewed(job, instance)
+		if state == "failed" || state == "incomplete" || state == "parallel_failed" {
+			reviewed, err := isReviewed(job, instance, state == "parallel_failed")
 			if err != nil {
 				return fmt.Errorf("Error fetching job comment: %s", err)
 			}
