@@ -199,9 +199,11 @@ func FetchJob(id int64, instance gopenqa.Instance) (gopenqa.Job, error) {
 	return job, fmt.Errorf("max recursion depth reached")
 }
 
-func FetchJobs(instance gopenqa.Instance) ([]gopenqa.Job, error) {
+type FetchJobsCallback func(int, int, int, int)
+
+func FetchJobs(instance gopenqa.Instance, callback FetchJobsCallback) ([]gopenqa.Job, error) {
 	ret := make([]gopenqa.Job, 0)
-	for _, group := range cf.Groups {
+	for i, group := range cf.Groups {
 		params := group.Params
 		jobs, err := instance.GetOverview("", params)
 		if err != nil {
@@ -212,7 +214,11 @@ func FetchJobs(instance gopenqa.Instance) ([]gopenqa.Job, error) {
 			jobs = jobs[:cf.MaxJobs]
 		}
 		// Get detailed job instances
-		for _, job := range jobs {
+		for j, job := range jobs {
+			if callback != nil {
+				// Add one to the counter to indicate the progress to humans (0/16 looks weird)
+				callback(i+1, len(cf.Groups), j+1, len(jobs))
+			}
 			if job, err = FetchJob(job.ID, instance); err != nil {
 				return ret, err
 			} else {
@@ -562,8 +568,14 @@ func tui_main(tui *TUI, instance gopenqa.Instance) error {
 		fmt.Fprintf(os.Stderr, "Warn: No job groups\n")
 	}
 	tui.Model.SetJobGroups(jobgroups)
-	fmt.Printf("\tGet jobs for %d groups ... \n", len(cf.Groups))
-	jobs, err := FetchJobs(instance)
+	fmt.Print("\033[s") // Save cursor position
+	fmt.Printf("\tGet jobs for %d groups ...", len(cf.Groups))
+	jobs, err := FetchJobs(instance, func(group int, groups int, job int, jobs int) {
+		fmt.Print("\033[u") // Restore cursor position
+		fmt.Print("\033[K") // Erase till end of line
+		fmt.Printf("\tGet jobs for %d groups ... %d/%d (%d/%d jobs)", len(cf.Groups), group, groups, job, jobs)
+	})
+	fmt.Println()
 	if err != nil {
 		return fmt.Errorf("Error fetching jobs: %s", err)
 	}
