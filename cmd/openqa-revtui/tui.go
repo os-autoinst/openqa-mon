@@ -307,6 +307,21 @@ func sortedKeys(vals map[string]int) []string {
 	return ret
 }
 
+func jobGroupHeader(group gopenqa.JobGroup, width int) string {
+	if width <= 0 {
+		return ""
+	}
+	line := fmt.Sprintf("===== %s =====", group.Name)
+	for len(line) < width {
+		line += "="
+	}
+	// Crop if necessary
+	if len(line) > width {
+		line = line[:width]
+	}
+	return line
+}
+
 func (tui *TUI) buildJobsScreenByGroup(width int) []string {
 	lines := make([]string, 0)
 
@@ -338,7 +353,8 @@ func (tui *TUI) buildJobsScreenByGroup(width int) []string {
 		} else {
 			lines = append(lines, "")
 		}
-		lines = append(lines, fmt.Sprintf("===== %s ====================", grp.Name))
+		lines = append(lines, jobGroupHeader(grp, width))
+
 		for _, job := range jobs {
 			if !tui.hideJob(job) {
 				lines = append(lines, tui.formatJobLine(job, width))
@@ -357,7 +373,23 @@ func (tui *TUI) buildJobsScreenByGroup(width int) []string {
 		stats := sortedKeys(statC)
 		for _, s := range stats {
 			c := statC[s]
-			line += fmt.Sprintf(", %s: %d", s, c)
+			line += ", "
+			// Add some color
+			if s == "passed" {
+				line += ANSI_GREEN
+			} else if s == "cancelled" {
+				line += ANSI_MAGENTA
+			} else if s == "failed" || s == "parallel_failed" || s == "incomplete" {
+				line += ANSI_RED
+			} else if s == "softfailed" {
+				line += ANSI_YELLOW
+			} else if s == "uploading" || s == "scheduled" || s == "running" {
+				line += ANSI_BLUE
+			} else if s == "skipped" {
+				line += ANSI_WHITE
+			}
+			line += fmt.Sprintf("%s: %d", s, c)
+			line += ANSI_RESET // Clear color
 		}
 		if hidden > 0 {
 			line += fmt.Sprintf(" (hidden: %d)", hidden)
@@ -459,8 +491,13 @@ func (tui *TUI) Update() {
 	tui.Model.mutex.Lock()
 	defer tui.Model.mutex.Unlock()
 	width, height := terminalSize()
-	if width < 0 || height < 0 {
+	if width <= 0 || height <= 0 {
 		return
+	}
+
+	// Check for unreasonable values
+	if width > 1000 {
+		width = 1000
 	}
 
 	// Header and footer are separate. We only scroll through the "screen"
