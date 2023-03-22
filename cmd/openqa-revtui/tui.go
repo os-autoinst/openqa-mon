@@ -525,7 +525,7 @@ func (tui *TUI) Update() {
 	if len(footer) > remainingLines {
 		footer = make([]string, 0)
 	} else {
-		remainingLines -= (len(footer) + 1)
+		remainingLines -= len(footer)
 	}
 
 	// Print screen
@@ -544,9 +544,9 @@ func (tui *TUI) Update() {
 
 	// Print footer
 	if len(footer) > 0 {
-		fmt.Println("")
 		for _, line := range footer {
-			fmt.Println(line)
+			fmt.Println("")
+			fmt.Print(line)
 		}
 	}
 }
