@@ -3,7 +3,7 @@
 Instance = "https://openqa.opensuse.org"                                              # openQA instance to query
 RabbitMQ = "amqps://opensuse:opensuse@rabbit.opensuse.org"                            # RabbitMQ instance to query
 RabbitMQTopic = "opensuse.openqa.job.done"                                            # RabbitMQ topic to query
-HideStatus = [ "scheduled","passed","assigned","running","softfailed" ]               # Hide scheduled, passed and assigned jobs
+HideStatus = [ "scheduled", "passed", "softfailed", "running", "reviewed" ] # Hide scheduled, passed and assigned jobs
 RefreshInterval = 60                                                                  # Refresh from API once every minute
 MaxJobs = 20                                                                          # Max. job per group to display
 GroupBy = "groups"                                                                    # Group by defined groups ("none" or "groups")
