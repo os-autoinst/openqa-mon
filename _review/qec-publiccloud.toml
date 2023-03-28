@@ -3,7 +3,7 @@
 Instance = "https://openqa.suse.de"              # openQA instance to query
 RabbitMQ = "amqps://suse:suse@rabbit.suse.de"    # RabbitMQ instance to query
 RabbitMQTopic = "suse.openqa.job.done"           # RabbitMQ topic to query
-HideStatus = ["scheduled", "passed", "softfailed", "cancelled", "skipped", "running", "uploading", "parallel_failed", "reviewed" ]           # Hide scheduled and passed jobs
+HideStatus = ["scheduled", "passed", "softfailed", "cancelled", "skipped", "running", "uploading", "parallel_failed", "reviewed", "user_cancelled"]  # Hide jobs in defined states
 Notify = false                                   # No notifications by default
 RefreshInterval = 60                             # Refresh from API once every minute
 MaxJobs = 20                                     # Max. job per group to display
@@ -11,7 +11,6 @@ GroupBy = "groups"                               # Group by defined groups ("non
 DefaultParams = { distri = "sle" }               # Set of default parameters
 
 # Incidents
-
 [[Groups]]
 Name = "Public Cloud Incident test runs"
 Params = { groupid = "430" }
