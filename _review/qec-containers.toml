@@ -11,6 +11,11 @@ GroupBy = "groups"                               # Group by defined groups ("non
 ## BCI and Base images
 
 [[Groups]]
+Name = "Containers/BCI Base Images 15-SP5"
+Params = { groupid = "475", build = "" }
+MaxLifetime = 86400
+
+[[Groups]]
 Name = "Containers/BCI Base Images 15-SP4"
 Params = { groupid = "443", build = "" }
 MaxLifetime = 86400
@@ -40,8 +45,12 @@ Name = "Containers/BCI repo"
 Params = { groupid = "428", build = "" }
 MaxLifetime = 86400
 
-
 ## Maintenance updates
+[[Groups]]
+Name = "Containers Maintenance Updates 15-SP4"
+Params = { groupid = "417", build = "%yesterday%-1", version="15-SP4" }
+MaxLifetime = 86400
+
 [[Groups]]
 Name = "Containers Maintenance Updates 15-SP3"
 Params = { groupid = "417", build = "%yesterday%-1", version="15-SP3" }

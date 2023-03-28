@@ -13,18 +13,24 @@ DefaultParams = { distri="opensuse", version = "Tumbleweed" }                   
 [[Groups]]
 Name = "openSUSE Tumbleweed DVD"
 Params = { flavor = "DVD" }
+MaxLifetime = 604800
 
 [[Groups]]
 Name = "openSUSE Tumbleweed Network"
 Params = { flavor = "NET" }
+MaxLifetime = 604800
 
 [[Groups]]
 Name = "openSUSE Tumbleweed JeOS"
 Params = { flavor = "JeOS-for-kvm-and-xen" }
+MaxLifetime = 604800
 
 [[Groups]]
 Name = "openSUSE Tumbleweed Gnome-Live"
 Params = { flavor = "GNOME-Live" }
+MaxLifetime = 604800
+
 [[Groups]]
 Name = "openSUSE Tumbleweed KDE-Live"
 Params = { flavor = "KDE-Live" }
+MaxLifetime = 604800

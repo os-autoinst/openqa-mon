@@ -11,18 +11,38 @@ GroupBy = "groups"                               # Group by defined groups ("non
 
 ## Latest SLE Micro images
 [[Groups]]
-Name = "Lastest SLE Micro (5.3)"
-Params = { groupid = "410" }
+Name = "Latest SLE Micro (5.4)"
+Params = { groupid = "479" }
 MaxLifetime = 86400
 
 [[Groups]]
-Name = "SLEM 5.2 on Publiccloud"
+Name = "SLEM 5.1 on Public Cloud"
 Params = { groupid = "413" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "SLEM 5.2 on Public Cloud"
+Params = { groupid = "413" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "SLEM 5.3 on Public Cloud"
+Params = { groupid = "455" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "SLEM 5.4 on Public Cloud"
+Params = { groupid = "480" }
 MaxLifetime = 86400
 
 [[Groups]]
 Name = "SLE Micro Toolbox updates"
 Params = { groupid = "451" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "SLE Micro for Rancher"
+Params = { groupid = "449" }
 MaxLifetime = 86400
 
 ## Maintenance updates
@@ -40,4 +60,3 @@ MaxLifetime = 86400
 Name = "SLE Micro Maintenance Updates 5.1"
 Params = { groupid = "420", build = "%yesterday%-1", version = "5.1" }
 MaxLifetime = 86400
-

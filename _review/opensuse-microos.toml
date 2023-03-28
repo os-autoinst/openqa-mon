@@ -13,11 +13,14 @@ DefaultParams = { distri="microos", version = "Tumbleweed" }  # Set of default p
 [[Groups]]
 Name = "MicroOS Image"
 Params = { flavor = "MicroOS-Image" }
+MaxLifetime = 604800
 
 [[Groups]]
 Name = "MicroOS Image Container Host"
 Params = { flavor = "MicroOS-Image-ContainerHost" }
+MaxLifetime = 604800
 
 [[Groups]]
 Name = "MicroOS Kubic Image - kubeadm"
 Params = { flavor = "MicroOS-Image-Kubic-kubeadm" }
+MaxLifetime = 604800
