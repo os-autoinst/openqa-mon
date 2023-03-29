@@ -17,7 +17,7 @@ import (
 	"github.com/grisu48/gopenqa"
 )
 
-const VERSION = "0.8.0"
+const VERSION = "0.8.1"
 
 var config Config
 var tui TUI
@@ -677,6 +677,17 @@ func main() {
 		singleCall(remotes)
 		os.Exit(0)
 	}
+
+	// Refresh rates below 30 seconds are not allowed on public instances
+	if config.Continuous < 30 {
+		for _, remote := range remotes {
+			if strings.Contains(remote.URI, "://openqa.suse.de") || strings.Contains(remote.URI, "://openqa.opensuse.org") {
+				config.Continuous = 30
+				break
+			}
+		}
+	}
+
 	tui = CreateTUI()
 	tui.EnterAltScreen()
 	tui.Clear()
@@ -700,7 +711,7 @@ func FetchJobs(remotes []Remote, callback func(int64, gopenqa.Job)) ([]Remote, e
 	for i, remote := range remotes {
 		instance := gopenqa.CreateInstance(ensureHTTP(remote.URI))
 		instance.SetUserAgent("openqa-mon")
-		instance.SetMaxRecursionDepth(100) // Certain jobs (e.g. verification runs) can have a lot of clones
+		instance.SetMaxRecursionDepth(20) // Certain jobs (e.g. verification runs) can have a lot of clones
 		// If no jobs are defined, fetch overview
 		if len(remote.Jobs) == 0 {
 			overview, err := instance.GetOverview("", gopenqa.EmptyParams())

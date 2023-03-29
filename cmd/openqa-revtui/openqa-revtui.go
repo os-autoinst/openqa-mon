@@ -11,7 +11,7 @@ import (
 	"github.com/grisu48/gopenqa"
 )
 
-const VERSION = "0.5.0"
+const VERSION = "0.5.1"
 
 /* Group is a single configurable monitoring unit. A group contains all parameters that will be queried from openQA */
 type Group struct {
@@ -36,6 +36,7 @@ type Config struct {
 
 var cf Config
 var knownJobs []gopenqa.Job
+var updatedRefresh bool
 
 func (cf *Config) LoadToml(filename string) error {
 	if _, err := toml.DecodeFile(filename, cf); err != nil {
@@ -449,6 +450,15 @@ func main() {
 	instance := gopenqa.CreateInstance(cf.Instance)
 	instance.SetUserAgent("openqa-mon/revtui")
 
+	// Refresh rates below 5 minutes are not allowed on public instances due to the rather large load it puts on them
+	updatedRefresh = false
+	if cf.RefreshInterval < 300 {
+		if strings.Contains(cf.Instance, "://openqa.suse.de") || strings.Contains(cf.Instance, "://openqa.opensuse.org") {
+			cf.RefreshInterval = 300
+			updatedRefresh = true
+		}
+	}
+
 	// Run TUI and use the return code
 	tui := CreateTUI()
 	switch cf.GroupBy {
@@ -558,6 +568,9 @@ func tui_main(tui *TUI, instance gopenqa.Instance) error {
 
 	fmt.Println(title)
 	fmt.Println("")
+	if updatedRefresh {
+		fmt.Printf(ANSI_YELLOW + "WARNING: For OSD and O3 a rate limit of 5 minutes between polling has been applied." + ANSI_RESET + "\n\n")
+	}
 	fmt.Printf("Initial querying instance %s ... \n", cf.Instance)
 	fmt.Println("\tGet job groups ... ")
 	jobgroups, err := FetchJobGroups(instance)
