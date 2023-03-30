@@ -11,7 +11,7 @@ import (
 	"github.com/grisu48/gopenqa"
 )
 
-const VERSION = "0.5.1"
+const VERSION = "0.5.2"
 
 /* Group is a single configurable monitoring unit. A group contains all parameters that will be queried from openQA */
 type Group struct {
@@ -200,6 +200,28 @@ func FetchJob(id int64, instance gopenqa.Instance) (gopenqa.Job, error) {
 	return job, fmt.Errorf("max recursion depth reached")
 }
 
+/* Fetch the given jobs from the instance at once */
+func fetchJobs(ids []int64, instance gopenqa.Instance) ([]gopenqa.Job, error) {
+	jobs := make([]gopenqa.Job, 0)
+
+	jobs, err := instance.GetJobs(ids)
+	if err != nil {
+		return jobs, err
+	}
+
+	// Get cloned jobs, if present
+	for i, job := range jobs {
+		if job.CloneID != 0 && job.CloneID != job.ID {
+			job, err = FetchJob(job.ID, instance)
+			if err != nil {
+				return jobs, err
+			}
+			jobs[i] = job
+		}
+	}
+	return jobs, nil
+}
+
 type FetchJobsCallback func(int, int, int, int)
 
 func FetchJobs(instance gopenqa.Instance, callback FetchJobsCallback) ([]gopenqa.Job, error) {
@@ -214,19 +236,28 @@ func FetchJobs(instance gopenqa.Instance, callback FetchJobsCallback) ([]gopenqa
 		if len(jobs) > cf.MaxJobs {
 			jobs = jobs[:cf.MaxJobs]
 		}
-		// Get detailed job instances
+
+		// Get detailed job instances. Fetch them at once
+		ids := make([]int64, 0)
+		for _, job := range jobs {
+			ids = append(ids, job.ID)
+		}
+		if callback != nil {
+			// Add one to the counter to indicate the progress to humans (0/16 looks weird)
+			callback(i+1, len(cf.Groups), 0, len(jobs))
+		}
+		jobs, err = fetchJobs(ids, instance)
+		if err != nil {
+			return jobs, err
+		}
 		for j, job := range jobs {
 			if callback != nil {
 				// Add one to the counter to indicate the progress to humans (0/16 looks weird)
 				callback(i+1, len(cf.Groups), j+1, len(jobs))
 			}
-			if job, err = FetchJob(job.ID, instance); err != nil {
-				return ret, err
-			} else {
-				// Filter too old jobs
-				if !isJobTooOld(job, group.MaxLifetime) {
-					ret = append(ret, job)
-				}
+			// Filter too old jobs
+			if !isJobTooOld(job, group.MaxLifetime) {
+				ret = append(ret, job)
 			}
 		}
 	}
@@ -589,7 +620,12 @@ func tui_main(tui *TUI, instance gopenqa.Instance) error {
 	jobs, err := FetchJobs(instance, func(group int, groups int, job int, jobs int) {
 		fmt.Print("\033[u") // Restore cursor position
 		fmt.Print("\033[K") // Erase till end of line
-		fmt.Printf("\tGet jobs for %d groups ... %d/%d (%d/%d jobs)", len(cf.Groups), group, groups, job, jobs)
+		fmt.Printf("\tGet jobs for %d groups ... %d/%d", len(cf.Groups), group, groups)
+		if job == 0 {
+			fmt.Printf(" (%d jobs)", jobs)
+		} else {
+			fmt.Printf(" (%d/%d jobs)", job, jobs)
+		}
 	})
 	fmt.Println()
 	if err != nil {
