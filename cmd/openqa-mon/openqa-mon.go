@@ -17,7 +17,7 @@ import (
 	"github.com/grisu48/gopenqa"
 )
 
-const VERSION = "0.8.1"
+const VERSION = "0.8.2"
 
 var config Config
 var tui TUI
@@ -724,23 +724,21 @@ func FetchJobs(remotes []Remote, callback func(int64, gopenqa.Job)) ([]Remote, e
 		} else {
 			// Fetch individual jobs
 			jobsModified := false // If remote.Jobs has been modified (e.g. id changes when detecting a restarted job)
-			for i, id := range remote.Jobs {
-				var job gopenqa.Job
-				var err error
-				if config.Follow {
-					job, err = instance.GetJobFollow(id)
-				} else {
-					job, err = instance.GetJob(id)
-				}
-				if err != nil {
-					// It's better to ignore a single failure than to suppress following jobs as well
-					continue
-				}
-				if job.ID != id {
+			jobs, err := instance.GetJobs(remote.Jobs)
+			if err != nil {
+				return remotes, err
+			}
+			for i, job := range jobs {
+				if config.Follow && (job.IsCloned()) {
+					job, err = instance.GetJobFollow(job.ID)
+					if err != nil {
+						// It's better to ignore a single failure than to suppress following jobs as well
+						continue
+					}
 					remote.Jobs[i] = job.ID
 					jobsModified = true
 				}
-				callback(id, job)
+				callback(job.ID, job)
 
 				// Fetch children
 				if config.Hierarchy {
