@@ -17,7 +17,7 @@ import (
 	"github.com/grisu48/gopenqa"
 )
 
-const VERSION = "0.8.2"
+const VERSION = "1.0.1"
 
 var config Config
 var tui TUI
