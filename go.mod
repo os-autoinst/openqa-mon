@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/BurntSushi/toml v1.2.1
-	github.com/grisu48/gopenqa v0.6.0
+	github.com/grisu48/gopenqa v0.7.0
 	github.com/streadway/amqp v1.0.0
 	golang.org/x/crypto v0.4.0
 )

@@ -2,8 +2,8 @@ github.com/BurntSushi/toml v1.2.1 h1:9F2/+DoOYIOksmaJFPw1tGFy1eDnIJXg+UHjuD8lTak
 github.com/BurntSushi/toml v1.2.1/go.mod h1:CxXYINrC8qIiEnFrOxCa7Jy5BFHlXnUU2pbicEuybxQ=
 github.com/google/go-cmp v0.5.5 h1:Khx7svrCpmxxtHBq5j2mp/xVjsi8hQMfNLvJFAlrGgU=
 github.com/google/go-cmp v0.5.5/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
-github.com/grisu48/gopenqa v0.6.0 h1:Vpod27cP73IoiBwneHwhMz4LOKg+fmGAKxxJLUw51OM=
-github.com/grisu48/gopenqa v0.6.0/go.mod h1:D7EFTPhtzNvnHnDol9UoPCFmnzOiLBVa1tOOYqJDgGo=
+github.com/grisu48/gopenqa v0.7.0 h1:9wCdJHGiz1/1tXUupW+r/myeFCDBGF9NojOCjhEghlQ=
+github.com/grisu48/gopenqa v0.7.0/go.mod h1:D7EFTPhtzNvnHnDol9UoPCFmnzOiLBVa1tOOYqJDgGo=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/streadway/amqp v1.0.0 h1:kuuDrUJFZL1QYL9hUNuCxNObNzB0bV/ZG5jV3RWAQgo=

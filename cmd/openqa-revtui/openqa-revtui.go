@@ -190,7 +190,7 @@ func FetchJob(id int64, instance gopenqa.Instance) (gopenqa.Job, error) {
 		if err != nil {
 			return job, err
 		}
-		if job.CloneID != 0 && job.CloneID != job.ID {
+		if job.IsCloned() {
 			id = job.CloneID
 			time.Sleep(100 * time.Millisecond) // Don't spam the instance
 			continue
@@ -211,7 +211,7 @@ func fetchJobs(ids []int64, instance gopenqa.Instance) ([]gopenqa.Job, error) {
 
 	// Get cloned jobs, if present
 	for i, job := range jobs {
-		if job.CloneID != 0 && job.CloneID != job.ID {
+		if job.IsCloned() {
 			job, err = FetchJob(job.ID, instance)
 			if err != nil {
 				return jobs, err
