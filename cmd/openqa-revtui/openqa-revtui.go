@@ -11,7 +11,7 @@ import (
 	"github.com/grisu48/gopenqa"
 )
 
-const VERSION = "0.5.1"
+const VERSION = "0.6.0"
 
 /* Group is a single configurable monitoring unit. A group contains all parameters that will be queried from openQA */
 type Group struct {
@@ -190,7 +190,7 @@ func FetchJob(id int64, instance gopenqa.Instance) (gopenqa.Job, error) {
 		if err != nil {
 			return job, err
 		}
-		if job.CloneID != 0 && job.CloneID != job.ID {
+		if job.IsCloned() {
 			id = job.CloneID
 			time.Sleep(100 * time.Millisecond) // Don't spam the instance
 			continue
@@ -198,6 +198,28 @@ func FetchJob(id int64, instance gopenqa.Instance) (gopenqa.Job, error) {
 		return job, nil
 	}
 	return job, fmt.Errorf("max recursion depth reached")
+}
+
+/* Fetch the given jobs from the instance at once */
+func fetchJobs(ids []int64, instance gopenqa.Instance) ([]gopenqa.Job, error) {
+	jobs := make([]gopenqa.Job, 0)
+
+	jobs, err := instance.GetJobs(ids)
+	if err != nil {
+		return jobs, err
+	}
+
+	// Get cloned jobs, if present
+	for i, job := range jobs {
+		if job.IsCloned() {
+			job, err = FetchJob(job.ID, instance)
+			if err != nil {
+				return jobs, err
+			}
+			jobs[i] = job
+		}
+	}
+	return jobs, nil
 }
 
 type FetchJobsCallback func(int, int, int, int)
@@ -214,19 +236,24 @@ func FetchJobs(instance gopenqa.Instance, callback FetchJobsCallback) ([]gopenqa
 		if len(jobs) > cf.MaxJobs {
 			jobs = jobs[:cf.MaxJobs]
 		}
-		// Get detailed job instances
-		for j, job := range jobs {
-			if callback != nil {
-				// Add one to the counter to indicate the progress to humans (0/16 looks weird)
-				callback(i+1, len(cf.Groups), j+1, len(jobs))
-			}
-			if job, err = FetchJob(job.ID, instance); err != nil {
-				return ret, err
-			} else {
-				// Filter too old jobs
-				if !isJobTooOld(job, group.MaxLifetime) {
-					ret = append(ret, job)
-				}
+
+		// Get detailed job instances. Fetch them at once
+		ids := make([]int64, 0)
+		for _, job := range jobs {
+			ids = append(ids, job.ID)
+		}
+		if callback != nil {
+			// Add one to the counter to indicate the progress to humans (0/16 looks weird)
+			callback(i+1, len(cf.Groups), 0, len(jobs))
+		}
+		jobs, err = fetchJobs(ids, instance)
+		if err != nil {
+			return jobs, err
+		}
+		for _, job := range jobs {
+			// Filter too old jobs
+			if !isJobTooOld(job, group.MaxLifetime) {
+				ret = append(ret, job)
 			}
 		}
 	}
@@ -242,19 +269,24 @@ func rabbitRemote(remote string) string {
 	return remote
 }
 
-/** Try to update the given job, if it exists and if not the same. Returns the found job and true, if an update was successful */
-func updateJob(orig_id int64, job gopenqa.Job, instance gopenqa.Instance) (gopenqa.Job, bool) {
+/** Updates the known job based on the Job ID. Returns true if it has been updated and the updated instance and false if and the job if the job id hasn't been found */
+func updateJob(job gopenqa.Job) (gopenqa.Job, bool) {
 	for i, j := range knownJobs {
-		if j.ID == orig_id {
-			if j.ID != job.ID || j.State != job.State || j.Result != job.Result {
-				knownJobs[i] = job
-				return knownJobs[i], true
-			} else {
-				return job, false
-			}
+		if j.ID == job.ID {
+			knownJobs[i] = job
+			return knownJobs[i], true
 		}
 	}
 	return job, false
+}
+
+func getKnownJob(id int64) (gopenqa.Job, bool) {
+	for _, j := range knownJobs {
+		if j.ID == id {
+			return j, true
+		}
+	}
+	return gopenqa.Job{}, false
 }
 
 /** Try to update the job with the given status, if present. Returns the found job and true if the job was present */
@@ -482,22 +514,29 @@ func main() {
 func refreshJobs(tui *TUI, instance gopenqa.Instance) error {
 	// Get fresh jobs
 	status := tui.Status()
-	tui.SetStatus("Refreshing jobs ... ")
+	oldJobs := tui.Model.Jobs()
+	tui.SetStatus(fmt.Sprintf("Refreshing %d jobs ... ", len(oldJobs)))
 	tui.Update()
-	jobs := tui.Model.Jobs()
-	for i, job := range jobs {
-		tui.SetStatus(fmt.Sprintf("Refreshing jobs ... %d/%d", i+1, len(jobs)))
-		tui.Update()
-		orig_id := job.ID
-		job, err := FetchJob(job.ID, instance)
-		if err != nil {
-			return err
+	// Refresh all jobs at once in one request
+	ids := make([]int64, 0)
+	for _, job := range oldJobs {
+		ids = append(ids, job.ID)
+	}
+	jobs, err := instance.GetJobs(ids)
+	if err != nil {
+		return err
+	}
+	for _, job := range jobs {
+		updated := false
+		if j, found := getKnownJob(job.ID); found {
+			updated = j.ID != job.ID || j.State != job.State || j.Result != job.Result
+		} else {
+			updated = true
 		}
-		job, found := updateJob(orig_id, job, instance)
-		if found {
+
+		if updated {
 			status = fmt.Sprintf("Last update: [%s] Job %d-%s %s", time.Now().Format("15:04:05"), job.ID, job.Name, job.JobState())
 			tui.SetStatus(status)
-			jobs[i] = job
 			tui.Model.Apply(jobs)
 			tui.Update()
 			if cf.Notify && !hideJob(job) {
@@ -505,7 +544,7 @@ func refreshJobs(tui *TUI, instance gopenqa.Instance) error {
 			}
 		}
 		tui.Update()
-		// Failed jobs will be also scanned for comments
+		// Scan failed jobs for comments
 		state := job.JobState()
 		if state == "failed" || state == "incomplete" || state == "parallel_failed" {
 			reviewed, err := isReviewed(job, instance, state == "parallel_failed")
@@ -517,6 +556,7 @@ func refreshJobs(tui *TUI, instance gopenqa.Instance) error {
 			tui.Update()
 		}
 	}
+	knownJobs = jobs
 	tui.Model.Apply(jobs)
 	tui.SetStatus(status)
 	tui.Update()
@@ -589,7 +629,12 @@ func tui_main(tui *TUI, instance gopenqa.Instance) error {
 	jobs, err := FetchJobs(instance, func(group int, groups int, job int, jobs int) {
 		fmt.Print("\033[u") // Restore cursor position
 		fmt.Print("\033[K") // Erase till end of line
-		fmt.Printf("\tGet jobs for %d groups ... %d/%d (%d/%d jobs)", len(cf.Groups), group, groups, job, jobs)
+		fmt.Printf("\tGet jobs for %d groups ... %d/%d", len(cf.Groups), group, groups)
+		if job == 0 {
+			fmt.Printf(" (%d jobs)", jobs)
+		} else {
+			fmt.Printf(" (%d/%d jobs)", job, jobs)
+		}
 	})
 	fmt.Println()
 	if err != nil {
