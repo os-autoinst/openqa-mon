@@ -486,6 +486,8 @@ func refreshJobs(tui *TUI, instance gopenqa.Instance) error {
 	tui.Update()
 	jobs := tui.Model.Jobs()
 	for i, job := range jobs {
+		tui.SetStatus(fmt.Sprintf("Refreshing jobs ... %d/%d", i+1, len(jobs)))
+		tui.Update()
 		orig_id := job.ID
 		job, err := FetchJob(job.ID, instance)
 		if err != nil {
@@ -502,6 +504,7 @@ func refreshJobs(tui *TUI, instance gopenqa.Instance) error {
 				NotifySend(fmt.Sprintf("%s: %s %s", job.JobState(), job.Name, job.Test))
 			}
 		}
+		tui.Update()
 		// Failed jobs will be also scanned for comments
 		state := job.JobState()
 		if state == "failed" || state == "incomplete" || state == "parallel_failed" {
