@@ -250,11 +250,7 @@ func FetchJobs(instance gopenqa.Instance, callback FetchJobsCallback) ([]gopenqa
 		if err != nil {
 			return jobs, err
 		}
-		for j, job := range jobs {
-			if callback != nil {
-				// Add one to the counter to indicate the progress to humans (0/16 looks weird)
-				callback(i+1, len(cf.Groups), j+1, len(jobs))
-			}
+		for _, job := range jobs {
 			// Filter too old jobs
 			if !isJobTooOld(job, group.MaxLifetime) {
 				ret = append(ret, job)
@@ -273,19 +269,24 @@ func rabbitRemote(remote string) string {
 	return remote
 }
 
-/** Try to update the given job, if it exists and if not the same. Returns the found job and true, if an update was successful */
-func updateJob(orig_id int64, job gopenqa.Job, instance gopenqa.Instance) (gopenqa.Job, bool) {
+/** Updates the known job based on the Job ID. Returns true if it has been updated and the updated instance and false if and the job if the job id hasn't been found */
+func updateJob(job gopenqa.Job) (gopenqa.Job, bool) {
 	for i, j := range knownJobs {
-		if j.ID == orig_id {
-			if j.ID != job.ID || j.State != job.State || j.Result != job.Result {
-				knownJobs[i] = job
-				return knownJobs[i], true
-			} else {
-				return job, false
-			}
+		if j.ID == job.ID {
+			knownJobs[i] = job
+			return knownJobs[i], true
 		}
 	}
 	return job, false
+}
+
+func getKnownJob(id int64) (gopenqa.Job, bool) {
+	for _, j := range knownJobs {
+		if j.ID == id {
+			return j, true
+		}
+	}
+	return gopenqa.Job{}, false
 }
 
 /** Try to update the job with the given status, if present. Returns the found job and true if the job was present */
@@ -513,22 +514,29 @@ func main() {
 func refreshJobs(tui *TUI, instance gopenqa.Instance) error {
 	// Get fresh jobs
 	status := tui.Status()
-	tui.SetStatus("Refreshing jobs ... ")
+	oldJobs := tui.Model.Jobs()
+	tui.SetStatus(fmt.Sprintf("Refreshing %d jobs ... ", len(oldJobs)))
 	tui.Update()
-	jobs := tui.Model.Jobs()
-	for i, job := range jobs {
-		tui.SetStatus(fmt.Sprintf("Refreshing jobs ... %d/%d", i+1, len(jobs)))
-		tui.Update()
-		orig_id := job.ID
-		job, err := FetchJob(job.ID, instance)
-		if err != nil {
-			return err
+	// Refresh all jobs at once in one request
+	ids := make([]int64, 0)
+	for _, job := range oldJobs {
+		ids = append(ids, job.ID)
+	}
+	jobs, err := instance.GetJobs(ids)
+	if err != nil {
+		return err
+	}
+	for _, job := range jobs {
+		updated := false
+		if j, found := getKnownJob(job.ID); found {
+			updated = j.ID != job.ID || j.State != job.State || j.Result != job.Result
+		} else {
+			updated = true
 		}
-		job, found := updateJob(orig_id, job, instance)
-		if found {
+
+		if updated {
 			status = fmt.Sprintf("Last update: [%s] Job %d-%s %s", time.Now().Format("15:04:05"), job.ID, job.Name, job.JobState())
 			tui.SetStatus(status)
-			jobs[i] = job
 			tui.Model.Apply(jobs)
 			tui.Update()
 			if cf.Notify && !hideJob(job) {
@@ -536,7 +544,7 @@ func refreshJobs(tui *TUI, instance gopenqa.Instance) error {
 			}
 		}
 		tui.Update()
-		// Failed jobs will be also scanned for comments
+		// Scan failed jobs for comments
 		state := job.JobState()
 		if state == "failed" || state == "incomplete" || state == "parallel_failed" {
 			reviewed, err := isReviewed(job, instance, state == "parallel_failed")
@@ -548,6 +556,7 @@ func refreshJobs(tui *TUI, instance gopenqa.Instance) error {
 			tui.Update()
 		}
 	}
+	knownJobs = jobs
 	tui.Model.Apply(jobs)
 	tui.SetStatus(status)
 	tui.Update()
