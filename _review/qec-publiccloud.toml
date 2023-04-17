@@ -17,7 +17,8 @@ Name = "Public Cloud Incident test runs"
 Params = { groupid = "430" }
 MaxLifetime = 86400
 
-# Define publiccloud aggregate runs based on their flavor
+# Define publiccloud aggregate runs based on their Flavor
+
 [[Groups]]
 Name = "AZURE-Basic-Updates"
 Params = { flavor = "AZURE-Basic-Updates", build = "%yesterday%-1" }
