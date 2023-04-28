@@ -26,7 +26,7 @@ To create such a `TODO` configuration, the following template might be useful.
 Instance = "https://openqa.opensuse.org"
 RabbitMQ = "amqps://opensuse:opensuse@rabbit.opensuse.org"
 RabbitMQTopic = "opensuse.openqa.job.done"
-HideStatus = [ "scheduled", "assigned", "passed", "softfailed", "cancelled", "skipped", "running", "reviewed" ]
+HideStatus = [ "scheduled", "assigned", "passed", "softfailed", "cancelled", "skipped", "running", "reviewed", "user_cancelled"]
 RefreshInterval = 60
 MaxJobs = 20
 GroupBy = "groups"

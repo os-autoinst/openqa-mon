@@ -3,13 +3,18 @@
 Instance = "https://openqa.suse.de"              # openQA instance to query
 RabbitMQ = "amqps://suse:suse@rabbit.suse.de"    # RabbitMQ instance to query
 RabbitMQTopic = "suse.openqa.job.done"           # RabbitMQ topic to query
-HideStatus = [ "scheduled", "passed", "softfailed", "running", "reviewed" ]           # Hide scheduled and passed jobs
+HideStatus = [ "scheduled", "passed", "softfailed", "running", "reviewed", "user_cancelled"]  # Hide jobs in defined states
 RefreshInterval = 60                             # Refresh from API once every minute
 MaxJobs = 20                                     # Max. job per group to display
 GroupBy = "groups"                               # Group by defined groups ("none" or "groups")
 
 
 ## Latest WSL builds
+[[Groups]]
+Name = "SLE 15-SP5 WSL"
+Params = { groupid = "461" }
+MaxLifetime = 86400
+
 [[Groups]]
 Name = "SLE 15-SP4 WSL"
 Params = { groupid = "386" }
@@ -20,13 +25,14 @@ Name = "SLE 15-SP3 WSL"
 Params = { groupid = "326" }
 MaxLifetime = 86400
 
+
+## Windows KVM Installation
 [[Groups]]
-Name = "SLE 15-SP2 WSL"
-Params = { groupid = "298" }
+Name = "Windows 11 installation"
+Params = { version="11", groupid="287" }
 MaxLifetime = 86400
 
 [[Groups]]
-Name = "SLE 12-SP5 WSL"
-Params = { groupid = "288" }
+Name = "Windows 10 installation"
+Params = { version="10", groupid="287" }
 MaxLifetime = 86400
-

@@ -3,7 +3,7 @@
 Instance = "https://openqa.suse.de"              # openQA instance to query
 RabbitMQ = "amqps://suse:suse@rabbit.suse.de"    # RabbitMQ instance to query
 RabbitMQTopic = "suse.openqa.job.done"           # RabbitMQ topic to query
-HideStatus = [ "scheduled", "passed", "softfailed", "running", "reviewed" ]           # Hide scheduled and passed jobs
+HideStatus = [ "scheduled", "passed", "softfailed", "running", "reviewed", "user_cancelled"]  # Hide jobs in defined states
 RefreshInterval = 60                             # Refresh from API once every minute
 MaxJobs = 20                                     # Max. job per group to display
 GroupBy = "groups"                               # Group by defined groups ("none" or "groups")
@@ -12,18 +12,30 @@ GroupBy = "groups"                               # Group by defined groups ("non
 ## Latest SLE Micro images
 
 [[Groups]]
-Name = "Lastest SLE Micro (5.4)"
+Name = "Latest SLE Micro (5.4)"
 Params = { groupid = "410" }
 MaxLifetime = 86400
 
+
+## SLEM on Public Cloud
 [[Groups]]
-Name = "SLEM 5.4 on Publiccloud"
+Name = "SLEM 5.4 on Public Cloud"
 Params = { groupid = "480" }
 MaxLifetime = 86400
 
 [[Groups]]
-Name = "SLEM 5.3 on Publiccloud"
+Name = "SLEM 5.3 on Public Cloud"
 Params = { groupid = "455" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "SLEM 5.2 on Public Cloud"
+Params = { groupid = "413" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "SLEM 5.1 on Public Cloud"
+Params = { groupid = "479" }
 MaxLifetime = 86400
 
 [[Groups]]
@@ -42,10 +54,9 @@ Params = { groupid = "451" }
 MaxLifetime = 86400
 
 [[Groups]]
-Name = "SLE Micro for Rancher image"
+Name = "SLE Micro for Rancher"
 Params = { groupid = "449" }
 MaxLifetime = 86400
-
 
 ## Maintenance updates
 

@@ -3,7 +3,7 @@
 Instance = "https://openqa.opensuse.org"                        # openQA instance to query
 RabbitMQ = "amqps://opensuse:opensuse@rabbit.opensuse.org"      # RabbitMQ instance to query
 RabbitMQTopic = "opensuse.openqa.job.done"                      # RabbitMQ topic to query
-HideStatus = ["scheduled", "passed", "softfailed", "cancelled", "skipped", "running", "uploading", "parallel_failed", "reviewed" ]           # Hide scheduled and passed jobs
+HideStatus = ["scheduled", "passed", "softfailed", "cancelled", "skipped", "running", "uploading", "parallel_failed", "reviewed", "user_cancelled"]  # Hide jobs in defined states
 RefreshInterval = 60                                            # Refresh from API once every minute
 MaxJobs = 20                                                    # Max. job per group to display
 GroupBy = "groups"                                              # Group by defined groups ("none" or "groups")
@@ -13,11 +13,14 @@ DefaultParams = { distri="microos", version = "Tumbleweed" }    # Set of default
 [[Groups]]
 Name = "MicroOS Image"
 Params = { flavor = "MicroOS-Image" }
+MaxLifetime = 86400
 
 [[Groups]]
 Name = "MicroOS Image Container Host"
 Params = { flavor = "MicroOS-Image-ContainerHost" }
+MaxLifetime = 86400
 
 [[Groups]]
 Name = "MicroOS Kubic Image - kubeadm"
 Params = { flavor = "MicroOS-Image-Kubic-kubeadm" }
+MaxLifetime = 86400

@@ -3,7 +3,7 @@
 Instance = "https://openqa.suse.de"              # openQA instance to query
 RabbitMQ = "amqps://suse:suse@rabbit.suse.de"    # RabbitMQ instance to query
 RabbitMQTopic = "suse.openqa.job.done"           # RabbitMQ topic to query
-HideStatus = ["scheduled", "passed", "softfailed", "cancelled", "skipped", "running", "uploading", "parallel_failed", "reviewed" ]           # Hide scheduled and passed jobs
+HideStatus = ["scheduled", "passed", "softfailed", "cancelled", "skipped", "running", "uploading", "parallel_failed", "reviewed", "user_cancelled"]  # Hide jobs in defined states
 RefreshInterval = 60                             # Refresh from API once every minute
 MaxJobs = 20                                     # Max. job per group to display
 GroupBy = "groups"                               # Group by defined groups ("none" or "groups")
@@ -16,7 +16,6 @@ Params = { groupid = "131" }
 MaxLifetime = 86400
 
 ## Maintenance updates
-
 [[Groups]]
 Name = "JeOS Maintenance Updates 15-SP4"
 Params = { groupid = "419", build = "%yesterday%-1", version = "15-SP4" }
@@ -41,9 +40,3 @@ MaxLifetime = 86400
 Name = "JeOS Maintenance Updates 12-SP5"
 Params = { groupid = "419", build = "%yesterday%-1", version = "12-SP5" }
 MaxLifetime = 86400
-
-[[Groups]]
-Name = "JeOS Maintenance Updates 12-SP4"
-Params = { groupid = "419", build = "%yesterday%-1", version = "12-SP4" }
-MaxLifetime = 86400
-
