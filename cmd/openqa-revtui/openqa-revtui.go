@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"os/user"
 	"strings"
 	"time"
@@ -597,6 +598,17 @@ func tui_main(tui *TUI, instance gopenqa.Instance) error {
 		} else if key == 's' {
 			// Shift through the sorting mechanism
 			tui.SetSorting((tui.Sorting() + 1) % 2)
+			tui.Update()
+		} else if key == 'o' {
+			for _, job := range tui.Model.jobs {
+				if !tui.hideJob(job) {
+					err := exec.Command("xdg-open", job.Link).Start()
+					if err != nil {
+						tui.SetStatus(fmt.Sprintf("Error: %s", err))
+						break
+					}
+				}
+			}
 			tui.Update()
 		} else {
 			tui.Update()

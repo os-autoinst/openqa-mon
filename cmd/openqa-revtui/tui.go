@@ -436,7 +436,7 @@ func (tui *TUI) buildHeader(width int) []string {
 	lines := make([]string, 0)
 	if tui.header != "" {
 		lines = append(lines, tui.header)
-		lines = append(lines, "q:Quit   r:Refresh   h:Hide/Show jobs   m:Toggle RabbitMQ tracker   s:Switch sorting    Arrows:Move up/down")
+		lines = append(lines, "q:Quit r:Refresh h:Hide/Show jobs o:Open links m:Toggle RabbitMQ tracker s:Switch sorting Arrows:Move up/down")
 	}
 	return lines
 }
