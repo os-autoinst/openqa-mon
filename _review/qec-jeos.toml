@@ -16,6 +16,12 @@ Params = { groupid = "131" }
 MaxLifetime = 86400
 
 ## Maintenance updates
+
+[[Groups]]
+Name = "JeOS Maintenance Updates 15-SP5"
+Params = { groupid = "419", build = "%yesterday%-1", version = "15-SP5" }
+MaxLifetime = 86400
+
 [[Groups]]
 Name = "JeOS Maintenance Updates 15-SP4"
 Params = { groupid = "419", build = "%yesterday%-1", version = "15-SP4" }
