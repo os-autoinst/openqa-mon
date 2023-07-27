@@ -1,0 +1,16 @@
+## Review template file for ALP test runs on OSD
+
+Instance = "https://openqa.suse.de"              # openQA instance to query
+RabbitMQ = "amqps://suse:suse@rabbit.suse.de"    # RabbitMQ instance to query
+RabbitMQTopic = "suse.openqa.job.done"           # RabbitMQ topic to query
+HideStatus = ["scheduled", "passed", "softfailed", "cancelled", "skipped", "running", "uploading", "parallel_failed", "reviewed", "user_cancelled"]  # Hide jobs in defined states
+RefreshInterval = 60                             # Refresh from API once every minute
+MaxJobs = 20                                     # Max. job per group to display
+GroupBy = "groups"                               # Group by defined groups ("none" or "groups")
+
+
+## Latest JeOS images
+[[Groups]]
+Name = "ALP Container host"
+Params = { groupid = "499" }
+MaxLifetime = 172800   # Review images upt to two days
