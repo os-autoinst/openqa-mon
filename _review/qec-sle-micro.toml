@@ -12,8 +12,8 @@ GroupBy = "groups"                               # Group by defined groups ("non
 ## Latest SLE Micro images
 
 [[Groups]]
-Name = "Latest SLE Micro (5.5)"
-Params = { groupid = "410" }
+Name = "Latest SLE Micro Container Host"
+Params = { groupid = "513" }
 MaxLifetime = 86400
 
 
