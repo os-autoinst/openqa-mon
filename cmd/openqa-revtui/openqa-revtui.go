@@ -128,7 +128,7 @@ func isJobTooOld(job gopenqa.Job, maxlifetime int64) bool {
 	return deltaT > maxlifetime
 }
 
-func isReviewed(job gopenqa.Job, instance gopenqa.Instance, checkParallel bool) (bool, error) {
+func isReviewed(job gopenqa.Job, instance *gopenqa.Instance, checkParallel bool) (bool, error) {
 	reviewed, err := checkReviewed(job.ID, instance)
 	if err != nil || reviewed {
 		return reviewed, err
@@ -149,7 +149,7 @@ func isReviewed(job gopenqa.Job, instance gopenqa.Instance, checkParallel bool) 
 	return false, nil
 }
 
-func checkReviewed(job int64, instance gopenqa.Instance) (bool, error) {
+func checkReviewed(job int64, instance *gopenqa.Instance) (bool, error) {
 	comments, err := instance.GetComments(job)
 	if err != nil {
 		return false, nil
@@ -182,7 +182,7 @@ func FetchJobGroups(instance gopenqa.Instance) (map[int]gopenqa.JobGroup, error)
 	return jobGroups, nil
 }
 
-/* Get job or restarted current job of the given job ID */
+/* Get job or clone current job of the given job ID */
 func FetchJob(id int64, instance gopenqa.Instance) (gopenqa.Job, error) {
 	var job gopenqa.Job
 	for i := 0; i < 25; i++ { // Max recursion depth is 25
@@ -512,7 +512,7 @@ func main() {
 	}
 }
 
-func refreshJobs(tui *TUI, instance gopenqa.Instance) error {
+func refreshJobs(tui *TUI, instance *gopenqa.Instance) error {
 	// Get fresh jobs
 	status := tui.Status()
 	oldJobs := tui.Model.Jobs()
@@ -523,7 +523,7 @@ func refreshJobs(tui *TUI, instance gopenqa.Instance) error {
 	for _, job := range oldJobs {
 		ids = append(ids, job.ID)
 	}
-	jobs, err := instance.GetJobs(ids)
+	jobs, err := instance.GetJobsFollow(ids)
 	if err != nil {
 		return err
 	}
@@ -577,7 +577,7 @@ func tui_main(tui *TUI, instance gopenqa.Instance) error {
 			if !refreshing {
 				refreshing = true
 				go func() {
-					if err := refreshJobs(tui, instance); err != nil {
+					if err := refreshJobs(tui, &instance); err != nil {
 						tui.SetStatus(fmt.Sprintf("Error while refreshing: %s", err))
 					}
 					refreshing = false
@@ -656,7 +656,7 @@ func tui_main(tui *TUI, instance gopenqa.Instance) error {
 	for _, job := range jobs {
 		state := job.JobState()
 		if state == "failed" || state == "incomplete" || state == "parallel_failed" {
-			reviewed, err := isReviewed(job, instance, state == "parallel_failed")
+			reviewed, err := isReviewed(job, &instance, state == "parallel_failed")
 			if err != nil {
 				return fmt.Errorf("Error fetching job comment: %s", err)
 			}
@@ -683,7 +683,7 @@ func tui_main(tui *TUI, instance gopenqa.Instance) error {
 		go func() {
 			for {
 				time.Sleep(time.Duration(cf.RefreshInterval) * time.Second)
-				if err := refreshJobs(tui, instance); err != nil {
+				if err := refreshJobs(tui, &instance); err != nil {
 					tui.SetStatus(fmt.Sprintf("Error while refreshing: %s", err))
 				}
 			}
