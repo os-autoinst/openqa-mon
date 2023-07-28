@@ -564,6 +564,16 @@ func refreshJobs(tui *TUI, instance *gopenqa.Instance) error {
 	return nil
 }
 
+// openJobs opens the given jobs in the browser
+func browserJobs(jobs []gopenqa.Job) error {
+	for _, job := range jobs {
+		if err := exec.Command("xdg-open", job.Link).Start(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // main routine for the TUI instance
 func tui_main(tui *TUI, instance gopenqa.Instance) error {
 	title := "openqa Review TUI Dashboard v" + VERSION
@@ -599,14 +609,18 @@ func tui_main(tui *TUI, instance gopenqa.Instance) error {
 			// Shift through the sorting mechanism
 			tui.SetSorting((tui.Sorting() + 1) % 2)
 			tui.Update()
-		} else if key == 'o' {
-			for _, job := range tui.Model.jobs {
-				if !tui.hideJob(job) {
-					err := exec.Command("xdg-open", job.Link).Start()
-					if err != nil {
-						tui.SetStatus(fmt.Sprintf("Error: %s", err))
-						break
-					}
+		} else if key == 'o' || key == 'O' {
+			// Note: 'o' has a failsafe to not open more than 10 links. 'O' overrides this failsafe
+			jobs := tui.GetVisibleJobs()
+			if len(jobs) == 0 {
+				tui.SetStatus("No visible jobs")
+			} else if len(jobs) > 10 && key == 'o' {
+				tui.SetStatus("Refusing to open more than 10 job links. Use 'O' to override")
+			} else {
+				if err := browserJobs(jobs); err != nil {
+					tui.SetStatus(fmt.Sprintf("error: %s", err))
+				} else {
+					tui.SetStatus(fmt.Sprintf("Opened %d links", len(jobs)))
 				}
 			}
 			tui.Update()
