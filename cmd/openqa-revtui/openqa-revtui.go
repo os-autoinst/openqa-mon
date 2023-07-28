@@ -128,7 +128,7 @@ func isJobTooOld(job gopenqa.Job, maxlifetime int64) bool {
 	return deltaT > maxlifetime
 }
 
-func isReviewed(job gopenqa.Job, instance gopenqa.Instance, checkParallel bool) (bool, error) {
+func isReviewed(job gopenqa.Job, instance *gopenqa.Instance, checkParallel bool) (bool, error) {
 	reviewed, err := checkReviewed(job.ID, instance)
 	if err != nil || reviewed {
 		return reviewed, err
@@ -149,7 +149,7 @@ func isReviewed(job gopenqa.Job, instance gopenqa.Instance, checkParallel bool) 
 	return false, nil
 }
 
-func checkReviewed(job int64, instance gopenqa.Instance) (bool, error) {
+func checkReviewed(job int64, instance *gopenqa.Instance) (bool, error) {
 	comments, err := instance.GetComments(job)
 	if err != nil {
 		return false, nil
@@ -182,7 +182,7 @@ func FetchJobGroups(instance gopenqa.Instance) (map[int]gopenqa.JobGroup, error)
 	return jobGroups, nil
 }
 
-/* Get job or restarted current job of the given job ID */
+/* Get job or clone current job of the given job ID */
 func FetchJob(id int64, instance gopenqa.Instance) (gopenqa.Job, error) {
 	var job gopenqa.Job
 	for i := 0; i < 25; i++ { // Max recursion depth is 25
@@ -512,7 +512,7 @@ func main() {
 	}
 }
 
-func refreshJobs(tui *TUI, instance gopenqa.Instance) error {
+func refreshJobs(tui *TUI, instance *gopenqa.Instance) error {
 	// Get fresh jobs
 	status := tui.Status()
 	oldJobs := tui.Model.Jobs()
@@ -523,7 +523,7 @@ func refreshJobs(tui *TUI, instance gopenqa.Instance) error {
 	for _, job := range oldJobs {
 		ids = append(ids, job.ID)
 	}
-	jobs, err := instance.GetJobs(ids)
+	jobs, err := instance.GetJobsFollow(ids)
 	if err != nil {
 		return err
 	}
@@ -564,6 +564,16 @@ func refreshJobs(tui *TUI, instance gopenqa.Instance) error {
 	return nil
 }
 
+// openJobs opens the given jobs in the browser
+func browserJobs(jobs []gopenqa.Job) error {
+	for _, job := range jobs {
+		if err := exec.Command("xdg-open", job.Link).Start(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // main routine for the TUI instance
 func tui_main(tui *TUI, instance gopenqa.Instance) error {
 	title := "openqa Review TUI Dashboard v" + VERSION
@@ -577,7 +587,7 @@ func tui_main(tui *TUI, instance gopenqa.Instance) error {
 			if !refreshing {
 				refreshing = true
 				go func() {
-					if err := refreshJobs(tui, instance); err != nil {
+					if err := refreshJobs(tui, &instance); err != nil {
 						tui.SetStatus(fmt.Sprintf("Error while refreshing: %s", err))
 					}
 					refreshing = false
@@ -599,14 +609,18 @@ func tui_main(tui *TUI, instance gopenqa.Instance) error {
 			// Shift through the sorting mechanism
 			tui.SetSorting((tui.Sorting() + 1) % 2)
 			tui.Update()
-		} else if key == 'o' {
-			for _, job := range tui.Model.jobs {
-				if !tui.hideJob(job) {
-					err := exec.Command("xdg-open", job.Link).Start()
-					if err != nil {
-						tui.SetStatus(fmt.Sprintf("Error: %s", err))
-						break
-					}
+		} else if key == 'o' || key == 'O' {
+			// Note: 'o' has a failsafe to not open more than 10 links. 'O' overrides this failsafe
+			jobs := tui.GetVisibleJobs()
+			if len(jobs) == 0 {
+				tui.SetStatus("No visible jobs")
+			} else if len(jobs) > 10 && key == 'o' {
+				tui.SetStatus("Refusing to open more than 10 job links. Use 'O' to override")
+			} else {
+				if err := browserJobs(jobs); err != nil {
+					tui.SetStatus(fmt.Sprintf("error: %s", err))
+				} else {
+					tui.SetStatus(fmt.Sprintf("Opened %d links", len(jobs)))
 				}
 			}
 			tui.Update()
@@ -656,7 +670,7 @@ func tui_main(tui *TUI, instance gopenqa.Instance) error {
 	for _, job := range jobs {
 		state := job.JobState()
 		if state == "failed" || state == "incomplete" || state == "parallel_failed" {
-			reviewed, err := isReviewed(job, instance, state == "parallel_failed")
+			reviewed, err := isReviewed(job, &instance, state == "parallel_failed")
 			if err != nil {
 				return fmt.Errorf("Error fetching job comment: %s", err)
 			}
@@ -683,7 +697,7 @@ func tui_main(tui *TUI, instance gopenqa.Instance) error {
 		go func() {
 			for {
 				time.Sleep(time.Duration(cf.RefreshInterval) * time.Second)
-				if err := refreshJobs(tui, instance); err != nil {
+				if err := refreshJobs(tui, &instance); err != nil {
 					tui.SetStatus(fmt.Sprintf("Error while refreshing: %s", err))
 				}
 			}

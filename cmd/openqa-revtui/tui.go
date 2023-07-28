@@ -91,6 +91,16 @@ func (tui *TUI) visibleJobCount() int {
 	return counter
 }
 
+func (tui *TUI) GetVisibleJobs() []gopenqa.Job {
+	jobs := make([]gopenqa.Job, 0)
+	for _, job := range tui.Model.jobs {
+		if !tui.hideJob(job) {
+			jobs = append(jobs, job)
+		}
+	}
+	return jobs
+}
+
 func (model *TUIModel) SetReviewed(job int64, reviewed bool) {
 	model.reviewed[job] = reviewed
 }
