@@ -159,6 +159,23 @@ func (tui *TUI) SetStatus(status string) {
 	tui.status = status
 }
 
+func (tui *TUI) SetTemporaryStatus(status string, duration int) {
+	tui.Model.mutex.Lock()
+	old := tui.status
+	tui.status = status
+	tui.Model.mutex.Unlock()
+	tui.Update()
+
+	// Reset status text after waiting for duration. But only, if the status text has not been altered in the meantime
+	go func(old, status string, duration int) {
+		time.Sleep(time.Duration(duration) * time.Second)
+		if tui.status == status {
+			tui.status = old
+			tui.Update()
+		}
+	}(old, status, duration)
+}
+
 func (tui *TUI) Status() string {
 	return tui.status
 }

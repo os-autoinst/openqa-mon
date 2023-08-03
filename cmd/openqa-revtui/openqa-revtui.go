@@ -576,7 +576,8 @@ func tui_main(tui *TUI, instance *gopenqa.Instance) error {
 			if len(jobs) == 0 {
 				tui.SetStatus("No visible jobs")
 			} else if len(jobs) > 10 && key == 'o' {
-				tui.SetStatus("Refusing to open more than 10 job links. Use 'O' to override")
+				status := fmt.Sprintf("Refuse to open %d (>10) job links. Use 'O' to override", len(jobs))
+				tui.SetTemporaryStatus(status, 5)
 			} else {
 				if err := browserJobs(jobs); err != nil {
 					tui.SetStatus(fmt.Sprintf("error: %s", err))
