@@ -19,6 +19,11 @@ MaxLifetime = 86400
 
 ## SLEM on Public Cloud
 [[Groups]]
+Name = "SLEM 5.5 on Public Cloud"
+Params = { groupid = "523" }
+MaxLifetime = 86400
+
+[[Groups]]
 Name = "SLEM 5.4 on Public Cloud"
 Params = { groupid = "480" }
 MaxLifetime = 86400
@@ -35,16 +40,6 @@ MaxLifetime = 86400
 
 [[Groups]]
 Name = "SLEM 5.1 on Public Cloud"
-Params = { groupid = "479" }
-MaxLifetime = 86400
-
-[[Groups]]
-Name = "SLEM 5.2 on Publiccloud"
-Params = { groupid = "413" }
-MaxLifetime = 86400
-
-[[Groups]]
-Name = "SLEM 5.1 on Publiccloud"
 Params = { groupid = "479" }
 MaxLifetime = 86400
 
