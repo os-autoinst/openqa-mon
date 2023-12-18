@@ -16,9 +16,9 @@ Individual files:
 * [qec-publiccloud.toml](qec-publiccloud.toml) - Review template for SLES PublicCloud test runs
 * [qec-containers.toml](qec-containers.toml) - Review template for SLES container test runs (excluding BCI)
 * [qec-bci.toml](qec-bci.toml) - Review template for SLE BCI container images
-* [qec-jeos.toml](qec-jeos.toml) - Review template for SLE JeOS images
+* [qec-minimalvm.toml](qec-minimalvm.toml) - Review template for MinimalVM/JeOS images
 * [qec-sle-micro.toml](qec-sle-micro.toml) - Review template for SLE Micro
-* [qec-sle-wsl.toml](qec-sle-wsl.toml) - Review template for SLE WSL images
+* [qec-wsl.toml](qec-wsl.toml) - Review template for SLE WSL images
 * [qec-wicked.toml](qec-wicked.toml) - Review template for wicked images
 * [qec-alp.toml](qec-alp.toml) - Review template for ALP (Dolomite)
 
