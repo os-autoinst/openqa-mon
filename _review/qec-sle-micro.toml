@@ -9,12 +9,7 @@ MaxJobs = 20                                     # Max. job per group to display
 GroupBy = "groups"                               # Group by defined groups ("none" or "groups")
 
 
-## Latest SLE Micro images
-
-[[Groups]]
-Name = "Latest SLE Micro Container Host"
-Params = { groupid = "513" }
-MaxLifetime = 86400
+## SLE Micro image updates
 
 [[Groups]]
 Name = "SLE Micro Toolbox updates"
@@ -29,8 +24,13 @@ MaxLifetime = 86400
 ## Maintenance updates
 
 [[Groups]]
+Name = "SLE Micro Maintenance Updates 5.5"
+Params = { groupid = "420", build = "%yesterday%-1", version = "5.5" }
+MaxLifetime = 86400
+
+[[Groups]]
 Name = "SLE Micro Maintenance Updates 5.4"
-Params = { groupid = "420", build = "%yesterday%-1", version = "5.3" }
+Params = { groupid = "420", build = "%yesterday%-1", version = "5.4" }
 MaxLifetime = 86400
 
 [[Groups]]
@@ -49,6 +49,11 @@ Params = { groupid = "420", build = "%yesterday%-1", version = "5.1" }
 MaxLifetime = 86400
 
 ## Single Incidents
+
+[[Groups]]
+Name = "SLE Micro Maintenance Incidents for 5.5"
+Params = { groupid = "528" }
+MaxLifetime = 86400
 
 [[Groups]]
 Name = "SLE Micro Maintenance Incidents for 5.4"

@@ -9,11 +9,18 @@ This directory contains example configuration files for `openqa-revtui`
 
 Find a selection of templates for the qe-c squad (containers and images)
 
+**Recommended review configuration file**: [qe-Maintenance-QEC.toml](qe-Maintenance-QEC.toml) (contains all maintenance test runs except *LATEST*)
+
+Individual files:
+
 * [qec-publiccloud.toml](qec-publiccloud.toml) - Review template for SLES PublicCloud test runs
-* [qec-containers.toml](qec-containers.toml) - Review template for SLES container test runs (including BCI)
+* [qec-containers.toml](qec-containers.toml) - Review template for SLES container test runs (excluding BCI)
+* [qec-bci.toml](qec-bci.toml) - Review template for SLE BCI container images
 * [qec-jeos.toml](qec-jeos.toml) - Review template for SLE JeOS images
 * [qec-sle-micro.toml](qec-sle-micro.toml) - Review template for SLE Micro
 * [qec-sle-wsl.toml](qec-sle-wsl.toml) - Review template for SLE WSL images
+* [qec-wicked.toml](qec-wicked.toml) - Review template for wicked images
+* [qec-alp.toml](qec-alp.toml) - Review template for ALP (Dolomite)
 
 ## Create a TODO template
 

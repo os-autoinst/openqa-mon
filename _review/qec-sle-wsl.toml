@@ -9,7 +9,8 @@ MaxJobs = 20                                     # Max. job per group to display
 GroupBy = "groups"                               # Group by defined groups ("none" or "groups")
 
 
-## Latest WSL builds
+## WSL builds
+
 [[Groups]]
 Name = "SLE 15-SP5 WSL"
 Params = { groupid = "461" }
@@ -22,11 +23,12 @@ MaxLifetime = 86400
 
 [[Groups]]
 Name = "SLE 15-SP3 WSL"
-Params = { groupid = "326" }
+Params = { groupid = "288" }
 MaxLifetime = 86400
 
 
 ## Windows KVM Installation
+
 [[Groups]]
 Name = "Windows 11 installation"
 Params = { version="11", groupid="287" }
