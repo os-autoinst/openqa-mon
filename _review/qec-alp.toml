@@ -9,8 +9,8 @@ MaxJobs = 20                                     # Max. job per group to display
 GroupBy = "groups"                               # Group by defined groups ("none" or "groups")
 
 
-## Latest JeOS images
+## Latest ALP (Dolomite) Container Host
 [[Groups]]
-Name = "ALP Container host"
+Name = "ALP Dolomite Container host"
 Params = { groupid = "499" }
 MaxLifetime = 172800   # Review images upt to two days

@@ -19,17 +19,17 @@ MaxLifetime = 86400
 # Leap 15.4
 
 [[Groups]]
-Name = "openSUSE Leap 15.4 Updates"
-Params = { groupid = "98", build = "" }
+Name = "openSUSE Leap 15.5 Updates"
+Params = { groupid = "112", build = "" }
 MaxLifetime = 86400
 
 [[Groups]]
-Name = "openSUSE Leap 15.4 Incidents"
-Params = { groupid = "97", build = "" }
+Name = "openSUSE Leap 15.5 Incidents"
+Params = { groupid = "114", build = "" }
 MaxLifetime = 86400
 
 [[Groups]]
-Name = "openSUSE Leap 15.4 Backports"
-Params = { groupid = "99", build = "" }
+Name = "openSUSE Leap 15.5 Backports"
+Params = { groupid = "113", build = "" }
 MaxLifetime = 86400
 

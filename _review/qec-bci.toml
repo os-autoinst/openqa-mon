@@ -1,4 +1,4 @@
-## Review template file for JeOS test runs on OSD
+## Review template file for container test runs on OSD
 
 Instance = "https://openqa.suse.de"              # openQA instance to query
 RabbitMQ = "amqps://suse:suse@rabbit.suse.de"    # RabbitMQ instance to query
@@ -8,34 +8,43 @@ RefreshInterval = 60                             # Refresh from API once every m
 MaxJobs = 20                                     # Max. job per group to display
 GroupBy = "groups"                               # Group by defined groups ("none" or "groups")
 
-## Maintenance updates
-
+## BCI and Base images
 [[Groups]]
-Name = "JeOS Maintenance Updates 15-SP5"
-Params = { groupid = "419", build = "%yesterday%-1", version = "15-SP5" }
+Name = "BCI Base Images 15-SP5"
+Params = { groupid = "475", build = "" }
 MaxLifetime = 86400
 
 [[Groups]]
-Name = "JeOS Maintenance Updates 15-SP4"
-Params = { groupid = "419", build = "%yesterday%-1", version = "15-SP4" }
+Name = "BCI Base Images 15-SP4"
+Params = { groupid = "443", build = "" }
 MaxLifetime = 86400
 
 [[Groups]]
-Name = "JeOS Maintenance Updates 15-SP3"
-Params = { groupid = "419", build = "%yesterday%-1", version = "15-SP3" }
+Name = "BCI Base Images 15-SP3"
+Params = { groupid = "442", build = "" }
 MaxLifetime = 86400
 
 [[Groups]]
-Name = "JeOS Maintenance Updates 15-SP2"
-Params = { groupid = "419", build = "%yesterday%-1", version = "15-SP2" }
+Name = "BCI Language Images"
+Params = { groupid = "444", build = "" }
 MaxLifetime = 86400
 
 [[Groups]]
-Name = "JeOS Maintenance Updates 15-SP1"
-Params = { groupid = "419", build = "%yesterday%-1", version = "15-SP1" }
+Name = "BCI Application Images"
+Params = { groupid = "445", build = "" }
 MaxLifetime = 86400
 
 [[Groups]]
-Name = "JeOS Maintenance Updates 12-SP5"
-Params = { groupid = "419", build = "%yesterday%-1", version = "12-SP5" }
+Name = "Base Images (pre-BCI, <15SP3)"
+Params = { groupid = "453", build = "" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "SUMA images"
+Params = { groupid = "516", build = "" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "BCI repo"
+Params = { groupid = "428", build = "" }
 MaxLifetime = 86400

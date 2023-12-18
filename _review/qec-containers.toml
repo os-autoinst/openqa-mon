@@ -8,42 +8,6 @@ RefreshInterval = 60                             # Refresh from API once every m
 MaxJobs = 20                                     # Max. job per group to display
 GroupBy = "groups"                               # Group by defined groups ("none" or "groups")
 
-## BCI and Base images
-[[Groups]]
-Name = "Containers/BCI Base Images 15-SP5"
-Params = { groupid = "475", build = "" }
-MaxLifetime = 86400
-
-[[Groups]]
-Name = "Containers/BCI Base Images 15-SP4"
-Params = { groupid = "443", build = "" }
-MaxLifetime = 86400
-
-[[Groups]]
-Name = "Containers/BCI Base Images 15-SP3"
-Params = { groupid = "442", build = "" }
-MaxLifetime = 86400
-
-[[Groups]]
-Name = "Containers/BCI Language Images"
-Params = { groupid = "444", build = "" }
-MaxLifetime = 86400
-
-[[Groups]]
-Name = "Containers/BCI Application Images"
-Params = { groupid = "445", build = "" }
-MaxLifetime = 86400
-
-[[Groups]]
-Name = "Containers/Base Images (pre-BCI, <15SP3)"
-Params = { groupid = "453", build = "" }
-MaxLifetime = 86400
-
-[[Groups]]
-Name = "Containers/BCI repo"
-Params = { groupid = "428", build = "" }
-MaxLifetime = 86400
-
 
 ## Maintenance updates
 
@@ -80,4 +44,11 @@ MaxLifetime = 86400
 [[Groups]]
 Name = "Containers Maintenance Updates 12-SP5"
 Params = { groupid = "417", build = "%yesterday%-1", version="12-SP5" }
+MaxLifetime = 86400
+
+# Create host disk images
+
+[[Groups]]
+Name = "Create bootable host HDDs"
+Params = { groupid = "377", build = "" }
 MaxLifetime = 86400

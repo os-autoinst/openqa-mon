@@ -10,86 +10,37 @@ MaxJobs = 20                                     # Max. job per group to display
 GroupBy = "groups"                               # Group by defined groups ("none" or "groups")
 DefaultParams = { distri = "sle" }               # Set of default parameters
 
-# Incidents
+
+## Maintenance updates
+
 [[Groups]]
-Name = "Public Cloud Incident test runs"
+Name = "PublicCloud Maintenance Updates 15-SP5"
+Params = { groupid = "427", build = "%yesterday%-1", version="15-SP5" }
+[[Groups]]
+Name = "PublicCloud Maintenance Updates 15-SP4"
+Params = { groupid = "427", build = "%yesterday%-1", version="15-SP4" }
+[[Groups]]
+Name = "PublicCloud Maintenance Updates 15-SP3"
+Params = { groupid = "427", build = "%yesterday%-1", version="15-SP3" }
+[[Groups]]
+Name = "PublicCloud Maintenance Updates 15-SP2"
+Params = { groupid = "427", build = "%yesterday%-1", version="15-SP2" }
+[[Groups]]
+Name = "PublicCloud Maintenance Updates 15-SP1"
+Params = { groupid = "427", build = "%yesterday%-1", version="15-SP1" }
+[[Groups]]
+Name = "PublicCloud Maintenance Updates 12-SP5"
+Params = { groupid = "427", build = "%yesterday%-1", version="12-SP5" }
+
+[[Groups]]
+Name = "Public Cloud Single Incidents"
 Params = { groupid = "430" }
 MaxLifetime = 86400
 
-# Define publiccloud aggregate runs based on their Flavor
+# Create openQA helper instance disk image
 
 [[Groups]]
-Name = "AZURE-Basic-Updates"
-Params = { flavor = "AZURE-Basic-Updates", build = "%yesterday%-1" }
-[[Groups]]
-Name = "AZURE-CHOST-BYOS-Updates"
-Params = { flavor = "AZURE-CHOST-BYOS-Updates", build = "%yesterday%-1" }
-[[Groups]]
-Name = "AZURE-Standard-Updates"
-Params = { flavor = "AZURE-Standard-Updates", build = "%yesterday%-1" }
-[[Groups]]
-Name = "AZURE-BYOS-Updates"
-Params = { flavor = "AZURE-BYOS-Updates", build = "%yesterday%-1" }
-[[Groups]]
-Name = "EC2-BYOS-Updates"
-Params = { flavor = "EC2-BYOS-Updates", build = "%yesterday%-1" }
-[[Groups]]
-Name = "EC2-CHOST-BYOS-Updates"
-Params = { flavor = "EC2-CHOST-BYOS-Updates", build = "%yesterday%-1" }
-[[Groups]]
-Name = "EC2-Updates"
-Params = { flavor = "EC2-Updates", build = "%yesterday%-1" }
-[[Groups]]
-Name = "GCE-Updates"
-Params = { flavor = "GCE-Updates", build = "%yesterday%-1" }
-[[Groups]]
-Name = "GCE-BYOS-Updates"
-Params = { flavor = "GCE-BYOS-Updates", build = "%yesterday%-1" }
-[[Groups]]
-Name = "GCE-CHOST-BYOS-Updates"
-Params = { flavor = "GCE-CHOST-BYOS-Updates", build = "%yesterday%-1" }
-[[Groups]]
-Name = "Public Cloud clients"
-Params = { flavor = "Server-DVD-Updates", build = "%yesterday%-1", groupid = "427" }
-
-# Latest
-
-[[Groups]]
-Name = "Azure - Latest"
-Params = { groupid = "219", build = "" }
-MaxLifetime = 86400
-
-[[Groups]]
-Name = "GCE - Latest"
-Params = { groupid = "275", build = "" }
-MaxLifetime = 86400
-
-[[Groups]]
-Name = "EC2 - Latest"
-Params = { groupid = "274", build = "" }
-MaxLifetime = 86400
-
-# Staging 
-
-[[Groups]]
-Name = "Staging - Azure"
-Params = { groupid = "463", build = "" }
-MaxLifetime = 86400
-
-[[Groups]]
-Name = "Staging - GCE"
-Params = { groupid = "465", build = "" }
-MaxLifetime = 86400
-
-[[Groups]]
-Name = "Staging - EC2"
-Params = { groupid = "464", build = "" }
-MaxLifetime = 86400
-
-# Create HDD
-
-[[Groups]]
-Name = "Create HDD"
+Name = "Create publiccloud-tools HDD"
 Params = { groupid = "276", build = "" }
 MaxLifetime = 86400
 
