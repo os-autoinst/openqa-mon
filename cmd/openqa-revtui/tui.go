@@ -373,6 +373,9 @@ func (tui *TUI) buildJobsScreenByGroup(width int) []string {
 			}
 			// Increase status counter
 			status := job.JobState()
+			if status == "failed" && tui.Model.reviewed[job.ID] {
+				status = "reviewed"
+			}
 			if c, exists := statC[status]; exists {
 				statC[status] = c + 1
 			} else {
@@ -391,6 +394,8 @@ func (tui *TUI) buildJobsScreenByGroup(width int) []string {
 				line += ANSI_MAGENTA
 			} else if s == "failed" || s == "parallel_failed" || s == "incomplete" {
 				line += ANSI_RED
+			} else if s == "reviewed" {
+				line += ANSI_MAGENTA
 			} else if s == "softfailed" {
 				line += ANSI_YELLOW
 			} else if s == "uploading" || s == "scheduled" || s == "running" {
@@ -622,6 +627,7 @@ func (tui *TUI) formatJobLine(job gopenqa.Job, width int) string {
 	if state == "failed" || state == "incomplete" || state == "parallel_failed" {
 		if reviewed, found := tui.Model.reviewed[job.ID]; found && reviewed {
 			c2 = ANSI_MAGENTA
+			state = "reviewed"
 		}
 	}
 
