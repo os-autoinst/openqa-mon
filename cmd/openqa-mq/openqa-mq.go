@@ -10,7 +10,7 @@ import (
 	"github.com/streadway/amqp"
 )
 
-const VERSION = "1.1.0"
+const VERSION = "1.2.0"
 
 type Config struct {
 	Remote     string   // Remote address
