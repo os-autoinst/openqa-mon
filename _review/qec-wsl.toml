@@ -12,6 +12,11 @@ GroupBy = "groups"                               # Group by defined groups ("non
 ## WSL builds
 
 [[Groups]]
+Name = "SLE 15-SP6 WSL"
+Params = { groupid = "326" }
+MaxLifetime = 86400
+
+[[Groups]]
 Name = "SLE 15-SP5 WSL"
 Params = { groupid = "461" }
 MaxLifetime = 86400
