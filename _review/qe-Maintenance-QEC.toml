@@ -11,6 +11,11 @@ GroupBy = "groups"                               # Group by defined groups ("non
 ## BCI and Base images #########################################################
 
 [[Groups]]
+Name = "BCI Base Images 15-SP6"
+Params = { groupid = "538", build = "" }
+MaxLifetime = 86400
+
+[[Groups]]
 Name = "BCI Base Images 15-SP5"
 Params = { groupid = "475", build = "" }
 MaxLifetime = 86400
@@ -52,6 +57,11 @@ MaxLifetime = 86400
 
 
 ## Container Maintenance updates ###############################################
+
+[[Groups]]
+Name = "Containers Maintenance Updates 15-SP6"
+Params = { groupid = "417", build = "%yesterday%-1", version="15-SP6" }
+MaxLifetime = 86400
 
 [[Groups]]
 Name = "Containers Maintenance Updates 15-SP5"
@@ -99,6 +109,11 @@ MaxLifetime = 86400
 ## JeOS/MinimalVM Maintenance updates ##########################################
 
 [[Groups]]
+Name = "JeOS Maintenance Updates 15-SP6"
+Params = { groupid = "419", build = "%yesterday%-1", version = "15-SP6" }
+MaxLifetime = 86400
+
+[[Groups]]
 Name = "JeOS Maintenance Updates 15-SP5"
 Params = { groupid = "419", build = "%yesterday%-1", version = "15-SP5" }
 MaxLifetime = 86400
@@ -131,6 +146,9 @@ MaxLifetime = 86400
 
 ## PublicCloud Maintenance updates #############################################
 
+[[Groups]]
+Name = "PublicCloud Maintenance Updates 15-SP6"
+Params = { groupid = "427", build = "%yesterday%-1", version="15-SP6" }
 [[Groups]]
 Name = "PublicCloud Maintenance Updates 15-SP5"
 Params = { groupid = "427", build = "%yesterday%-1", version="15-SP5" }
@@ -230,40 +248,12 @@ Params = { groupid = "482" }
 MaxLifetime = 86400
 
 
-## Wicked Maintenance Updates ##################################################
-
-[[Groups]]
-Name = "Wicked Maintenance Updates 15-SP5"
-Params = { groupid = "412", build = "%yesterday%-1", version="15-SP5" }
-MaxLifetime = 86400
-
-[[Groups]]
-Name = "Wicked Maintenance Updates 15-SP4"
-Params = { groupid = "412", build = "%yesterday%-1", version="15-SP4" }
-MaxLifetime = 86400
-
-[[Groups]]
-Name = "Wicked Maintenance Updates 15-SP3"
-Params = { groupid = "412", build = "%yesterday%-1", version="15-SP3" }
-MaxLifetime = 86400
-
-[[Groups]]
-Name = "Wicked Maintenance Updates 15-SP2"
-Params = { groupid = "412", build = "%yesterday%-1", version="15-SP2" }
-MaxLifetime = 86400
-
-[[Groups]]
-Name = "Wicked Maintenance Updates 15-SP1"
-Params = { groupid = "412", build = "%yesterday%-1", version="15-SP1" }
-MaxLifetime = 86400
-
-[[Groups]]
-Name = "Wicked Maintenance Updates 12-SP5"
-Params = { groupid = "412", build = "%yesterday%-1", version="12-SP5" }
-MaxLifetime = 86400
-
-
 ## WSL builds ##################################################################
+
+[[Groups]]
+Name = "SLE 15-SP6 WSL"
+Params = { groupid = "326" }
+MaxLifetime = 86400
 
 [[Groups]]
 Name = "SLE 15-SP5 WSL"
