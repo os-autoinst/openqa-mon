@@ -9,6 +9,10 @@ MaxJobs = 20                                     # Max. job per group to display
 GroupBy = "groups"                               # Group by defined groups ("none" or "groups")
 
 ## Maintenance updates
+[[Groups]]
+Name = "JeOS Maintenance Updates 15-SP6"
+Params = { groupid = "419", build = "%yesterday%-1", version = "15-SP6" }
+MaxLifetime = 86400
 
 [[Groups]]
 Name = "JeOS Maintenance Updates 15-SP5"
