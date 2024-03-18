@@ -10,6 +10,10 @@ GroupBy = "groups"                               # Group by defined groups ("non
 
 
 ## Maintenance updates
+[[Groups]]
+Name = "Containers Maintenance Updates 15-SP6"
+Params = { groupid = "417", build = "%yesterday%-1", version="15-SP6" }
+MaxLifetime = 86400
 
 [[Groups]]
 Name = "Containers Maintenance Updates 15-SP5"

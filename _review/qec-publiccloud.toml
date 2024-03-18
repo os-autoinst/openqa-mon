@@ -12,7 +12,9 @@ DefaultParams = { distri = "sle" }               # Set of default parameters
 
 
 ## Maintenance updates
-
+[[Groups]]
+Name = "PublicCloud Maintenance Updates 15-SP6"
+Params = { groupid = "427", build = "%yesterday%-1", version="15-SP6" }
 [[Groups]]
 Name = "PublicCloud Maintenance Updates 15-SP5"
 Params = { groupid = "427", build = "%yesterday%-1", version="15-SP5" }

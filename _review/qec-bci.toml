@@ -10,6 +10,11 @@ GroupBy = "groups"                               # Group by defined groups ("non
 
 ## BCI and Base images
 [[Groups]]
+Name = "BCI Base Images 15-SP6"
+Params = { groupid = "538", build = "" }
+MaxLifetime = 86400
+
+[[Groups]]
 Name = "BCI Base Images 15-SP5"
 Params = { groupid = "475", build = "" }
 MaxLifetime = 86400
