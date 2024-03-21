@@ -230,6 +230,7 @@ func FetchJobs(instance *gopenqa.Instance, callback FetchJobsCallback) ([]gopenq
 		if err != nil {
 			return ret, err
 		}
+
 		// Limit jobs to at most MaxJobs
 		if len(jobs) > cf.MaxJobs {
 			jobs = jobs[:cf.MaxJobs]
@@ -249,8 +250,8 @@ func FetchJobs(instance *gopenqa.Instance, callback FetchJobsCallback) ([]gopenq
 			return jobs, err
 		}
 		for _, job := range jobs {
-			// Filter too old jobs
-			if !isJobTooOld(job, group.MaxLifetime) {
+			// Filter too old jobs and jobs with group=0
+			if job.GroupID == 0 || !isJobTooOld(job, group.MaxLifetime) {
 				ret = append(ret, job)
 			}
 		}
