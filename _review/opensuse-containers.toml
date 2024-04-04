@@ -1,0 +1,146 @@
+## Review template file for Tumbleweed test runs on O3
+
+Instance = "https://openqa.opensuse.org"                        # openQA instance to query
+RabbitMQ = "amqps://opensuse:opensuse@rabbit.opensuse.org"      # RabbitMQ instance to query
+RabbitMQTopic = "opensuse.openqa.job.done"                      # RabbitMQ topic to query
+HideStatus = ["scheduled", "passed", "softfailed", "cancelled", "skipped", "running", "uploading", "parallel_failed", "reviewed", "user_cancelled"]  # Hide jobs in defined states
+RefreshInterval = 60                                            # Refresh from API once every minute
+MaxJobs = 20                                                    # Max. job per group to display
+GroupBy = "groups"                                              # Group by defined groups ("none" or "groups")
+DefaultParams = { distri="opensuse", version = "Tumbleweed" }   # Set of default parameters
+
+## Define job groups
+
+[[Groups]]
+Name = "container-host"
+Params = { groupid = "1", distri="microos", test="container-host" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "container-host-old2microosnext"
+Params = { groupid = "1", distri="microos", test="container-host-old2microosnext" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "container-host-host2microosnext"
+Params = { groupid = "1", distri="microos", test="container-host2microosnext" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "containers_host_containerd"
+Params = { groupid = "1", distri="opensuse", test="containers_host_containerd" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "containers_host_docker"
+Params = { groupid = "1", distri="opensuse", test="containers_host_docker" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "containers_host_helm"
+Params = { groupid = "1", distri="opensuse", test="containers_host_helm" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "containers_host_kubectl"
+Params = { groupid = "1", distri="opensuse", test="containers_host_kubectl" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "containers_host_podman"
+Params = { groupid = "1", distri="opensuse", test="containers_host_podman" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "containers_host_podman_testsuite"
+Params = { groupid = "1", distri="opensuse", test="containers_host_podman_testsuite" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "containers_hpc_aptainer"
+Params = { groupid = "1", distri="opensuse", test="containers_hpc_apptainer" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "containers_image"
+Params = { groupid = "1", distri="opensuse", test="containers_image" }
+MaxLifetime = 86400
+
+## Aarch64 #####################################################################
+
+[[Groups]]
+Name = "container-host"
+Params = { groupid = "3", distri="microos", test="container-host" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "container-host-old2microosnext"
+Params = { groupid = "3", distri="microos", test="container-host-old2microosnext" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "container-host-host2microosnext"
+Params = { groupid = "3", distri="microos", test="container-host2microosnext" }
+MaxLifetime = 86400
+
+
+[[Groups]]
+Name = "containers_host_containerd"
+Params = { groupid = "3", distri="opensuse", test="containers_host_containerd" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "containers_host_docker"
+Params = { groupid = "3", distri="opensuse", test="containers_host_docker" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "containers_host_helm"
+Params = { groupid = "3", distri="opensuse", test="containers_host_helm" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "containers_host_kubectl"
+Params = { groupid = "3", distri="opensuse", test="containers_host_kubectl" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "containers_host_podman"
+Params = { groupid = "3", distri="opensuse", test="containers_host_podman" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "containers_host_podman_testsuite"
+Params = { groupid = "3", distri="opensuse", test="containers_host_podman_testsuite" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "containers_hpc_aptainer"
+Params = { groupid = "3", distri="opensuse", test="containers_hpc_apptainer" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "containers_image"
+Params = { groupid = "3", distri="opensuse", test="containers_image" }
+MaxLifetime = 86400
+
+## Legacy X86 ##################################################################
+
+# (no jobs)
+
+## PowerPC #####################################################################
+
+
+[[Groups]]
+Name = "containers_host_docker"
+Params = { groupid = "4", distri="opensuse", test="containers_host_docker" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "containers_host_podman"
+Params = { groupid = "4", distri="opensuse", test="containers_host_podman" }
+MaxLifetime = 86400
+
+## s390x #######################################################################
+
+# (no jobs)
