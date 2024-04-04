@@ -629,6 +629,10 @@ func tui_main(tui *TUI, instance *gopenqa.Instance) error {
 	if err != nil {
 		return fmt.Errorf("error fetching jobs: %s", err)
 	}
+	if len(jobs) == 0 {
+		// No reason to continue - there are no jobs to scan
+		return fmt.Errorf("no jobs found")
+	}
 	// Failed jobs will be also scanned for comments
 	for _, job := range jobs {
 		state := job.JobState()
