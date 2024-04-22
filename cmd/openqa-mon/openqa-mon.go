@@ -512,8 +512,8 @@ func SetStatus() {
 	}
 }
 
-func parseProgramArguments() error {
-	args, err := expandArguments(os.Args[1:])
+func parseProgramArguments(cliargs []string) error {
+	args, err := expandArguments(cliargs[1:])
 	if err != nil {
 		return err
 	}
@@ -690,7 +690,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := parseProgramArguments(); err != nil {
+	if err := parseProgramArguments(os.Args); err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		os.Exit(1)
 	}
