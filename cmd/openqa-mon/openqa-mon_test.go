@@ -24,9 +24,13 @@ func TestAdd2JobsToSameRemote(t *testing.T) {
 	if err != nil {
 		t.Error("Error parsing command line:", err)
 	}
-	expected := []int64{5701879, 5701880}
-	if !reflect.DeepEqual(remotes[0].Jobs, expected) {
-		t.Error("Expected,", expected, "jobs, got", remotes[0].Jobs)
+	expected_jobs := []int64{5701879, 5701880}
+	if !reflect.DeepEqual(remotes[0].Jobs, expected_jobs) {
+		t.Error("Expected,", expected_jobs, "jobs, got", remotes[0].Jobs)
+	}
+	expected_URI := "https://openqa.opensuse.org"
+	if remotes[0].URI != expected_URI {
+		t.Error("Expected remote URI=", expected_URI, ",got", remotes[0].URI)
 	}
 }
 
