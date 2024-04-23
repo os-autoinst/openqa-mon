@@ -31,3 +31,6 @@ uninstall:
 	rm -f /usr/local/bin/openqa-mq
 	rm -f /usr/local/bin/openqa-review
 	rm -f /usr/local/man/man8/openqa-mon.8
+
+test:
+	go test ./...
