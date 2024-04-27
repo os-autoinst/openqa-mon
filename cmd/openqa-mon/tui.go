@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 	"unsafe"
@@ -80,14 +81,6 @@ func IsTTY() bool {
 	} else {
 		return false
 	}
-}
-
-func spaces(n int) string {
-	ret := ""
-	for i := 0; i < n; i++ {
-		ret += " "
-	}
-	return ret
 }
 
 func PrintLine(line string, maxWidth int) {
@@ -173,17 +166,15 @@ func PrintJob(job gopenqa.Job, useColors bool, width int) {
 	}
 	// Crop or extend name with spaces to fill the whole line
 	i := width - fixedCharacters - len(link) - len(name)
-	if i == 0 {
-	} else if i < 0 {
+	if i < 0 {
 		name = name[:width-fixedCharacters]
 		link = ""
-	} else {
+	} else if i > 0 {
 		// Expand name
-		name = name + spaces(i)
+		name = name + strings.Repeat(" ", i)
 	}
-
 	if len(status) < 18 {
-		status = spaces(18-len(status)) + status
+		status = strings.Repeat(" ", 18-len(status)) + status
 	}
 	fmt.Printf("%8d  %s%s  %.18s\n", job.ID, name, link, status)
 
@@ -351,7 +342,8 @@ func (tui *TUI) Update() {
 		status := tui.status
 		footer := "openqa-mon (https://github.com/grisu48/openqa-mon)"
 		if width >= len(status)+len(footer)+5 {
-			status += spaces(width-len(status)-len(footer)) + footer
+			spaces := strings.Repeat(" ", width-len(status)-len(footer))
+			status += spaces + footer
 		}
 		fmt.Println("")
 		fmt.Println(status)
