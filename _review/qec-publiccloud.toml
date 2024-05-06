@@ -34,6 +34,17 @@ Params = { groupid = "427", build = "%yesterday%-1", version="15-SP1" }
 Name = "PublicCloud Maintenance Updates 12-SP5"
 Params = { groupid = "427", build = "%yesterday%-1", version="12-SP5" }
 
+# SLE-Micro
+[[Groups]]
+Name = "PublicCloud Maintenance Updates 5.5"
+Params = { groupid = "532", build = "%yesterday%-1", version="5.5" }
+[[Groups]]
+Name = "PublicCloud Maintenance Updates 5.4"
+Params = { groupid = "532", build = "%yesterday%-1", version="5.4" }
+[[Groups]]
+Name = "PublicCloud Maintenance Updates 5.3"
+Params = { groupid = "532", build = "%yesterday%-1", version="5.3" }
+
 [[Groups]]
 Name = "Public Cloud Single Incidents"
 Params = { groupid = "430" }
