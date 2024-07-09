@@ -7,7 +7,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/streadway/amqp"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 const VERSION = "1.2.1"
