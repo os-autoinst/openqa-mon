@@ -15,9 +15,8 @@ import (
 	"unicode"
 
 	"github.com/grisu48/gopenqa"
+	"github.com/grisu48/openqa-mon/internal"
 )
-
-const VERSION = "1.2.1"
 
 var config Config
 var tui TUI
@@ -529,7 +528,7 @@ func parseProgramArguments(cliargs []string) error {
 				printHelp()
 				os.Exit(0)
 			case "--version":
-				fmt.Println("openqa-mon version " + VERSION)
+				fmt.Println("openqa-mon version " + internal.VERSION)
 				os.Exit(0)
 			case "--jobs":
 				i++
@@ -736,7 +735,7 @@ func main() {
 	if len(remotes) == 1 {
 		remotesString = remotes[0].URI
 	}
-	tui.SetHeader(fmt.Sprintf("openqa-mon v%s - Monitoring %s", VERSION, remotesString))
+	tui.SetHeader(fmt.Sprintf("openqa-mon v%s - Monitoring %s", internal.VERSION, remotesString))
 	tui.Model.HideStates = config.HideStates
 	tui.Update()
 	defer tui.LeaveAltScreen()

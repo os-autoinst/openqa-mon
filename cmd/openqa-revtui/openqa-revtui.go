@@ -9,9 +9,8 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/grisu48/gopenqa"
+	"github.com/grisu48/openqa-mon/internal"
 )
-
-const VERSION = "1.2.1"
 
 /* Group is a single configurable monitoring unit. A group contains all parameters that will be queried from openQA */
 type Group struct {
@@ -312,7 +311,7 @@ func parseProgramArgs() error {
 				printUsage()
 				os.Exit(0)
 			} else if arg == "--version" {
-				fmt.Println("openqa-revtui version " + VERSION)
+				fmt.Println("openqa-revtui version " + internal.VERSION)
 				os.Exit(0)
 			} else if arg == "-c" || arg == "--config" {
 				if i++; i >= n {
@@ -538,7 +537,7 @@ func browserJobs(jobs []gopenqa.Job) error {
 
 // main routine for the TUI instance
 func tui_main(tui *TUI, instance *gopenqa.Instance) error {
-	title := "openqa Review TUI Dashboard v" + VERSION
+	title := "openqa Review TUI Dashboard v" + internal.VERSION
 	var rabbitmq gopenqa.RabbitMQ
 	var err error
 
