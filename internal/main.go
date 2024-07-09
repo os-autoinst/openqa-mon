@@ -2,4 +2,4 @@
 package internal
 
 // VERSION gives the unified version string for all application
-const VERSION = "1.2.1"
+const VERSION = "1.2.2"
