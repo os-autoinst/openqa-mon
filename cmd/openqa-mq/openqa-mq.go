@@ -7,10 +7,9 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/grisu48/openqa-mon/internal"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
-
-const VERSION = "1.2.1"
 
 type Config struct {
 	Remote     string   // Remote address
@@ -86,7 +85,7 @@ func parseProgramArguments() error {
 				printUsage()
 				os.Exit(0)
 			} else if arg == "--version" {
-				fmt.Println("openqa-mq version " + VERSION)
+				fmt.Println("openqa-mq version " + internal.VERSION)
 				os.Exit(0)
 			} else if arg == "-r" {
 				if i >= len(args)-1 {
