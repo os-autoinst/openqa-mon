@@ -1,7 +1,9 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/user"
 	"strings"
@@ -10,10 +12,7 @@ import (
 
 func fileExists(filename string) bool {
 	_, err := os.Stat(filename)
-	if os.IsNotExist(err) {
-		return false
-	}
-	return true
+	return !errors.Is(err, fs.ErrNotExist)
 }
 
 func homeDir() string {

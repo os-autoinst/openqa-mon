@@ -78,15 +78,6 @@ func CreateConfig() Config {
 	return cf
 }
 
-// CreateGroup creates a group with the default settings
-func CreateGroup() Group {
-	var grp Group
-	grp.Params = make(map[string]string, 0)
-	grp.Params = cf.DefaultParams
-	grp.MaxLifetime = 0
-	return grp
-}
-
 func getKnownJob(id int64) (gopenqa.Job, bool) {
 	for _, j := range knownJobs {
 		if j.ID == id {
@@ -285,7 +276,7 @@ func main() {
 		os.Exit(1)
 	}
 	tui.SetHideStatus(cf.HideStatus)
-	err := tui_main(&tui, &instance)
+	err := tui_main(tui, &instance)
 	tui.LeaveAltScreen() // Ensure we leave alt screen
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)

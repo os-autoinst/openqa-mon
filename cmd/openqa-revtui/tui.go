@@ -58,7 +58,7 @@ type TUI struct {
 	screensize int // Lines per screen
 }
 
-func CreateTUI() TUI {
+func CreateTUI() *TUI {
 	var tui TUI
 	tui.done = make(chan bool, 1)
 	tui.Keypress = nil
@@ -68,7 +68,7 @@ func CreateTUI() TUI {
 	tui.Model.jobs = make([]gopenqa.Job, 0)
 	tui.Model.jobGroups = make(map[int]gopenqa.JobGroup, 0)
 	tui.Model.reviewed = make(map[int64]bool, 0)
-	return tui
+	return &tui
 }
 
 /* The model that will be displayed in the TUI*/
@@ -79,16 +79,6 @@ type TUIModel struct {
 	offset     int                      // Line offset for printing
 	printLines int                      // Lines that would need to be printed, needed for offset handling
 	reviewed   map[int64]bool           // Indicating if failed jobs are reviewed
-}
-
-func (tui *TUI) visibleJobCount() int {
-	counter := 0
-	for _, job := range tui.Model.jobs {
-		if !tui.hideJob(job) {
-			counter++
-		}
-	}
-	return counter
 }
 
 func (tui *TUI) GetVisibleJobs() []gopenqa.Job {
@@ -103,11 +93,6 @@ func (tui *TUI) GetVisibleJobs() []gopenqa.Job {
 
 func (model *TUIModel) SetReviewed(job int64, reviewed bool) {
 	model.reviewed[job] = reviewed
-}
-
-func (model *TUIModel) isReviewed(job int64) bool {
-	reviewed, found := model.reviewed[job]
-	return found && reviewed
 }
 
 func (tui *TUIModel) MoveHome() {
@@ -464,7 +449,7 @@ func trimEmpty(lines []string) []string {
 	return lines
 }
 
-func (tui *TUI) buildHeader(width int) []string {
+func (tui *TUI) buildHeader(_ int) []string {
 	lines := make([]string, 0)
 	if tui.header != "" {
 		lines = append(lines, tui.header)
