@@ -1,4 +1,4 @@
-[![openqa-mon](https://github.com/grisu48/openqa-mon/actions/workflows/openqa-mon.yml/badge.svg)](https://github.com/grisu48/openqa-mon/actions/workflows/openqa-mon.yml)
+[![openqa-mon](https://github.com/os-autoinst/openqa-mon/actions/workflows/openqa-mon.yml/badge.svg)](https://github.com/os-autoinst/openqa-mon/actions/workflows/openqa-mon.yml)
 
 Simple CLI monitoring utilities for [openQA](https://open.qa).
 This project now consists of three programs:
