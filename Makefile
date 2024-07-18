@@ -13,9 +13,9 @@ openqa-mq: cmd/openqa-mq/openqa-mq.go
 	go build $(GOARGS) -o $@ $^
 openqa-mq-static: cmd/openqa-mq/openqa-mq.go
 	CGO_ENABLED=0 go build -a -ldflags '-extldflags "-static"' -o openqa-mq $^
-openqa-revtui: cmd/openqa-revtui/openqa-revtui.go cmd/openqa-revtui/tui.go cmd/openqa-revtui/utils.go cmd/openqa-revtui/openqa.go
+openqa-revtui: cmd/openqa-revtui/openqa-revtui.go cmd/openqa-revtui/tui.go cmd/openqa-revtui/utils.go cmd/openqa-revtui/openqa.go cmd/openqa-revtui/config.go
 	go build $(GOARGS) -o $@ $^
-openqa-revtui-static: cmd/openqa-revtui/openqa-revtui.go cmd/openqa-revtui/tui.go cmd/openqa-revtui/utils.go cmd/openqa-revtui/openqa.go
+openqa-revtui-static: cmd/openqa-revtui/openqa-revtui.go cmd/openqa-revtui/tui.go cmd/openqa-revtui/utils.go cmd/openqa-revtui/openqa.go cmd/openqa-revtui/config.go
 	CGO_ENABLED=0 go build -a -ldflags '-extldflags "-static"' -o openqa-revtui $^
 
 requirements:
