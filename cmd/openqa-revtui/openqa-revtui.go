@@ -231,7 +231,7 @@ func refreshJobs(tui *TUI, instance *gopenqa.Instance) error {
 	for _, job := range oldJobs {
 		ids = append(ids, job.ID)
 	}
-	jobs, err := instance.GetJobsFollow(ids)
+	jobs, err := fetchJobsFollow(ids, instance)
 	if err != nil {
 		return err
 	}

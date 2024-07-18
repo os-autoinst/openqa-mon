@@ -107,21 +107,47 @@ func FetchJob(id int64, instance *gopenqa.Instance) (gopenqa.Job, error) {
 	return job, fmt.Errorf("max recursion depth reached")
 }
 
+/* Fetch the given jobs and follow their clones */
+func fetchJobsFollow(ids []int64, instance *gopenqa.Instance) ([]gopenqa.Job, error) {
+	// Obey the maximum number of job per requests.
+	// We split the job ids into multiple requests if necessary
+	jobs := make([]gopenqa.Job, 0)
+	for len(ids) > 0 {
+		n := min(cf.RequestJobLimit, len(ids))
+		chunk, err := instance.GetJobsFollow(ids[:n])
+		ids = ids[n:]
+		if err != nil {
+			return jobs, err
+		}
+		jobs = append(jobs, chunk...)
+	}
+
+	return jobs, nil
+}
+
 /* Fetch the given jobs from the instance at once */
 func fetchJobs(ids []int64, instance *gopenqa.Instance) ([]gopenqa.Job, error) {
-	jobs, err := instance.GetJobs(ids)
-	if err != nil {
-		return jobs, err
+	// Obey the maximum number of job per requests.
+	// We split the job ids into multiple requests if necessary
+	jobs := make([]gopenqa.Job, 0)
+	for len(ids) > 0 {
+		n := min(cf.RequestJobLimit, len(ids))
+		chunk, err := instance.GetJobs(ids[:n])
+		ids = ids[n:]
+		if err != nil {
+			return jobs, err
+		}
+		jobs = append(jobs, chunk...)
 	}
 
 	// Get cloned jobs, if present
 	for i, job := range jobs {
 		if job.IsCloned() {
-			job, err = FetchJob(job.ID, instance)
-			if err != nil {
+			if job, err := FetchJob(job.ID, instance); err != nil {
 				return jobs, err
+			} else {
+				jobs[i] = job
 			}
-			jobs[i] = job
 		}
 	}
 	return jobs, nil
