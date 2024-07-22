@@ -7,6 +7,7 @@ HideStatus = ["scheduled", "passed", "softfailed", "cancelled", "skipped", "runn
 RefreshInterval = 60                             # Refresh from API once every minute
 MaxJobs = 20                                     # Max. job per group to display
 GroupBy = "groups"                               # Group by defined groups ("none" or "groups")
+RequestJobLimit = 100                                           # Query up to 100 jobs per http request
 
 
 ## Maintenance updates

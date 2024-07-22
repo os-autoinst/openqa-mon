@@ -26,6 +26,7 @@ type Config struct {
 	Groups          []Group           // Groups that will be monitord
 	MaxJobs         int               // Maximum number of jobs per group to consider
 	GroupBy         string            // Display group mode: "none", "groups"
+	RequestJobLimit int               // Maximum number of jobs in a single request
 }
 
 var cf Config
@@ -68,5 +69,6 @@ func CreateConfig() Config {
 	cf.DefaultParams = make(map[string]string, 0)
 	cf.Groups = make([]Group, 0)
 	cf.MaxJobs = 20
+	cf.RequestJobLimit = 100
 	return cf
 }
