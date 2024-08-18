@@ -12,6 +12,7 @@ import (
 	"unsafe"
 
 	"github.com/grisu48/gopenqa"
+	"github.com/os-autoinst/openqa-mon/internal"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
@@ -38,11 +39,14 @@ type TUI struct {
 
 	Keypress KeyPressCallback
 
-	header     string
-	status     string // Additional status text
-	showStatus bool   // Show status line
-	showHelp   bool   // Show help line
-	hideEnable bool   // If hideStates will be considered
+	header      string // program version, remote servers and current/total page
+	status      string // Additional status text
+	remotes     string // address of the openQA server or number of monitored instances
+	showStatus  bool   // Show status line
+	showHelp    bool   // Show help line
+	hideEnable  bool   // If hideStates will be considered
+	currentPage int    // the page we are displaying (0=first)
+	totalPages  int    // how many pages are there to display
 }
 
 /* The model that will be displayed in the TUI */
@@ -97,6 +101,8 @@ func CreateTUI() TUI {
 	tui.status = ""
 	tui.showStatus = true
 	tui.hideEnable = true
+	tui.currentPage = 0
+	tui.totalPages = 1
 	return tui
 }
 
@@ -263,6 +269,24 @@ func (tui *TUI) SetHideStates(enabled bool) {
 	tui.Update()
 }
 
+func (tui *TUI) NextPage() {
+	tui.Model.mutex.Lock()
+	defer tui.Model.mutex.Unlock()
+	if tui.currentPage < tui.totalPages-1 {
+		tui.currentPage++
+		tui.header = fmt.Sprintf("openqa-mon v%s - Monitoring %s - Page %d/%d", internal.VERSION, tui.remotes, 1+tui.currentPage, tui.totalPages)
+	}
+}
+
+func (tui *TUI) PrevPage() {
+	tui.Model.mutex.Lock()
+	defer tui.Model.mutex.Unlock()
+	if tui.currentPage > 0 {
+		tui.currentPage--
+		tui.header = fmt.Sprintf("openqa-mon v%s - Monitoring %s - Page %d/%d", internal.VERSION, tui.remotes, 1+tui.currentPage, tui.totalPages)
+	}
+}
+
 func (tui *TUI) DoHideStates() bool {
 	return tui.hideEnable
 }
@@ -295,6 +319,10 @@ func (tui *TUI) doHideJob(j gopenqa.Job) bool {
 
 // Redraw tui
 func (tui *TUI) Update() {
+	if len(tui.Model.jobs) == 0 {
+		// no jobs fetched yet, nothing to display
+		return
+	}
 	width, height := terminalSize()
 
 	tui.Clear()
@@ -304,48 +332,48 @@ func (tui *TUI) Update() {
 		lines++
 	}
 	if tui.showHelp {
-		help := "?:Toggle help    r: Refresh    d:Toggle notifications    b:Toggle bell    +/-:Modify refresh time    p:Toggle pause"
+		help := "?:Toggle help  r:Refresh  d:Toggle notifications  b:Toggle bell  +/-:Modify refresh time  p:Toggle pause  <>:Page"
 		if len(tui.Model.HideStates) > 0 {
-			help += "    h:Toggle hide"
+			help += "  h:Toggle hide"
 		}
-		help += "    q:Quit"
+		help += "  q:Quit"
 		PrintLine(help, width)
 		lines++
 	}
-	fmt.Println()
-	lines++
-
-	offset := 0
-	maxHeight := height
+	pageHeight := height - 1
 	if tui.showStatus {
-		maxHeight -= 2
+		pageHeight--
 	}
-	for _, job := range tui.Model.jobs {
+	// ensure to always have something to display without exceeding the slice limits
+	startIdx := min(tui.currentPage*pageHeight, len(tui.Model.jobs))
+	endIdx := min(startIdx+pageHeight, len(tui.Model.jobs))
+	tui.totalPages = len(tui.Model.jobs) / pageHeight
+	if len(tui.Model.jobs)%pageHeight > 0 {
+		tui.totalPages++ // one more page for any partial-page leftover
+	}
+	for _, job := range tui.Model.jobs[startIdx:endIdx] {
 		if tui.hideEnable && tui.doHideJob(job) {
-			continue
-		}
-		// Ignore offset jobs (for scrolling)
-		if offset > 0 {
-			offset--
 			continue
 		}
 		PrintJob(job, true, width)
 		lines++
-		if lines >= maxHeight {
-			return
-		}
+	}
+
+	// print some empty lines if needed to fill last page and make footer always on last line
+	for lines <= pageHeight {
+		fmt.Println()
+		lines++
 	}
 
 	// Status line
 	if tui.showStatus {
 		// Add footer, if possible
 		status := tui.status
-		footer := "openqa-mon (https://github.com/grisu48/openqa-mon)"
+		footer := "openqa-mon (https://github.com/os-autoinst/openqa-mon)"
 		if width >= len(status)+len(footer)+5 {
-			spaces := strings.Repeat(" ", width-len(status)-len(footer))
+			spaces := strings.Repeat(" ", width-len(status)-len(footer)-1)
 			status += spaces + footer
 		}
-		fmt.Println("")
-		fmt.Println(status)
+		fmt.Print(status)
 	}
 }

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/grisu48/openqa-mon/internal"
+	"github.com/os-autoinst/openqa-mon/internal"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 

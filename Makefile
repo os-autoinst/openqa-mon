@@ -34,3 +34,7 @@ uninstall:
 
 test:
 	go test ./...
+
+clean:
+	go clean
+	rm openqa-mon openqa-mq openqa-revtui

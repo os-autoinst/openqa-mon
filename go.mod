@@ -1,6 +1,6 @@
-module github.com/grisu48/openqa-mon
+module github.com/os-autoinst/openqa-mon
 
-go 1.20
+go 1.21
 
 require (
 	github.com/BurntSushi/toml v1.4.0
