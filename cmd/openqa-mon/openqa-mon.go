@@ -509,6 +509,7 @@ func SetStatus() {
 	} else {
 		tui.SetStatus("")
 	}
+	tui.UpdateHeader()
 }
 
 func parseProgramArguments(cliargs []string) error {
@@ -735,7 +736,7 @@ func main() {
 	if len(remotes) == 1 {
 		remotesString = remotes[0].URI
 	}
-	tui.remotes=remotesString
+	tui.remotes = remotesString
 	tui.SetHeader(fmt.Sprintf("openqa-mon v%s - Monitoring %s", internal.VERSION, remotesString))
 	tui.Model.HideStates = config.HideStates
 	tui.Update()
@@ -862,7 +863,6 @@ func singleCall(remotes []Remote) {
 	}
 }
 
-
 func continuousMonitoring(remotes []Remote) {
 	var err error
 	// Ensure cursor is visible after termination
@@ -881,51 +881,74 @@ func continuousMonitoring(remotes []Remote) {
 	refreshSignal := make(chan int, 1)
 
 	// Keybress callback
+	p := make([]byte, 3) // History, needed for special keys
 	tui.Keypress = func(b byte) {
-		switch b {
-		case 'q':
-			tui.LeaveAltScreen()
-			os.Exit(0)
-		case 'r':
-			// Refresh
-			refreshSignal <- 1
-			return
-		case '?':
-			tui.SetShowHelp(!tui.DoShowHelp())
-		case 'h':
-			tui.SetHideStates(!tui.DoHideStates())
-		case 'p':
-			config.Paused = !config.Paused
-			if config.Paused {
-				SetStatus()
-			} else {
+		p[2], p[1], p[0] = p[1], p[0], b
+
+		// Handle special keys
+		if p[2] == 27 && p[1] == 91 {
+			switch p[0] {
+			case 72: // home
+				tui.FirstPage()
+			case 70: // end
+				tui.LastPage()
+			case 53: // page up
+				tui.PrevPage()
+			case 54: // page down
+				tui.NextPage()
+			case 68: // arrow left
+				tui.PrevPage()
+			case 67: // arrow right
+				tui.NextPage()
+			}
+		} else {
+			switch b {
+			case 'q':
+				tui.LeaveAltScreen()
+				os.Exit(0)
+			case 'r':
+				// Refresh
 				refreshSignal <- 1
+				return
+			case '?':
+				tui.SetShowHelp(!tui.DoShowHelp())
+			case 'h':
+				tui.SetHideStates(!tui.DoHideStates())
+			case 'p':
+				config.Paused = !config.Paused
+				if config.Paused {
+					SetStatus()
+				} else {
+					refreshSignal <- 1
+				}
+				return
+			case 'd', 'n':
+				config.Notify = !config.Notify
+				SetStatus()
+			case 'b':
+				config.Bell = !config.Bell
+				SetStatus()
+			case 'm':
+				config.Notify = false
+				config.Bell = false
+				SetStatus()
+			case 'l':
+				config.Notify = true
+				config.Bell = true
+				SetStatus()
+			case '+':
+				config.Continuous++
+				SetStatus()
+			case '-':
+				if config.Continuous > 1 {
+					config.Continuous--
+				}
+				SetStatus()
+			case '>':
+				tui.NextPage()
+			case '<':
+				tui.PrevPage()
 			}
-			return
-		case 'd','n':
-			config.Notify = !config.Notify
-			SetStatus()
-		case 'b':
-			config.Bell = !config.Bell
-			SetStatus()
-		case 'm':
-			config.Notify = false
-			config.Bell = false
-			SetStatus()
-		case 'l':
-			config.Notify = true
-			config.Bell = true
-			SetStatus()
-		case '+':
-			config.Continuous++
-			SetStatus()
-		case '-':
-			if config.Continuous > 1 {
-				config.Continuous--
-			}
-			SetStatus()
-		case '>': tui.NextPage()
-		case '<': tui.PrevPage()
 		}
 		tui.Update()
 	}
