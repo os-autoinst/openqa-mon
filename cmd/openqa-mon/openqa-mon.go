@@ -15,7 +15,7 @@ import (
 	"unicode"
 
 	"github.com/grisu48/gopenqa"
-	"github.com/grisu48/openqa-mon/internal"
+	"github.com/os-autoinst/openqa-mon/internal"
 )
 
 var config Config
@@ -735,6 +735,7 @@ func main() {
 	if len(remotes) == 1 {
 		remotesString = remotes[0].URI
 	}
+	tui.remotes=remotesString
 	tui.SetHeader(fmt.Sprintf("openqa-mon v%s - Monitoring %s", internal.VERSION, remotesString))
 	tui.Model.HideStates = config.HideStates
 	tui.Update()
@@ -861,6 +862,7 @@ func singleCall(remotes []Remote) {
 	}
 }
 
+
 func continuousMonitoring(remotes []Remote) {
 	var err error
 	// Ensure cursor is visible after termination
@@ -880,18 +882,19 @@ func continuousMonitoring(remotes []Remote) {
 
 	// Keybress callback
 	tui.Keypress = func(b byte) {
-		if b == 'q' {
+		switch b {
+		case 'q':
 			tui.LeaveAltScreen()
 			os.Exit(0)
-		} else if b == 'r' {
+		case 'r':
 			// Refresh
 			refreshSignal <- 1
 			return
-		} else if b == '?' {
+		case '?':
 			tui.SetShowHelp(!tui.DoShowHelp())
-		} else if b == 'h' {
+		case 'h':
 			tui.SetHideStates(!tui.DoHideStates())
-		} else if b == 'p' {
+		case 'p':
 			config.Paused = !config.Paused
 			if config.Paused {
 				SetStatus()
@@ -899,28 +902,30 @@ func continuousMonitoring(remotes []Remote) {
 				refreshSignal <- 1
 			}
 			return
-		} else if b == 'd' || b == 'n' {
+		case 'd','n':
 			config.Notify = !config.Notify
 			SetStatus()
-		} else if b == 'b' {
+		case 'b':
 			config.Bell = !config.Bell
 			SetStatus()
-		} else if b == 'm' {
+		case 'm':
 			config.Notify = false
 			config.Bell = false
 			SetStatus()
-		} else if b == 'l' {
+		case 'l':
 			config.Notify = true
 			config.Bell = true
 			SetStatus()
-		} else if b == '+' {
+		case '+':
 			config.Continuous++
 			SetStatus()
-		} else if b == '-' {
+		case '-':
 			if config.Continuous > 1 {
 				config.Continuous--
 			}
 			SetStatus()
+		case '>': tui.NextPage()
+		case '<': tui.PrevPage()
 		}
 		tui.Update()
 	}

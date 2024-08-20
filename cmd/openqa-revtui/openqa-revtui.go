@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/grisu48/gopenqa"
-	"github.com/grisu48/openqa-mon/internal"
+	"github.com/os-autoinst/openqa-mon/internal"
 )
 
 var knownJobs []gopenqa.Job
