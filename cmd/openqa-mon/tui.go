@@ -269,22 +269,36 @@ func (tui *TUI) SetHideStates(enabled bool) {
 	tui.Update()
 }
 
+func (tui *TUI) UpdateHeader() {
+	tui.header = fmt.Sprintf("openqa-mon v%s - Monitoring %s - Page %d/%d", internal.VERSION, tui.remotes, 1+tui.currentPage, tui.totalPages)
+}
+
+func (tui *TUI) FirstPage() {
+	tui.Model.mutex.Lock()
+	defer tui.Model.mutex.Unlock()
+	tui.currentPage = 0
+	tui.UpdateHeader()
+}
+
+func (tui *TUI) LastPage() {
+	tui.Model.mutex.Lock()
+	defer tui.Model.mutex.Unlock()
+	tui.currentPage = max(0, tui.totalPages-1)
+	tui.UpdateHeader()
+}
+
 func (tui *TUI) NextPage() {
 	tui.Model.mutex.Lock()
 	defer tui.Model.mutex.Unlock()
-	if tui.currentPage < tui.totalPages-1 {
-		tui.currentPage++
-		tui.header = fmt.Sprintf("openqa-mon v%s - Monitoring %s - Page %d/%d", internal.VERSION, tui.remotes, 1+tui.currentPage, tui.totalPages)
-	}
+	tui.currentPage = min(tui.totalPages-1, tui.currentPage+1)
+	tui.UpdateHeader()
 }
 
 func (tui *TUI) PrevPage() {
 	tui.Model.mutex.Lock()
 	defer tui.Model.mutex.Unlock()
-	if tui.currentPage > 0 {
-		tui.currentPage--
-		tui.header = fmt.Sprintf("openqa-mon v%s - Monitoring %s - Page %d/%d", internal.VERSION, tui.remotes, 1+tui.currentPage, tui.totalPages)
-	}
+	tui.currentPage = max(0, tui.currentPage-1)
+	tui.UpdateHeader()
 }
 
 func (tui *TUI) DoHideStates() bool {

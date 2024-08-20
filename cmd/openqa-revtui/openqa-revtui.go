@@ -291,7 +291,8 @@ func tui_main(tui *TUI, instance *gopenqa.Instance) error {
 	refreshing := false
 	tui.Keypress = func(key byte) {
 		// Input handling
-		if key == 'r' {
+		switch key {
+		case 'r':
 			if !refreshing {
 				refreshing = true
 				go func() {
@@ -302,22 +303,22 @@ func tui_main(tui *TUI, instance *gopenqa.Instance) error {
 				}()
 				tui.Update()
 			}
-		} else if key == 'u' {
+		case 'u':
 			tui.Update()
-		} else if key == 'q' {
+		case 'q':
 			tui.done <- true
-		} else if key == 'h' {
+		case 'h':
 			tui.SetHide(!tui.Hide())
 			tui.Model.MoveHome()
 			tui.Update()
-		} else if key == 'm' {
+		case 'm':
 			tui.SetShowTracker(!tui.showTracker)
 			tui.Update()
-		} else if key == 's' {
+		case 's':
 			// Shift through the sorting mechanism
 			tui.SetSorting((tui.Sorting() + 1) % 2)
 			tui.Update()
-		} else if key == 'o' || key == 'O' {
+		case 'o', 'O':
 			// Note: 'o' has a failsafe to not open more than 10 links. 'O' overrides this failsafe
 			jobs := tui.GetVisibleJobs()
 			if len(jobs) == 0 {
@@ -333,7 +334,7 @@ func tui_main(tui *TUI, instance *gopenqa.Instance) error {
 				}
 			}
 			tui.Update()
-		} else {
+		default:
 			tui.Update()
 		}
 	}

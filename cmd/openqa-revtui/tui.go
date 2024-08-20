@@ -204,28 +204,32 @@ func (tui *TUI) readInput() {
 		p[2], p[1], p[0] = p[1], p[0], k
 
 		// Catch special keys
-		if p[1] == 91 && k == 65 { // Arrow up
-			if tui.Model.offset > 0 {
-				tui.Model.offset--
-				tui.Update()
+		if p[2] == 27 && p[1] == 91 {
+			switch k {
+			case 65: // arrow up
+				if tui.Model.offset > 0 {
+					tui.Model.offset--
+					tui.Update()
+				}
+
+			case 66: // arrow down
+				max := max(0, (tui.Model.printLines - tui.screensize))
+				if tui.Model.offset < max {
+					tui.Model.offset++
+					tui.Update()
+				}
+			case 72: // home
+				tui.Model.offset = 0
+			case 70: // end
+				tui.Model.offset = max(0, (tui.Model.printLines - tui.screensize))
+			case 53: // page up
+				// Always leave one line overlap for better orientation
+				tui.Model.offset = max(0, tui.Model.offset-tui.screensize+1)
+			case 54: // page down
+				max := max(0, (tui.Model.printLines - tui.screensize))
+				// Always leave one line overlap for better orientation
+				tui.Model.offset = min(max, tui.Model.offset+tui.screensize-1)
 			}
-		} else if p[1] == 91 && k == 66 { // Arrow down
-			max := max(0, (tui.Model.printLines - tui.screensize))
-			if tui.Model.offset < max {
-				tui.Model.offset++
-				tui.Update()
-			}
-		} else if p[2] == 27 && p[1] == 91 && p[0] == 72 { // home
-			tui.Model.offset = 0
-		} else if p[2] == 27 && p[1] == 91 && p[0] == 70 { // end
-			tui.Model.offset = max(0, (tui.Model.printLines - tui.screensize))
-		} else if p[2] == 27 && p[1] == 91 && p[0] == 53 { // page up
-			// Always leave one line overlap for better orientation
-			tui.Model.offset = max(0, tui.Model.offset-tui.screensize+1)
-		} else if p[2] == 27 && p[1] == 91 && p[0] == 54 { // page down
-			max := max(0, (tui.Model.printLines - tui.screensize))
-			// Always leave one line overlap for better orientation
-			tui.Model.offset = min(max, tui.Model.offset+tui.screensize-1)
 		}
 
 		// Forward keypress to listener
