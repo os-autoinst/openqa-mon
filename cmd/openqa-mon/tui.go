@@ -396,3 +396,10 @@ func (tui *TUI) Update() {
 		fmt.Print(status)
 	}
 }
+
+func min(x, y int) int {
+	if x < y {
+		return x
+	}
+	return y
+}
