@@ -210,6 +210,7 @@ func (tui *TUI) Start() {
 		signal.Notify(sigs, syscall.SIGWINCH)
 		for {
 			<-sigs
+			tui.UpdateHeader()
 			tui.Update()
 		}
 	}()
@@ -270,7 +271,11 @@ func (tui *TUI) SetHideStates(enabled bool) {
 }
 
 func (tui *TUI) UpdateHeader() {
-	tui.header = fmt.Sprintf("openqa-mon v%s - Monitoring %s - Page %d/%d", internal.VERSION, tui.remotes, 1+tui.currentPage, tui.totalPages)
+	if tui.totalPages > 1 {
+		tui.header = fmt.Sprintf("openqa-mon v%s - Monitoring %s - Page %d/%d", internal.VERSION, tui.remotes, tui.currentPage+1, tui.totalPages)
+	} else {
+		tui.header = fmt.Sprintf("openqa-mon v%s - Monitoring %s", internal.VERSION, tui.remotes)
+	}
 }
 
 func (tui *TUI) FirstPage() {
