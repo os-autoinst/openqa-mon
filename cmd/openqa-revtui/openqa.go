@@ -58,7 +58,7 @@ func isReviewed(job gopenqa.Job, instance *gopenqa.Instance, checkParallel bool)
 func checkReviewed(job int64, instance *gopenqa.Instance) (bool, error) {
 	comments, err := instance.GetComments(job)
 	if err != nil {
-		return false, nil
+		return false, err
 	}
 	for _, c := range comments {
 		if len(c.BugRefs) > 0 {
