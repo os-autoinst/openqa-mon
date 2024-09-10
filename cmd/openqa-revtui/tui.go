@@ -13,7 +13,7 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/grisu48/gopenqa"
+	"github.com/os-autoinst/gopenqa"
 )
 
 // Declare ANSI color codes
