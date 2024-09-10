@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/grisu48/gopenqa"
+	"github.com/os-autoinst/gopenqa"
 	"github.com/os-autoinst/openqa-mon/internal"
 )
 
@@ -131,7 +131,7 @@ func printUsage() {
 	fmt.Println("    -n,--notify                         Enable notifications")
 	fmt.Println("    -m,--mute                           Disable notifications")
 	fmt.Println("")
-	fmt.Println("openqa-review is part of openqa-mon (https://github.com/grisu48/openqa-mon/)")
+	fmt.Println("openqa-review is part of openqa-mon (https://github.com/os-autoinst/openqa-mon/)")
 }
 
 // Register the given rabbitMQ instance for the tui

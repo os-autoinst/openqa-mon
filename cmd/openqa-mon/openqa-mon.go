@@ -14,7 +14,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/grisu48/gopenqa"
+	"github.com/os-autoinst/gopenqa"
 	"github.com/os-autoinst/openqa-mon/internal"
 )
 
@@ -62,7 +62,7 @@ func printHelp() {
 	fmt.Println("  --config FILE                    Read additional config file FILE")
 	fmt.Println("  -i, --input FILE                 Read jobs from FILE (additionally to stdin)")
 	fmt.Println("")
-	fmt.Println("2023, https://github.com/grisu48/openqa-mon")
+	fmt.Println("2024, https://github.com/os-autoinst/openqa-mon")
 }
 
 /** Try to match the url to be a test url. On success, return the remote and the job id */

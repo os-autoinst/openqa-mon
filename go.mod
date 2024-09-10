@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/BurntSushi/toml v1.4.0
-	github.com/grisu48/gopenqa v0.7.4
+	github.com/os-autoinst/gopenqa v1.0.0
 	golang.org/x/crypto v0.25.0
 )
 

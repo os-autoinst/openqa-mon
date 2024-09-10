@@ -11,7 +11,7 @@ import (
 	"syscall"
 	"unsafe"
 
-	"github.com/grisu48/gopenqa"
+	"github.com/os-autoinst/gopenqa"
 	"github.com/os-autoinst/openqa-mon/internal"
 	"golang.org/x/crypto/ssh/terminal"
 )

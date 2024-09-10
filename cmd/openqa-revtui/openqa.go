@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/grisu48/gopenqa"
+	"github.com/os-autoinst/gopenqa"
 )
 
 func hideJob(job gopenqa.Job) bool {
