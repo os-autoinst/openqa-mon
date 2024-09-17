@@ -1,4 +1,4 @@
-## Review template file for ALP test runs on OSD
+## Review configuration for QE-C related jobs on OSD
 
 Instance = "https://openqa.suse.de"              # openQA instance to query
 RabbitMQ = "amqps://suse:suse@rabbit.suse.de"    # RabbitMQ instance to query
@@ -7,7 +7,6 @@ HideStatus = ["scheduled", "passed", "softfailed", "cancelled", "skipped", "runn
 RefreshInterval = 60                             # Refresh from API once every minute
 MaxJobs = 20                                     # Max. job per group to display
 GroupBy = "groups"                               # Group by defined groups ("none" or "groups")
-RequestJobLimit = 100                                           # Query up to 100 jobs per http request
 
 ## BCI and Base images #########################################################
 
@@ -197,6 +196,16 @@ MaxLifetime = 86400
 ## SLE Micro Maintenance updates ###############################################
 
 [[Groups]]
+Name = "SL Micro 6.0 Staging Updates for Containers"
+Params = { groupid = "566" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "SL Micro 6.0 Product Updates for Containers"
+Params = { groupid = "572" }
+MaxLifetime = 86400
+
+[[Groups]]
 Name = "SLE Micro Maintenance Updates 5.5"
 Params = { groupid = "420", build = "%yesterday%-1", version = "5.5" }
 MaxLifetime = 86400
@@ -259,16 +268,6 @@ MaxLifetime = 86400
 [[Groups]]
 Name = "SLE 15-SP5 WSL"
 Params = { groupid = "461" }
-MaxLifetime = 86400
-
-[[Groups]]
-Name = "SLE 15-SP4 WSL"
-Params = { groupid = "386" }
-MaxLifetime = 86400
-
-[[Groups]]
-Name = "SLE 15-SP3 WSL"
-Params = { groupid = "288" }
 MaxLifetime = 86400
 
 ## Windows KVM Installation
