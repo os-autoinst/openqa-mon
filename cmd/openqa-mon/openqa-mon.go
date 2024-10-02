@@ -695,14 +695,10 @@ func main() {
 		os.Exit(1)
 	}
 
+	// No jobs and no remotes is considered wrong usage
 	if len(remotes) == 0 {
-		// Apply default remote, if defined
-		if config.DefaultRemote == "" {
-			printHelp()
-			return
-		}
-		remote := Remote{URI: config.DefaultRemote}
-		remotes = append(remotes, remote)
+		printHelp()
+		os.Exit(1)
 	}
 
 	// Remove duplicate IDs and sort jobs by ID
