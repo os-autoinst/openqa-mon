@@ -229,17 +229,17 @@ func jobsContainId(jobs []gopenqa.Job, id int64) bool {
 func getJobHierarchy(job gopenqa.Job, follow bool) ([]gopenqa.Job, error) {
 	jobs := make([]gopenqa.Job, 0)
 	// TODO: The prefix got missing ...
-	chained, err := job.FetchChildren(unique64(job.Children.Chained), follow)
+	chained, err := job.FetchChildren(unique(job.Children.Chained), follow)
 	if err != nil {
 		return jobs, err
 	}
 	jobs = append(jobs, chained...)
-	directlyChained, err := job.FetchChildren(unique64(job.Children.DirectlyChained), follow)
+	directlyChained, err := job.FetchChildren(unique(job.Children.DirectlyChained), follow)
 	if err != nil {
 		return jobs, err
 	}
 	jobs = append(jobs, directlyChained...)
-	parallel, err := job.FetchChildren(unique64(job.Children.Parallel), follow)
+	parallel, err := job.FetchChildren(unique(job.Children.Parallel), follow)
 	if err != nil {
 		return jobs, err
 	}
@@ -703,7 +703,7 @@ func main() {
 
 	// Remove duplicate IDs and sort jobs by ID
 	for _, remote := range remotes {
-		remote.Jobs = unique64(remote.Jobs)
+		remote.Jobs = unique(remote.Jobs)
 		sort.Slice(remote.Jobs, func(i, j int) bool {
 			return remote.Jobs[i] < remote.Jobs[j]
 		})
@@ -809,7 +809,7 @@ func FetchJobs(remotes []Remote, callback func(int64, gopenqa.Job)) ([]Remote, e
 			}
 			if jobsModified {
 				// Ensure the job IDs are unique and sorted
-				jobs := unique64(remote.Jobs)
+				jobs := unique(remote.Jobs)
 				sort.Slice(jobs, func(i, j int) bool {
 					return jobs[i] < jobs[j]
 				})
