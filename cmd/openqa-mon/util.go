@@ -41,37 +41,16 @@ func max(x int, y int) int {
 	return y
 }
 
-func unique(a []int) []int {
-	keys := make(map[int]bool)
-	list := []int{}
-	for _, entry := range a {
-		if _, value := keys[entry]; !value {
-			keys[entry] = true
-			list = append(list, entry)
+func unique[T comparable](slice []T) []T {
+	seen := make(map[T]struct{})
+	unique := []T{}
+	for _, item := range slice {
+		if _, exists := seen[item]; !exists {
+			seen[item] = struct{}{}
+			unique = append(unique, item)
 		}
 	}
-	return list
-}
-
-func unique64(a []int64) []int64 {
-	keys := make(map[int64]bool)
-	list := []int64{}
-	for _, entry := range a {
-		if _, value := keys[entry]; !value {
-			keys[entry] = true
-			list = append(list, entry)
-		}
-	}
-	return list
-}
-
-func containsInt(a []int, cmp int) bool {
-	for _, i := range a {
-		if i == cmp {
-			return true
-		}
-	}
-	return false
+	return unique
 }
 
 func trimSplit(s string, sep string) []string {
@@ -94,16 +73,9 @@ func homeDir() string {
 	return usr.HomeDir
 }
 
-func createIntRange(min int, max int, offset int) []int {
-	ret := make([]int, 0)
-	for i := min; i <= max; i++ {
-		ret = append(ret, i+offset)
-	}
-	return ret
-}
-
 func createInt64Range(min int64, max int64, offset int64) []int64 {
-	ret := make([]int64, 0)
+	// create with capacity to avoid runtime reallocation
+	ret := make([]int64, 0, 1+max-min)
 	for i := min; i <= max; i++ {
 		ret = append(ret, i+offset)
 	}
