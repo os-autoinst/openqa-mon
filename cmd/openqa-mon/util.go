@@ -75,7 +75,7 @@ func homeDir() string {
 
 func createInt64Range(min int64, max int64, offset int64) []int64 {
 	// create with capacity to avoid runtime reallocation
-	ret := make([]int64, 0, 1+max-min)
+	ret := make([]int64, 0, (max-min)+1)
 	for i := min; i <= max; i++ {
 		ret = append(ret, i+offset)
 	}
