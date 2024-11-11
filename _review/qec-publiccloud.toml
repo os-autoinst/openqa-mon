@@ -45,6 +45,11 @@ Params = { groupid = "532", build = "%yesterday%-1", version="5.4" }
 [[Groups]]
 Name = "PublicCloud Maintenance Updates 5.3"
 Params = { groupid = "532", build = "%yesterday%-1", version="5.3" }
+[[Groups]]
+Name = "SLEM Product Increments"
+Params = { groupid = "613" }
+MaxLifetime = 86400
+
 
 [[Groups]]
 Name = "Public Cloud Single Incidents"
