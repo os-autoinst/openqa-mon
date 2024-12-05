@@ -15,9 +15,7 @@ RequestJobLimit = 100                                           # Query up to 10
 [[Groups]]
 Name = "openSUSE Tumbleweed BCI x86_64"
 Params = { flavor = "BCI", groupid = "1" }
-MaxLifetime = 86400
 
 [[Groups]]
 Name = "openSUSE Tumbleweed BCI aarch64"
 Params = { flavor = "BCI", groupid = "3" }
-MaxLifetime = 86400
