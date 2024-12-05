@@ -11,6 +11,11 @@ RequestJobLimit = 100                                           # Query up to 10
 
 ## BCI and Base images
 [[Groups]]
+Name = "BCI Base Images 16"
+Params = { groupid = "608", build = "" }
+MaxLifetime = 86400
+
+[[Groups]]
 Name = "BCI Base Images 15-SP6"
 Params = { groupid = "538", build = "" }
 MaxLifetime = 86400
