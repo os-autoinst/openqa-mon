@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"os/signal"
 	"sort"
-	"sync"
 	"syscall"
 	"time"
 	"unsafe"
@@ -25,6 +24,7 @@ const ANSI_BLUE = "\u001b[34m"
 const ANSI_MAGENTA = "\u001b[35m"
 const ANSI_CYAN = "\u001b[36m"
 const ANSI_WHITE = "\u001b[37m"
+const ANSI_BOLD = "\u001b[1m"
 const ANSI_RESET = "\u001b[0m"
 
 const ANSI_ALT_SCREEN = "\x1b[?1049h"
@@ -37,15 +37,16 @@ type winsize struct {
 	Ypixel uint16
 }
 
-type KeyPressCallback func(byte)
+type KeyPressCallback func(byte, *bool)
 
 /* Declares the terminal user interface */
 type TUI struct {
-	Model TUIModel
-	done  chan bool
+	Tabs []TUIModel
+	done chan bool
 
 	Keypress KeyPressCallback
 
+	currentTab  int      // Currently selected tab
 	status      string   // Additional status text
 	tracker     string   // Additional tracker text for RabbitMQ messages
 	header      string   // Additional header text
@@ -53,7 +54,6 @@ type TUI struct {
 	hide        bool     // Hide statuses in hideStatus
 	showTracker bool     // Show tracker
 	showStatus  bool     // Show status line
-	sorting     int      // Sorting method - 0: none, 1 - by job group
 
 	screensize int // Lines per screen
 }
@@ -65,25 +65,27 @@ func CreateTUI() *TUI {
 	tui.hide = true
 	tui.showTracker = false
 	tui.showStatus = true
-	tui.Model.jobs = make([]gopenqa.Job, 0)
-	tui.Model.jobGroups = make(map[int]gopenqa.JobGroup, 0)
-	tui.Model.reviewed = make(map[int64]bool, 0)
+	tui.Tabs = make([]TUIModel, 0)
 	return &tui
 }
 
 /* The model that will be displayed in the TUI*/
 type TUIModel struct {
+	Instance *gopenqa.Instance // openQA instance for this config
+	Config   *Config           // Job group configuration for this model
+
 	jobs       []gopenqa.Job            // Jobs to be displayed
 	jobGroups  map[int]gopenqa.JobGroup // Job Groups
-	mutex      sync.Mutex               // Access mutex to the model
 	offset     int                      // Line offset for printing
 	printLines int                      // Lines that would need to be printed, needed for offset handling
 	reviewed   map[int64]bool           // Indicating if failed jobs are reviewed
+	sorting    int                      // Sorting method - 0: none, 1 - by job group
 }
 
 func (tui *TUI) GetVisibleJobs() []gopenqa.Job {
 	jobs := make([]gopenqa.Job, 0)
-	for _, job := range tui.Model.jobs {
+	model := &tui.Tabs[tui.currentTab]
+	for _, job := range model.jobs {
 		if !tui.hideJob(job) {
 			jobs = append(jobs, job)
 		}
@@ -95,15 +97,21 @@ func (model *TUIModel) SetReviewed(job int64, reviewed bool) {
 	model.reviewed[job] = reviewed
 }
 
+func (model *TUIModel) HideJob(job gopenqa.Job) bool {
+	status := job.JobState()
+	for _, s := range model.Config.HideStatus {
+		if status == s {
+			return true
+		}
+	}
+	return false
+}
+
 func (tui *TUIModel) MoveHome() {
-	tui.mutex.Lock()
-	defer tui.mutex.Unlock()
 	tui.offset = 0
 }
 
 func (tui *TUIModel) Apply(jobs []gopenqa.Job) {
-	tui.mutex.Lock()
-	defer tui.mutex.Unlock()
 	tui.jobs = jobs
 }
 
@@ -111,8 +119,36 @@ func (model *TUIModel) Jobs() []gopenqa.Job {
 	return model.jobs
 }
 
+func (model *TUIModel) Job(id int64) *gopenqa.Job {
+	for i := range model.jobs {
+		if model.jobs[i].ID == id {
+			return &model.jobs[i]
+		}
+	}
+	// Return dummy job
+	job := gopenqa.Job{ID: 0}
+	return &job
+}
+
 func (tui *TUIModel) SetJobGroups(grps map[int]gopenqa.JobGroup) {
 	tui.jobGroups = grps
+}
+
+func (tui *TUI) NextTab() {
+	if len(tui.Tabs) > 1 {
+		tui.currentTab--
+		if tui.currentTab < 0 {
+			tui.currentTab = len(tui.Tabs) - 1
+		}
+		tui.Update()
+	}
+}
+
+func (tui *TUI) PreviousTab() {
+	if len(tui.Tabs) > 1 {
+		tui.currentTab = (tui.currentTab + 1) % len(tui.Tabs)
+		tui.Update()
+	}
 }
 
 func (tui *TUI) SetHide(hide bool) {
@@ -128,30 +164,24 @@ func (tui *TUI) SetHideStatus(st []string) {
 }
 
 // Apply sorting method. 0 = none, 1 = by job group
-func (tui *TUI) SetSorting(sorting int) {
-	tui.Model.mutex.Lock()
-	defer tui.Model.mutex.Unlock()
+func (tui *TUIModel) SetSorting(sorting int) {
 	tui.sorting = sorting
 }
 
-func (tui *TUI) Sorting() int {
+func (tui *TUIModel) Sorting() int {
 	return tui.sorting
 }
 
 func (tui *TUI) SetStatus(status string) {
-	tui.Model.mutex.Lock()
-	defer tui.Model.mutex.Unlock()
 	tui.status = status
 }
 
 func (tui *TUI) SetTemporaryStatus(status string, duration int) {
-	tui.Model.mutex.Lock()
 	old := tui.status
 	tui.status = status
-	tui.Model.mutex.Unlock()
 	tui.Update()
 
-	// Reset status text after waiting for duration. But only, if the status text has not been altered in the meantime
+	// Reset status text after duration, if the status text has not been altered in the meantime
 	go func(old, status string, duration int) {
 		time.Sleep(time.Duration(duration) * time.Second)
 		if tui.status == status {
@@ -166,14 +196,10 @@ func (tui *TUI) Status() string {
 }
 
 func (tui *TUI) SetTracker(tracker string) {
-	tui.Model.mutex.Lock()
-	defer tui.Model.mutex.Unlock()
 	tui.tracker = tracker
 }
 
 func (tui *TUI) SetShowTracker(tracker bool) {
-	tui.Model.mutex.Lock()
-	defer tui.Model.mutex.Unlock()
 	tui.showTracker = tracker
 }
 
@@ -183,9 +209,23 @@ func (tui *TUI) ShowTracker() bool {
 }
 
 func (tui *TUI) SetHeader(header string) {
-	tui.Model.mutex.Lock()
-	defer tui.Model.mutex.Unlock()
 	tui.header = header
+}
+
+func (tui *TUI) CreateTUIModel(cf *Config) *TUIModel {
+	instance := gopenqa.CreateInstance(cf.Instance)
+	instance.SetUserAgent("openqa-mon/revtui")
+	tui.Tabs = append(tui.Tabs, TUIModel{Instance: &instance, Config: cf})
+	model := &tui.Tabs[len(tui.Tabs)-1]
+	model.jobGroups = make(map[int]gopenqa.JobGroup)
+	model.jobs = make([]gopenqa.Job, 0)
+	model.reviewed = make(map[int64]bool)
+	return model
+}
+
+// Model returns the currently selected model
+func (tui *TUI) Model() *TUIModel {
+	return &tui.Tabs[tui.currentTab]
 }
 
 func (tui *TUI) readInput() {
@@ -198,6 +238,8 @@ func (tui *TUI) readInput() {
 		} else if n == 0 { // EOL
 			break
 		}
+		model := tui.Model()
+
 		k := b[0]
 
 		// Shift history, do it manually for now
@@ -207,34 +249,43 @@ func (tui *TUI) readInput() {
 		if p[2] == 27 && p[1] == 91 {
 			switch k {
 			case 65: // arrow up
-				if tui.Model.offset > 0 {
-					tui.Model.offset--
-					tui.Update()
+				if model.offset > 0 {
+					model.offset--
 				}
-
 			case 66: // arrow down
-				max := max(0, (tui.Model.printLines - tui.screensize))
-				if tui.Model.offset < max {
-					tui.Model.offset++
-					tui.Update()
+				max := max(0, (model.printLines - tui.screensize))
+				if model.offset < max {
+					model.offset++
 				}
 			case 72: // home
-				tui.Model.offset = 0
+				model.offset = 0
 			case 70: // end
-				tui.Model.offset = max(0, (tui.Model.printLines - tui.screensize))
+				model.offset = max(0, (model.printLines - tui.screensize))
 			case 53: // page up
 				// Always leave one line overlap for better orientation
-				tui.Model.offset = max(0, tui.Model.offset-tui.screensize+1)
+				model.offset = max(0, model.offset-tui.screensize+1)
 			case 54: // page down
-				max := max(0, (tui.Model.printLines - tui.screensize))
+				max := max(0, (model.printLines - tui.screensize))
 				// Always leave one line overlap for better orientation
-				tui.Model.offset = min(max, tui.Model.offset+tui.screensize-1)
+				model.offset = min(max, model.offset+tui.screensize-1)
+			case 90: // Shift+Tab
+				tui.PreviousTab()
 			}
 		}
+		// Default keys
+		if k == 9 { // Tab
+			tui.NextTab()
+		}
+
+		update := true
 
 		// Forward keypress to listener
 		if tui.Keypress != nil {
-			tui.Keypress(k)
+			tui.Keypress(k, &update)
+		}
+
+		if update {
+			tui.Update()
 		}
 	}
 }
@@ -285,6 +336,7 @@ func (tui *TUI) hideJob(job gopenqa.Job) bool {
 		return false
 	}
 	state := job.JobState()
+	model := &tui.Tabs[tui.currentTab]
 	for _, s := range tui.hideStatus {
 		if state == s {
 			return true
@@ -292,7 +344,7 @@ func (tui *TUI) hideJob(job gopenqa.Job) bool {
 
 		// Special reviewed keyword
 		if s == "reviewed" && (state == "failed" || state == "parallel_failed" || state == "incomplete") {
-			if reviewed, found := tui.Model.reviewed[job.ID]; found && reviewed {
+			if reviewed, found := model.reviewed[job.ID]; found && reviewed {
 				return true
 			}
 		}
@@ -303,7 +355,8 @@ func (tui *TUI) hideJob(job gopenqa.Job) bool {
 // print all jobs unsorted
 func (tui *TUI) buildJobsScreen(width int) []string {
 	lines := make([]string, 0)
-	for _, job := range tui.Model.jobs {
+	model := &tui.Tabs[tui.currentTab]
+	for _, job := range model.jobs {
 		if !tui.hideJob(job) {
 			lines = append(lines, tui.formatJobLine(job, width))
 		}
@@ -340,10 +393,11 @@ func jobGroupHeader(group gopenqa.JobGroup, width int) string {
 
 func (tui *TUI) buildJobsScreenByGroup(width int) []string {
 	lines := make([]string, 0)
+	model := &tui.Tabs[tui.currentTab]
 
 	// Determine active groups first
 	groups := make(map[int][]gopenqa.Job, 0)
-	for _, job := range tui.Model.jobs {
+	for _, job := range model.jobs {
 		// Create item if not existing, then append job
 		if _, ok := groups[job.GroupID]; !ok {
 			groups[job.GroupID] = make([]gopenqa.Job, 0)
@@ -360,7 +414,7 @@ func (tui *TUI) buildJobsScreenByGroup(width int) []string {
 	// Now print them sorted by group ID
 	first := true
 	for _, id := range grpIDs {
-		grp := tui.Model.jobGroups[id]
+		grp := model.jobGroups[id]
 		jobs := groups[id]
 		statC := make(map[string]int, 0)
 		hidden := 0
@@ -379,7 +433,7 @@ func (tui *TUI) buildJobsScreenByGroup(width int) []string {
 			}
 			// Increase status counter
 			status := job.JobState()
-			if status == "failed" && tui.Model.reviewed[job.ID] {
+			if status == "failed" && model.reviewed[job.ID] {
 				status = "reviewed"
 			}
 			if c, exists := statC[status]; exists {
@@ -458,6 +512,24 @@ func (tui *TUI) buildHeader(_ int) []string {
 	if tui.header != "" {
 		lines = append(lines, tui.header)
 		lines = append(lines, "q:Quit r:Refresh h:Hide/Show jobs o:Open links m:Toggle RabbitMQ tracker s:Switch sorting Arrows:Move up/down")
+		// Tabs if multiple configs are present
+		if len(tui.Tabs) > 1 {
+			tabs := ""
+			for i := range tui.Tabs {
+				enabled := (tui.currentTab == i)
+				model := &tui.Tabs[i]
+				cf := model.Config
+				name := cf.Name
+				if name == "" {
+					name = fmt.Sprintf("Config %d", i+1)
+				}
+				if enabled {
+					name = ANSI_BOLD + name + ANSI_RESET
+				}
+				tabs += fmt.Sprintf("  [%s]", name)
+			}
+			lines = append(lines, tabs)
+		}
 	}
 	return lines
 }
@@ -494,8 +566,9 @@ func (tui *TUI) buildFooter(width int) []string {
 // Build the full screen
 func (tui *TUI) buildScreen(width int) []string {
 	lines := make([]string, 0)
+	model := tui.Model()
 
-	switch tui.sorting {
+	switch model.sorting {
 	case 1:
 		lines = append(lines, tui.buildJobsScreenByGroup(width)...)
 	default:
@@ -503,23 +576,23 @@ func (tui *TUI) buildScreen(width int) []string {
 	}
 	lines = trimEmpty(lines)
 
-	tui.Model.printLines = len(lines)
+	// We only scroll through the screen, so those are the relevant lines
+	model.printLines = len(lines)
+
 	return lines
 }
 
 /* Redraw screen */
 func (tui *TUI) Update() {
-	tui.Model.mutex.Lock()
-	defer tui.Model.mutex.Unlock()
+	model := tui.Model()
 	width, height := terminalSize()
 	if width <= 0 || height <= 0 {
 		return
 	}
 
 	// Check for unreasonable values
-	if width > 1000 {
-		width = 1000
-	}
+	width = min(width, 1024)
+	height = min(height, 1024)
 
 	// Header and footer are separate. We only scroll through the "screen"
 	screen := tui.buildScreen(width)
@@ -551,7 +624,7 @@ func (tui *TUI) Update() {
 
 	// Print screen
 	screensize := 0
-	for elem := tui.Model.offset; remainingLines > 0; remainingLines-- {
+	for elem := model.offset; remainingLines > 0; remainingLines-- {
 		if elem >= len(screen) {
 			fmt.Println("") // Fill screen with empty lines for alignment
 		} else {
@@ -610,6 +683,8 @@ func getDateColorcode(t time.Time) string {
 }
 
 func (tui *TUI) formatJobLine(job gopenqa.Job, width int) string {
+	model := &tui.Tabs[tui.currentTab]
+
 	c1 := ANSI_WHITE // date color
 	tStr := ""       // Timestamp string
 
@@ -631,7 +706,7 @@ func (tui *TUI) formatJobLine(job gopenqa.Job, width int) string {
 	}
 	// For failed jobs check if they are reviewed
 	if state == "failed" || state == "incomplete" || state == "parallel_failed" {
-		if reviewed, found := tui.Model.reviewed[job.ID]; found && reviewed {
+		if reviewed, found := model.reviewed[job.ID]; found && reviewed {
 			c2 = ANSI_MAGENTA
 			state = "reviewed"
 		}

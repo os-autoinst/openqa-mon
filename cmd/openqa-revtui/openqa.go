@@ -9,16 +9,6 @@ import (
 	"github.com/os-autoinst/gopenqa"
 )
 
-func hideJob(job gopenqa.Job) bool {
-	status := job.JobState()
-	for _, s := range cf.HideStatus {
-		if status == s {
-			return true
-		}
-	}
-	return false
-}
-
 func isJobTooOld(job gopenqa.Job, maxlifetime int64) bool {
 	if maxlifetime <= 0 {
 		return false
@@ -34,8 +24,8 @@ func isJobTooOld(job gopenqa.Job, maxlifetime int64) bool {
 	return deltaT > maxlifetime
 }
 
-func isReviewed(job gopenqa.Job, instance *gopenqa.Instance, checkParallel bool) (bool, error) {
-	reviewed, err := checkReviewed(job.ID, instance)
+func isReviewed(job gopenqa.Job, model *TUIModel, checkParallel bool) (bool, error) {
+	reviewed, err := checkReviewed(job.ID, model.Instance)
 	if err != nil || reviewed {
 		return reviewed, err
 	}
@@ -43,7 +33,7 @@ func isReviewed(job gopenqa.Job, instance *gopenqa.Instance, checkParallel bool)
 	// If not reviewed but "parallel_failed", check parallel jobs if they are reviewed
 	if checkParallel {
 		for _, childID := range job.Children.Parallel {
-			reviewed, err := checkReviewed(childID, instance)
+			reviewed, err := checkReviewed(childID, model.Instance)
 			if err != nil {
 				return reviewed, err
 			}
@@ -108,15 +98,15 @@ func FetchJob(id int64, instance *gopenqa.Instance) (gopenqa.Job, error) {
 }
 
 /* Fetch the given jobs and follow their clones */
-func fetchJobsFollow(ids []int64, instance *gopenqa.Instance, progress func(i, n int)) ([]gopenqa.Job, error) {
+func fetchJobsFollow(ids []int64, model *TUIModel, progress func(i, n int)) ([]gopenqa.Job, error) {
 	// Obey the maximum number of job per requests.
 	// We split the job ids into multiple requests if necessary
 	jobs := make([]gopenqa.Job, 0)
 	// Progress variables
-	chunks := len(ids) / cf.RequestJobLimit
+	chunks := len(ids) / model.Config.RequestJobLimit
 	for i := 0; len(ids) > 0; i++ { // Repeat until no more ids are available.
-		n := min(cf.RequestJobLimit, len(ids))
-		chunk, err := instance.GetJobsFollow(ids[:n])
+		n := min(model.Config.RequestJobLimit, len(ids))
+		chunk, err := model.Instance.GetJobsFollow(ids[:n])
 		if progress != nil {
 			progress(i, chunks)
 		}
@@ -131,13 +121,17 @@ func fetchJobsFollow(ids []int64, instance *gopenqa.Instance, progress func(i, n
 }
 
 /* Fetch the given jobs from the instance at once */
-func fetchJobs(ids []int64, instance *gopenqa.Instance) ([]gopenqa.Job, error) {
+func fetchJobs(ids []int64, model *TUIModel) ([]gopenqa.Job, error) {
 	// Obey the maximum number of job per requests.
 	// We split the job ids into multiple requests if necessary
 	jobs := make([]gopenqa.Job, 0)
 	for len(ids) > 0 {
-		n := min(cf.RequestJobLimit, len(ids))
-		chunk, err := instance.GetJobs(ids[:n])
+		n := len(ids)
+		if model.Config.RequestJobLimit > 0 {
+			n = min(model.Config.RequestJobLimit, len(ids))
+		}
+		n = max(1, n)
+		chunk, err := model.Instance.GetJobs(ids[:n])
 		ids = ids[n:]
 		if err != nil {
 			return jobs, err
@@ -148,7 +142,7 @@ func fetchJobs(ids []int64, instance *gopenqa.Instance) ([]gopenqa.Job, error) {
 	// Get cloned jobs, if present
 	for i, job := range jobs {
 		if job.IsCloned() {
-			if job, err := FetchJob(job.ID, instance); err != nil {
+			if job, err := FetchJob(job.ID, model.Instance); err != nil {
 				return jobs, err
 			} else {
 				jobs[i] = job
@@ -160,18 +154,18 @@ func fetchJobs(ids []int64, instance *gopenqa.Instance) ([]gopenqa.Job, error) {
 
 type FetchJobsCallback func(int, int, int, int)
 
-func FetchJobs(instance *gopenqa.Instance, callback FetchJobsCallback) ([]gopenqa.Job, error) {
+func FetchJobs(model *TUIModel, callback FetchJobsCallback) ([]gopenqa.Job, error) {
 	ret := make([]gopenqa.Job, 0)
-	for i, group := range cf.Groups {
+	for i, group := range model.Config.Groups {
 		params := group.Params
-		jobs, err := instance.GetOverview("", params)
+		jobs, err := model.Instance.GetOverview("", params)
 		if err != nil {
 			return ret, err
 		}
 
 		// Limit jobs to at most MaxJobs
-		if len(jobs) > cf.MaxJobs {
-			jobs = jobs[:cf.MaxJobs]
+		if len(jobs) > model.Config.MaxJobs {
+			jobs = jobs[:model.Config.MaxJobs]
 		}
 
 		// Get detailed job instances. Fetch them at once
@@ -181,9 +175,9 @@ func FetchJobs(instance *gopenqa.Instance, callback FetchJobsCallback) ([]gopenq
 		}
 		if callback != nil {
 			// Add one to the counter to indicate the progress to humans (0/16 looks weird)
-			callback(i+1, len(cf.Groups), 0, len(jobs))
+			callback(i+1, len(model.Config.Groups), 0, len(jobs))
 		}
-		jobs, err = fetchJobs(ids, instance)
+		jobs, err = fetchJobs(ids, model)
 		if err != nil {
 			return jobs, err
 		}

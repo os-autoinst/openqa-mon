@@ -16,6 +16,7 @@ type Group struct {
 
 /* Program configuration parameters */
 type Config struct {
+	Name            string            // Configuration name, if set
 	Instance        string            // Instance URL to be used
 	RabbitMQ        string            // RabbitMQ url to be used
 	RabbitMQTopic   string            // Topic to subscribe to
@@ -29,7 +30,12 @@ type Config struct {
 	RequestJobLimit int               // Maximum number of jobs in a single request
 }
 
-var cf Config
+func (cf Config) Validate() error {
+	if len(cf.Groups) == 0 {
+		return fmt.Errorf("no review groups defined")
+	}
+	return nil
+}
 
 func (cf *Config) LoadToml(filename string) error {
 	if _, err := toml.DecodeFile(filename, cf); err != nil {
@@ -54,7 +60,11 @@ func (cf *Config) LoadToml(filename string) error {
 		}
 		cf.Groups[i] = group
 	}
-	return nil
+	// Apply filename as name, if no name is set
+	if cf.Name == "" {
+		cf.Name = extractFilename(filename)
+	}
+	return cf.Validate()
 }
 
 /* Create configuration instance and set default vaules */
