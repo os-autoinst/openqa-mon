@@ -108,13 +108,18 @@ func FetchJob(id int64, instance *gopenqa.Instance) (gopenqa.Job, error) {
 }
 
 /* Fetch the given jobs and follow their clones */
-func fetchJobsFollow(ids []int64, instance *gopenqa.Instance) ([]gopenqa.Job, error) {
+func fetchJobsFollow(ids []int64, instance *gopenqa.Instance, progress func(i, n int)) ([]gopenqa.Job, error) {
 	// Obey the maximum number of job per requests.
 	// We split the job ids into multiple requests if necessary
 	jobs := make([]gopenqa.Job, 0)
-	for len(ids) > 0 {
+	// Progress variables
+	chunks := len(ids) / cf.RequestJobLimit
+	for i := 0; len(ids) > 0; i++ { // Repeat until no more ids are available.
 		n := min(cf.RequestJobLimit, len(ids))
 		chunk, err := instance.GetJobsFollow(ids[:n])
+		if progress != nil {
+			progress(i, chunks)
+		}
 		ids = ids[n:]
 		if err != nil {
 			return jobs, err

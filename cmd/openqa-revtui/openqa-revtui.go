@@ -231,7 +231,11 @@ func refreshJobs(tui *TUI, instance *gopenqa.Instance) error {
 	for _, job := range oldJobs {
 		ids = append(ids, job.ID)
 	}
-	jobs, err := fetchJobsFollow(ids, instance)
+	callback := func(i, n int) {
+		tui.SetStatus(fmt.Sprintf("Refreshing %d jobs ... %d%% ", len(oldJobs), 100/n*i))
+		tui.Update()
+	}
+	jobs, err := fetchJobsFollow(ids, instance, callback)
 	if err != nil {
 		return err
 	}
