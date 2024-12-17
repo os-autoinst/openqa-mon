@@ -10,25 +10,9 @@ import (
 	"sort"
 	"syscall"
 	"time"
-	"unsafe"
 
 	"github.com/os-autoinst/gopenqa"
 )
-
-// Declare ANSI color codes
-const ANSI_RED = "\u001b[31m"
-const ANSI_GREEN = "\u001b[32m"
-const ANSI_YELLOW = "\u001b[33m"
-const ANSI_BRIGHTYELLOW = "\u001b[33;1m"
-const ANSI_BLUE = "\u001b[34m"
-const ANSI_MAGENTA = "\u001b[35m"
-const ANSI_CYAN = "\u001b[36m"
-const ANSI_WHITE = "\u001b[37m"
-const ANSI_BOLD = "\u001b[1m"
-const ANSI_RESET = "\u001b[0m"
-
-const ANSI_ALT_SCREEN = "\x1b[?1049h"
-const ANSI_EXIT_ALT_SCREEN = "\x1b[?1049l"
 
 type winsize struct {
 	Row    uint16
@@ -37,25 +21,24 @@ type winsize struct {
 	Ypixel uint16
 }
 
+// Callback function - key and a update flag (defaults to true)
 type KeyPressCallback func(byte, *bool)
 
 /* Declares the terminal user interface */
 type TUI struct {
-	Tabs []TUIModel
-	done chan bool
+	Tabs        []TUIModel       // Configuration containers displayed as tabs
+	Keypress    KeyPressCallback // Callback function for every keypress
+	currentTab  int              // Currently selected tab
+	status      string           // Additional status text
+	tracker     string           // Additional tracker text for RabbitMQ messages
+	header      string           // Additional header text
+	hideStatus  []string         // Statuses to hide
+	hide        bool             // Hide statuses in hideStatus
+	showTracker bool             // Show tracker
+	showStatus  bool             // Show status line
 
-	Keypress KeyPressCallback
-
-	currentTab  int      // Currently selected tab
-	status      string   // Additional status text
-	tracker     string   // Additional tracker text for RabbitMQ messages
-	header      string   // Additional header text
-	hideStatus  []string // Statuses to hide
-	hide        bool     // Hide statuses in hideStatus
-	showTracker bool     // Show tracker
-	showStatus  bool     // Show status line
-
-	screensize int // Lines per screen
+	screensize int       // Lines per screen
+	done       chan bool // Program termination signal
 }
 
 func CreateTUI() *TUI {
@@ -69,7 +52,7 @@ func CreateTUI() *TUI {
 	return &tui
 }
 
-/* The model that will be displayed in the TUI*/
+/* One tab for the TUI */
 type TUIModel struct {
 	Instance *gopenqa.Instance // openQA instance for this config
 	Config   *Config           // Job group configuration for this model
@@ -80,17 +63,6 @@ type TUIModel struct {
 	printLines int                      // Lines that would need to be printed, needed for offset handling
 	reviewed   map[int64]bool           // Indicating if failed jobs are reviewed
 	sorting    int                      // Sorting method - 0: none, 1 - by job group
-}
-
-func (tui *TUI) GetVisibleJobs() []gopenqa.Job {
-	jobs := make([]gopenqa.Job, 0)
-	model := &tui.Tabs[tui.currentTab]
-	for _, job := range model.jobs {
-		if !tui.hideJob(job) {
-			jobs = append(jobs, job)
-		}
-	}
-	return jobs
 }
 
 func (model *TUIModel) SetReviewed(job int64, reviewed bool) {
@@ -134,6 +106,15 @@ func (tui *TUIModel) SetJobGroups(grps map[int]gopenqa.JobGroup) {
 	tui.jobGroups = grps
 }
 
+// Apply sorting method. 0 = none, 1 = by job group
+func (tui *TUIModel) SetSorting(sorting int) {
+	tui.sorting = sorting
+}
+
+func (tui *TUIModel) Sorting() int {
+	return tui.sorting
+}
+
 func (tui *TUI) NextTab() {
 	if len(tui.Tabs) > 1 {
 		tui.currentTab--
@@ -142,6 +123,17 @@ func (tui *TUI) NextTab() {
 		}
 		tui.Update()
 	}
+}
+
+func (tui *TUI) GetVisibleJobs() []gopenqa.Job {
+	jobs := make([]gopenqa.Job, 0)
+	model := &tui.Tabs[tui.currentTab]
+	for _, job := range model.jobs {
+		if !tui.hideJob(job) {
+			jobs = append(jobs, job)
+		}
+	}
+	return jobs
 }
 
 func (tui *TUI) PreviousTab() {
@@ -161,15 +153,6 @@ func (tui *TUI) Hide() bool {
 
 func (tui *TUI) SetHideStatus(st []string) {
 	tui.hideStatus = st
-}
-
-// Apply sorting method. 0 = none, 1 = by job group
-func (tui *TUIModel) SetSorting(sorting int) {
-	tui.sorting = sorting
-}
-
-func (tui *TUIModel) Sorting() int {
-	return tui.sorting
 }
 
 func (tui *TUI) SetStatus(status string) {
@@ -228,68 +211,6 @@ func (tui *TUI) Model() *TUIModel {
 	return &tui.Tabs[tui.currentTab]
 }
 
-func (tui *TUI) readInput() {
-	var b []byte = make([]byte, 1)
-	var p = make([]byte, 3) // History, needed for special keys
-	for {
-		if n, err := os.Stdin.Read(b); err != nil {
-			fmt.Fprintf(os.Stderr, "Input stream error: %s\n", err)
-			break
-		} else if n == 0 { // EOL
-			break
-		}
-		model := tui.Model()
-
-		k := b[0]
-
-		// Shift history, do it manually for now
-		p[2], p[1], p[0] = p[1], p[0], k
-
-		// Catch special keys
-		if p[2] == 27 && p[1] == 91 {
-			switch k {
-			case 65: // arrow up
-				if model.offset > 0 {
-					model.offset--
-				}
-			case 66: // arrow down
-				max := max(0, (model.printLines - tui.screensize))
-				if model.offset < max {
-					model.offset++
-				}
-			case 72: // home
-				model.offset = 0
-			case 70: // end
-				model.offset = max(0, (model.printLines - tui.screensize))
-			case 53: // page up
-				// Always leave one line overlap for better orientation
-				model.offset = max(0, model.offset-tui.screensize+1)
-			case 54: // page down
-				max := max(0, (model.printLines - tui.screensize))
-				// Always leave one line overlap for better orientation
-				model.offset = min(max, model.offset+tui.screensize-1)
-			case 90: // Shift+Tab
-				tui.PreviousTab()
-			}
-		}
-		// Default keys
-		if k == 9 { // Tab
-			tui.NextTab()
-		}
-
-		update := true
-
-		// Forward keypress to listener
-		if tui.Keypress != nil {
-			tui.Keypress(k, &update)
-		}
-
-		if update {
-			tui.Update()
-		}
-	}
-}
-
 func (tui *TUI) Start() {
 	// disable input buffering
 	exec.Command("stty", "-F", "/dev/tty", "cbreak", "min", "1").Run()
@@ -319,16 +240,42 @@ func (tui *TUI) LeaveAltScreen() {
 	fmt.Print(ANSI_EXIT_ALT_SCREEN)
 }
 
-// awaits SIGINT or SIGTERM
-func (tui *TUI) awaitTerminationSignal() {
+// Sends the Done signal to the TUI, indicating that the program should terminate now.
+func (tui *TUI) Done() {
+	tui.done <- true
+}
+
+// awaits SIGINT, SIGTERM or someone sending the done signal
+func (tui *TUI) AwaitTermination() {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		sig := <-sigs
 		fmt.Println(sig)
-		tui.done <- true
+		tui.Done()
 	}()
 	<-tui.done
+}
+
+func (tui *TUI) StartPeriodicRefresh() {
+	// Periodic refresh
+	for i := range tui.Tabs {
+		model := &tui.Tabs[i]
+		interval := model.Config.RefreshInterval
+		if interval > 0 {
+			go func(currentTab int) {
+				for {
+					time.Sleep(time.Duration(interval) * time.Second)
+					// Only refresh, if current tab is ours
+					if tui.currentTab == currentTab {
+						if err := RefreshJobs(); err != nil {
+							tui.SetStatus(fmt.Sprintf("Error while refreshing: %s", err))
+						}
+					}
+				}
+			}(i)
+		}
+	}
 }
 
 func (tui *TUI) hideJob(job gopenqa.Job) bool {
@@ -362,18 +309,6 @@ func (tui *TUI) buildJobsScreen(width int) []string {
 		}
 	}
 	return lines
-}
-
-func sortedKeys(vals map[string]int) []string {
-	n := len(vals)
-	ret := make([]string, n)
-	i := 0
-	for s := range vals {
-		ret[i] = s
-		i++
-	}
-	sort.Strings(ret)
-	return ret
 }
 
 func jobGroupHeader(group gopenqa.JobGroup, width int) string {
@@ -471,39 +406,6 @@ func (tui *TUI) buildJobsScreenByGroup(width int) []string {
 		}
 		lines = append(lines, line)
 	}
-	return lines
-}
-
-func cut(text string, n int) string {
-	if len(text) < n {
-		return text
-	} else {
-		return text[:n]
-	}
-}
-func trimEmptyTail(lines []string) []string {
-	// Crop empty elements at the end of the array
-	for n := len(lines) - 1; n > 0; n-- {
-		if lines[n] != "" {
-			return lines[0 : n+1]
-		}
-	}
-	return lines[0:0]
-}
-
-func trimEmptyHead(lines []string) []string {
-	// Crop empty elements at the end of the array
-	for i := 0; i < len(lines); i++ {
-		if lines[i] != "" {
-			return lines[i:]
-		}
-	}
-	return lines[0:0]
-}
-
-func trimEmpty(lines []string) []string {
-	lines = trimEmptyHead(lines)
-	lines = trimEmptyTail(lines)
 	return lines
 }
 
@@ -645,43 +547,6 @@ func (tui *TUI) Update() {
 	}
 }
 
-// NotifySend fires a Desktop notification
-func NotifySend(text string) {
-	cmd := exec.Command("notify-send", text)
-	err := cmd.Run()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error sending notification via 'notify-send': %s\n", err)
-	}
-}
-
-func getStateColorcode(state string) string {
-	if state == "scheduled" || state == "assigned" {
-		return ANSI_BLUE
-	} else if state == "done" || state == "passed" {
-		return ANSI_GREEN
-	} else if state == "softfail" || state == "softfailed" {
-		return ANSI_YELLOW
-	} else if state == "fail" || state == "failed" || state == "incomplete" || state == "parallel_failed" {
-		return ANSI_RED
-	} else if state == "cancelled" || state == "user_cancelled" {
-		return ANSI_MAGENTA
-	} else if state == "running" {
-		return ANSI_CYAN
-	}
-	return ANSI_WHITE
-}
-
-func getDateColorcode(t time.Time) string {
-	now := time.Now()
-	diff := now.Unix() - t.Unix()
-	if diff > 2*24*60*60 {
-		return ANSI_RED // 2 days: red
-	} else if diff > 24*60*60 {
-		return ANSI_BRIGHTYELLOW // 1 day: yellow
-	}
-	return ANSI_WHITE
-}
-
 func (tui *TUI) formatJobLine(job gopenqa.Job, width int) string {
 	model := &tui.Tabs[tui.currentTab]
 
@@ -699,7 +564,7 @@ func (tui *TUI) formatJobLine(job gopenqa.Job, width int) string {
 	} else {
 		c1 = getDateColorcode(timestamp)
 	}
-	c2 := getStateColorcode(state)
+	c2 := stateColor(state)
 	// If it is scheduled, it does not make any sense to display the starting time, since it's not set
 	if state != "scheduled" && timestamp.Unix() > 0 {
 		tStr = timestamp.Format("2006-01-02-15:04:05")
@@ -759,24 +624,81 @@ func (tui *TUI) formatJobLine(job gopenqa.Job, width int) string {
 	}
 }
 
-func terminalSize() (int, int) {
-	ws := &winsize{}
-	ret, _, _ := syscall.Syscall(syscall.SYS_IOCTL,
-		uintptr(syscall.Stdin),
-		uintptr(syscall.TIOCGWINSZ),
-		uintptr(unsafe.Pointer(ws)))
+func (tui *TUI) readInput() {
+	var b []byte = make([]byte, 1)
+	var p = make([]byte, 3) // History, needed for special keys
+	for {
+		if n, err := os.Stdin.Read(b); err != nil {
+			fmt.Fprintf(os.Stderr, "Input stream error: %s\n", err)
+			break
+		} else if n == 0 { // EOL
+			break
+		}
+		model := tui.Model()
 
-	if int(ret) == 0 {
-		return int(ws.Col), int(ws.Row)
-	} else {
-		return 80, 24 // Default value
+		k := b[0]
+
+		// Shift history, do it manually for now
+		p[2], p[1], p[0] = p[1], p[0], k
+
+		// Catch special keys
+		if p[2] == 27 && p[1] == 91 {
+			switch k {
+			case 65: // arrow up
+				if model.offset > 0 {
+					model.offset--
+				}
+			case 66: // arrow down
+				max := max(0, (model.printLines - tui.screensize))
+				if model.offset < max {
+					model.offset++
+				}
+			case 72: // home
+				model.offset = 0
+			case 70: // end
+				model.offset = max(0, (model.printLines - tui.screensize))
+			case 53: // page up
+				// Always leave one line overlap for better orientation
+				model.offset = max(0, model.offset-tui.screensize+1)
+			case 54: // page down
+				max := max(0, (model.printLines - tui.screensize))
+				// Always leave one line overlap for better orientation
+				model.offset = min(max, model.offset+tui.screensize-1)
+			case 90: // Shift+Tab
+				tui.PreviousTab()
+			}
+		}
+		// Default keys
+		if k == 9 { // Tab
+			tui.NextTab()
+		}
+
+		update := true
+
+		// Forward keypress to listener
+		if tui.Keypress != nil {
+			tui.Keypress(k, &update)
+		}
+
+		if update {
+			tui.Update()
+		}
 	}
 }
 
-func spaces(n int) string {
-	ret := ""
-	for i := 0; i < n; i++ {
-		ret += " "
+func stateColor(state string) string {
+	if state == "scheduled" || state == "assigned" {
+		return ANSI_BLUE
+	} else if state == "done" || state == "passed" {
+		return ANSI_GREEN
+	} else if state == "softfail" || state == "softfailed" {
+		return ANSI_YELLOW
+	} else if state == "fail" || state == "failed" || state == "incomplete" || state == "parallel_failed" {
+		return ANSI_RED
+	} else if state == "cancelled" || state == "user_cancelled" {
+		return ANSI_MAGENTA
+	} else if state == "running" {
+		return ANSI_CYAN
 	}
-	return ret
+	return ANSI_WHITE
 }

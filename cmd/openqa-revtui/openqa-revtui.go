@@ -13,17 +13,6 @@ import (
 
 var tui *TUI
 
-func loadDefaultConfig() (Config, error) {
-	var cf Config
-	configFile := homeDir() + "/.openqa-revtui.toml"
-	if fileExists(configFile) {
-		if err := cf.LoadToml(configFile); err != nil {
-			return cf, err
-		}
-	}
-	return cf, nil
-}
-
 func parseProgramArgs(cf *Config) ([]Config, error) {
 	cfs := make([]Config, 0)
 	n := len(os.Args)
@@ -157,7 +146,7 @@ func main() {
 	var err error
 	var cfs []Config
 
-	if defaultConfig, err = loadDefaultConfig(); err != nil {
+	if defaultConfig, err = LoadDefaultConfig(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error loading default config file: %s\n", err)
 		os.Exit(1)
 	}
@@ -197,7 +186,7 @@ func main() {
 	tui.SetHideStatus(cf.HideStatus)
 
 	// Enter main loop
-	err = tui_main()
+	err = main_loop()
 	tui.LeaveAltScreen()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
@@ -284,67 +273,8 @@ func browserJobs(jobs []gopenqa.Job) error {
 	return nil
 }
 
-// main routine for the TUI instance
-func tui_main() error {
-	title := "openqa Review TUI Dashboard v" + internal.VERSION
-	var rabbitmqs []gopenqa.RabbitMQ
+func initialQuery() error {
 	var err error
-
-	rabbitmqs = make([]gopenqa.RabbitMQ, 0)
-	refreshing := false
-	tui.Keypress = func(key byte, update *bool) {
-		// Input handling
-		switch key {
-		case 'r':
-			if !refreshing {
-				refreshing = true
-				go func() {
-					if err := RefreshJobs(); err != nil {
-						tui.SetStatus(fmt.Sprintf("Error while refreshing: %s", err))
-					}
-					refreshing = false
-				}()
-			}
-		case 'u':
-			// Pass, update is anyways happening
-		case 'q':
-			tui.done <- true
-			*update = false
-		case 'h':
-			tui.SetHide(!tui.Hide())
-			tui.Model().MoveHome()
-		case 'm':
-			tui.SetShowTracker(!tui.showTracker)
-		case 's':
-			// Shift through the sorting mechanism
-			model := tui.Model()
-			model.SetSorting((model.Sorting() + 1) % 2)
-		case 'o', 'O':
-			// Note: 'o' has a failsafe to not open more than 10 links. 'O' overrides this failsafe
-			jobs := tui.GetVisibleJobs()
-			if len(jobs) == 0 {
-				tui.SetStatus("No visible jobs")
-			} else if len(jobs) > 10 && key == 'o' {
-				status := fmt.Sprintf("Refuse to open %d (>10) job links. Use 'O' to override", len(jobs))
-				tui.SetTemporaryStatus(status, 5)
-			} else {
-				if err := browserJobs(jobs); err != nil {
-					tui.SetStatus(fmt.Sprintf("error: %s", err))
-				} else {
-					tui.SetStatus(fmt.Sprintf("Opened %d links", len(jobs)))
-				}
-			}
-		}
-	}
-	tui.EnterAltScreen()
-	tui.Clear()
-	tui.SetHeader(title)
-	defer tui.LeaveAltScreen()
-
-	// Initial query instance via REST API
-
-	fmt.Println(title)
-	fmt.Println("")
 	if len(tui.Tabs) == 0 {
 		model := &tui.Tabs[0]
 		cf := model.Config
@@ -353,7 +283,7 @@ func tui_main() error {
 		fmt.Printf("Initial querying for %d configurations ... \n", len(tui.Tabs))
 	}
 
-	for i, _ := range tui.Tabs {
+	for i := range tui.Tabs {
 		model := &tui.Tabs[i]
 		cf := model.Config
 
@@ -371,7 +301,7 @@ func tui_main() error {
 			return fmt.Errorf("error fetching job groups: %s", err)
 		}
 		if len(model.jobGroups) == 0 {
-			fmt.Fprintf(os.Stderr, "Warn: No job groups\n")
+			fmt.Fprintf(os.Stderr, "Warning: No job groups found\n")
 		}
 		fmt.Print("\033[s") // Save cursor position
 		fmt.Printf("\tGet jobs for %d groups ...", len(cf.Groups))
@@ -405,41 +335,106 @@ func tui_main() error {
 				model.SetReviewed(job.ID, reviewed)
 			}
 		}
+	}
+	return nil
+}
+
+func registerRabbitMQs() ([]gopenqa.RabbitMQ, error) {
+	rabbitmqs := make([]gopenqa.RabbitMQ, 0)
+	for i := range tui.Tabs {
+		model := &tui.Tabs[i]
+		cf := model.Config
 
 		// Register RabbitMQ
 		if cf.RabbitMQ != "" {
 			rabbitmq, err := registerRabbitMQ(model, cf.RabbitMQ, cf.RabbitMQTopic)
+			// RabbitMQ is still considered experimental, as such errors are not considered critical for the program.
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error establishing link to RabbitMQ %s: %s\n", rabbitRemote(cf.RabbitMQ), err)
 			}
 			rabbitmqs = append(rabbitmqs, rabbitmq)
 		}
 	}
-	fmt.Println("Initial fetching completed. Entering main loop ... ")
+	return rabbitmqs, nil
+}
+
+// main loop
+func main_loop() error {
+	title := "openqa Review TUI Dashboard v" + internal.VERSION
+
+	var rabbitmqs []gopenqa.RabbitMQ
+	var err error
+
+	tui.Keypress = func(key byte, update *bool) {
+		refreshing := false
+		// Input handling
+		switch key {
+		case 'r':
+			if !refreshing {
+				refreshing = true
+				go func() {
+					if err := RefreshJobs(); err != nil {
+						tui.SetStatus(fmt.Sprintf("Error while refreshing: %s", err))
+					}
+					refreshing = false
+				}()
+			}
+		case 'u':
+			*update = true
+		case 'q':
+			tui.Done()
+			*update = false
+		case 'h':
+			tui.SetHide(!tui.Hide())
+			tui.Model().MoveHome()
+		case 'm':
+			tui.SetShowTracker(!tui.showTracker)
+		case 's':
+			// Shift through the sorting mechanism
+			model := tui.Model()
+			model.SetSorting((model.Sorting() + 1) % 2)
+		case 'o', 'O':
+			// Note: 'o' has a failsafe to not open more than 10 links. 'O' overrides this failsafe
+			jobs := tui.GetVisibleJobs()
+			if len(jobs) == 0 {
+				tui.SetStatus("No visible jobs")
+			} else if len(jobs) > 10 && key == 'o' {
+				status := fmt.Sprintf("Refuse to open %d (>10) job links. Use 'O' to override", len(jobs))
+				tui.SetTemporaryStatus(status, 5)
+			} else {
+				if err := browserJobs(jobs); err != nil {
+					tui.SetStatus(fmt.Sprintf("error: %s", err))
+				} else {
+					tui.SetStatus(fmt.Sprintf("Opened %d links", len(jobs)))
+				}
+			}
+		}
+	}
+	tui.EnterAltScreen()
+	tui.Clear()
+	tui.SetHeader(title)
+	defer tui.LeaveAltScreen()
+
+	// Program initialization
+	fmt.Println(title)
+	fmt.Println("")
+	if err := initialQuery(); err != nil {
+		return err
+	}
+	rabbitmqs, err = registerRabbitMQs()
+	if err != nil {
+		// RabbitMQ errors are not critical.
+		fmt.Fprintf(os.Stderr, "RabbitMQ error: %s\n", err)
+	}
+
+	fmt.Println("Initialization completed. Entering main loop ... ")
 	tui.Start()
 	tui.Update()
 
-	// Periodic refresh
-	for i := range tui.Tabs {
-		model := &tui.Tabs[i]
-		interval := model.Config.RefreshInterval
-		if interval > 0 {
-			go func(currentTab int) {
-				for {
-					time.Sleep(time.Duration(interval) * time.Second)
-					// Only refresh, if current tab is ours
-					if tui.currentTab == currentTab {
-						if err := RefreshJobs(); err != nil {
-							tui.SetStatus(fmt.Sprintf("Error while refreshing: %s", err))
-						}
-					}
-				}
-			}(i)
-		}
-	}
-
-	tui.awaitTerminationSignal()
+	tui.StartPeriodicRefresh()
+	tui.AwaitTermination()
 	tui.LeaveAltScreen()
+
 	for i := range rabbitmqs {
 		rabbitmqs[i].Close()
 	}
