@@ -11,42 +11,21 @@ import (
 	"github.com/os-autoinst/openqa-mon/internal"
 )
 
-var knownJobs []gopenqa.Job
-var updatedRefresh bool
+var tui *TUI
 
-func getKnownJob(id int64) (gopenqa.Job, bool) {
-	for _, j := range knownJobs {
-		if j.ID == id {
-			return j, true
-		}
-	}
-	return gopenqa.Job{}, false
-}
-
-/** Try to update the job with the given status, if present. Returns the found job and true if the job was present */
-func updateJobStatus(status gopenqa.JobStatus) (gopenqa.Job, bool) {
-	var job gopenqa.Job
-	for i, j := range knownJobs {
-		if j.ID == status.ID {
-			knownJobs[i].State = "done"
-			knownJobs[i].Result = fmt.Sprintf("%s", status.Result)
-			return knownJobs[i], true
-		}
-	}
-	return job, false
-}
-
-func loadDefaultConfig() error {
+func loadDefaultConfig() (Config, error) {
+	var cf Config
 	configFile := homeDir() + "/.openqa-revtui.toml"
 	if fileExists(configFile) {
 		if err := cf.LoadToml(configFile); err != nil {
-			return err
+			return cf, err
 		}
 	}
-	return nil
+	return cf, nil
 }
 
-func parseProgramArgs() error {
+func parseProgramArgs(cf *Config) ([]Config, error) {
+	cfs := make([]Config, 0)
 	n := len(os.Args)
 	for i := 1; i < n; i++ {
 		arg := os.Args[i]
@@ -62,33 +41,35 @@ func parseProgramArgs() error {
 				os.Exit(0)
 			} else if arg == "-c" || arg == "--config" {
 				if i++; i >= n {
-					return fmt.Errorf("missing argument: %s", "config file")
+					return cfs, fmt.Errorf("missing argument: %s", "config file")
 				}
 				filename := os.Args[i]
+				var cf Config
 				if err := cf.LoadToml(filename); err != nil {
-					return fmt.Errorf("in %s: %s", filename, err)
+					return cfs, fmt.Errorf("in %s: %s", filename, err)
 				}
+				cfs = append(cfs, cf)
 			} else if arg == "-r" || arg == "--remote" {
 				if i++; i >= n {
-					return fmt.Errorf("missing argument: %s", "remote")
+					return cfs, fmt.Errorf("missing argument: %s", "remote")
 				}
 				cf.Instance = os.Args[i]
 			} else if arg == "-q" || arg == "--rabbit" || arg == "--rabbitmq" {
 				if i++; i >= n {
-					return fmt.Errorf("missing argument: %s", "RabbitMQ link")
+					return cfs, fmt.Errorf("missing argument: %s", "RabbitMQ link")
 				}
 				cf.RabbitMQ = os.Args[i]
 			} else if arg == "-i" || arg == "--hide" || arg == "--hide-status" {
 				if i++; i >= n {
-					return fmt.Errorf("missing argument: %s", "Status to hide")
+					return cfs, fmt.Errorf("missing argument: %s", "Status to hide")
 				}
 				cf.HideStatus = append(cf.HideStatus, strings.Split(os.Args[i], ",")...)
 			} else if arg == "-p" || arg == "--param" {
 				if i++; i >= n {
-					return fmt.Errorf("missing argument: %s", "parameter")
+					return cfs, fmt.Errorf("missing argument: %s", "parameter")
 				}
 				if name, value, err := splitNV(os.Args[i]); err != nil {
-					return fmt.Errorf("argument parameter is invalid: %s", err)
+					return cfs, fmt.Errorf("argument parameter is invalid: %s", err)
 				} else {
 					cf.DefaultParams[name] = value
 				}
@@ -97,25 +78,27 @@ func parseProgramArgs() error {
 			} else if arg == "-m" || arg == "--mute" || arg == "--silent" || arg == "--no-notify" {
 				cf.Notify = false
 			} else {
-				return fmt.Errorf("illegal argument: %s", arg)
+				return cfs, fmt.Errorf("illegal argument: %s", arg)
 			}
 		} else {
 			// Convenience logic. If it contains a = then assume it's a parameter, otherwise assume it's a config file
 			if strings.Contains(arg, "=") {
 				if name, value, err := splitNV(arg); err != nil {
-					return fmt.Errorf("argument parameter is invalid: %s", err)
+					return cfs, fmt.Errorf("argument parameter is invalid: %s", err)
 				} else {
 					cf.DefaultParams[name] = value
 				}
 			} else {
 				// Assume it's a config file
+				var cf Config
 				if err := cf.LoadToml(arg); err != nil {
-					return fmt.Errorf("in %s: %s", arg, err)
+					return cfs, fmt.Errorf("in %s: %s", arg, err)
 				}
+				cfs = append(cfs, cf)
 			}
 		}
 	}
-	return nil
+	return cfs, nil
 }
 
 func printUsage() {
@@ -135,7 +118,7 @@ func printUsage() {
 }
 
 // Register the given rabbitMQ instance for the tui
-func registerRabbitMQ(tui *TUI, remote, topic string) (gopenqa.RabbitMQ, error) {
+func registerRabbitMQ(model *TUIModel, remote, topic string) (gopenqa.RabbitMQ, error) {
 	rmq, err := gopenqa.ConnectRabbitMQ(remote)
 	if err != nil {
 		return rmq, fmt.Errorf("RabbitMQ connection error: %s", err)
@@ -145,87 +128,103 @@ func registerRabbitMQ(tui *TUI, remote, topic string) (gopenqa.RabbitMQ, error) 
 		return rmq, fmt.Errorf("RabbitMQ subscribe error: %s", err)
 	}
 	// Receive function
-	go func() {
+	go func(model *TUIModel) {
+		cf := model.Config
 		for {
 			if status, err := sub.ReceiveJobStatus(); err == nil {
 				now := time.Now()
-				// Update job, if present
-				if job, found := updateJobStatus(status); found {
-					tui.Model.Apply(knownJobs)
-					tui.SetTracker(fmt.Sprintf("[%s] Job %d-%s:%s %s", now.Format("15:04:05"), job.ID, status.Flavor, status.Build, status.Result))
-					tui.Update()
-					if cf.Notify && !hideJob(job) {
-						NotifySend(fmt.Sprintf("%s: %s %s", job.JobState(), job.Name, job.Test))
-					}
-				} else {
-					name := status.Flavor
-					if status.Build != "" {
-						name += ":" + status.Build
-					}
-					tui.SetTracker(fmt.Sprintf("RabbitMQ: [%s] Foreign job %d-%s %s", now.Format("15:04:05"), job.ID, name, status.Result))
-					tui.Update()
+				// Check if we know this job or if this is just another job.
+				job := model.Job(status.ID)
+				if job.ID == 0 {
+					continue
+				}
+
+				tui.SetTracker(fmt.Sprintf("[%s] Job %d-%s:%s %s", now.Format("15:04:05"), job.ID, status.Flavor, status.Build, status.Result))
+				job.State = "done"
+				job.Result = fmt.Sprintf("%s", status.Result)
+
+				if cf.Notify && !model.HideJob(*job) {
+					NotifySend(fmt.Sprintf("%s: %s %s", job.JobState(), job.Name, job.Test))
 				}
 			}
 		}
-	}()
+	}(model)
 	return rmq, err
 }
 
 func main() {
-	cf = CreateConfig()
-	if err := loadDefaultConfig(); err != nil {
+	var defaultConfig Config
+	var err error
+	var cfs []Config
+
+	if defaultConfig, err = loadDefaultConfig(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error loading default config file: %s\n", err)
 		os.Exit(1)
-
 	}
-	if err := parseProgramArgs(); err != nil {
+	if cfs, err = parseProgramArgs(&defaultConfig); err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		os.Exit(1)
 	}
 
-	if len(cf.Groups) == 0 {
-		fmt.Fprintf(os.Stderr, "No review groups defined\n")
-		os.Exit(1)
+	// Use default configuration only if no configuration files are loaded.
+	if len(cfs) < 1 {
+		if err := defaultConfig.Validate(); err != nil {
+			fmt.Fprintf(os.Stderr, "%s\n", err)
+			os.Exit(1)
+		}
+		cfs = append(cfs, defaultConfig)
 	}
 
-	instance := gopenqa.CreateInstance(cf.Instance)
-	instance.SetUserAgent("openqa-mon/revtui")
+	// Run terminal user interface from all available configuration objects
+	tui = CreateTUI()
+	for _, cf := range cfs {
+		model := tui.CreateTUIModel(&cf)
 
-	// Refresh rates below 5 minutes are not allowed on public instances due to the load it puts on them
-	updatedRefresh = false
-	if cf.RefreshInterval < 300 {
-		if strings.Contains(cf.Instance, "://openqa.suse.de") || strings.Contains(cf.Instance, "://openqa.opensuse.org") {
-			cf.RefreshInterval = 300
-			updatedRefresh = true
+		// Apply sorting of the first group
+		switch cf.GroupBy {
+		case "none", "":
+			model.SetSorting(0)
+		case "groups", "jobgroups":
+			model.SetSorting(1)
+		default:
+			fmt.Fprintf(os.Stderr, "Unsupported GroupBy: '%s'\n", cf.GroupBy)
+			os.Exit(1)
 		}
 	}
 
-	// Run TUI and use the return code
-	tui := CreateTUI()
-	switch cf.GroupBy {
-	case "none", "":
-		tui.SetSorting(0)
-	case "groups", "jobgroups":
-		tui.SetSorting(1)
-	default:
-		fmt.Fprintf(os.Stderr, "Unsupported GroupBy: '%s'\n", cf.GroupBy)
-		os.Exit(1)
-	}
+	// Some settings get applied from the last available configuration
+	cf := cfs[len(cfs)-1]
 	tui.SetHideStatus(cf.HideStatus)
-	err := tui_main(tui, &instance)
-	tui.LeaveAltScreen() // Ensure we leave alt screen
+
+	// Enter main loop
+	err = tui_main()
+	tui.LeaveAltScreen()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		os.Exit(1)
 	}
 }
 
-func refreshJobs(tui *TUI, instance *gopenqa.Instance) error {
+func RefreshJobs() error {
+	model := tui.Model()
+
+	// Determine if a job is already known or not
+	knownJobs := model.jobs
+	getKnownJob := func(id int64) (gopenqa.Job, bool) {
+		for _, j := range knownJobs {
+			if j.ID == id {
+				return j, true
+			}
+		}
+		return gopenqa.Job{}, false
+	}
+
 	// Get fresh jobs
 	status := tui.Status()
-	oldJobs := tui.Model.Jobs()
+	oldJobs := model.Jobs()
 	tui.SetStatus(fmt.Sprintf("Refreshing %d jobs ... ", len(oldJobs)))
 	tui.Update()
+
 	// Refresh all jobs at once in one request
 	ids := make([]int64, 0)
 	for _, job := range oldJobs {
@@ -235,7 +234,7 @@ func refreshJobs(tui *TUI, instance *gopenqa.Instance) error {
 		tui.SetStatus(fmt.Sprintf("Refreshing %d jobs ... %d%% ", len(oldJobs), 100/n*i))
 		tui.Update()
 	}
-	jobs, err := fetchJobsFollow(ids, instance, callback)
+	jobs, err := fetchJobsFollow(ids, model, callback)
 	if err != nil {
 		return err
 	}
@@ -250,9 +249,9 @@ func refreshJobs(tui *TUI, instance *gopenqa.Instance) error {
 		if updated {
 			status = fmt.Sprintf("Last update: [%s] Job %d-%s %s", time.Now().Format("15:04:05"), job.ID, job.Name, job.JobState())
 			tui.SetStatus(status)
-			tui.Model.Apply(jobs)
+			model.Apply(jobs)
 			tui.Update()
-			if cf.Notify && !hideJob(job) {
+			if model.Config.Notify && !model.HideJob(job) {
 				NotifySend(fmt.Sprintf("%s: %s %s", job.JobState(), job.Name, job.Test))
 			}
 		}
@@ -260,17 +259,16 @@ func refreshJobs(tui *TUI, instance *gopenqa.Instance) error {
 		// Scan failed jobs for comments
 		state := job.JobState()
 		if state == "failed" || state == "incomplete" || state == "parallel_failed" {
-			reviewed, err := isReviewed(job, instance, state == "parallel_failed")
+			reviewed, err := isReviewed(job, model, state == "parallel_failed")
 			if err != nil {
 				return err
 			}
 
-			tui.Model.SetReviewed(job.ID, reviewed)
+			model.SetReviewed(job.ID, reviewed)
 			tui.Update()
 		}
 	}
-	knownJobs = jobs
-	tui.Model.Apply(jobs)
+	model.Apply(jobs)
 	tui.SetStatus(status)
 	tui.Update()
 	return nil
@@ -287,41 +285,40 @@ func browserJobs(jobs []gopenqa.Job) error {
 }
 
 // main routine for the TUI instance
-func tui_main(tui *TUI, instance *gopenqa.Instance) error {
+func tui_main() error {
 	title := "openqa Review TUI Dashboard v" + internal.VERSION
-	var rabbitmq gopenqa.RabbitMQ
+	var rabbitmqs []gopenqa.RabbitMQ
 	var err error
 
+	rabbitmqs = make([]gopenqa.RabbitMQ, 0)
 	refreshing := false
-	tui.Keypress = func(key byte) {
+	tui.Keypress = func(key byte, update *bool) {
 		// Input handling
 		switch key {
 		case 'r':
 			if !refreshing {
 				refreshing = true
 				go func() {
-					if err := refreshJobs(tui, instance); err != nil {
+					if err := RefreshJobs(); err != nil {
 						tui.SetStatus(fmt.Sprintf("Error while refreshing: %s", err))
 					}
 					refreshing = false
 				}()
-				tui.Update()
 			}
 		case 'u':
-			tui.Update()
+			// Pass, update is anyways happening
 		case 'q':
 			tui.done <- true
+			*update = false
 		case 'h':
 			tui.SetHide(!tui.Hide())
-			tui.Model.MoveHome()
-			tui.Update()
+			tui.Model().MoveHome()
 		case 'm':
 			tui.SetShowTracker(!tui.showTracker)
-			tui.Update()
 		case 's':
 			// Shift through the sorting mechanism
-			tui.SetSorting((tui.Sorting() + 1) % 2)
-			tui.Update()
+			model := tui.Model()
+			model.SetSorting((model.Sorting() + 1) % 2)
 		case 'o', 'O':
 			// Note: 'o' has a failsafe to not open more than 10 links. 'O' overrides this failsafe
 			jobs := tui.GetVisibleJobs()
@@ -337,9 +334,6 @@ func tui_main(tui *TUI, instance *gopenqa.Instance) error {
 					tui.SetStatus(fmt.Sprintf("Opened %d links", len(jobs)))
 				}
 			}
-			tui.Update()
-		default:
-			tui.Update()
 		}
 	}
 	tui.EnterAltScreen()
@@ -351,81 +345,103 @@ func tui_main(tui *TUI, instance *gopenqa.Instance) error {
 
 	fmt.Println(title)
 	fmt.Println("")
-	if updatedRefresh {
-		fmt.Printf(ANSI_YELLOW + "For OSD and O3 a rate limit of 5 minutes between polling is applied" + ANSI_RESET + "\n\n")
+	if len(tui.Tabs) == 0 {
+		model := &tui.Tabs[0]
+		cf := model.Config
+		fmt.Printf("Initial querying instance %s ... \n", cf.Instance)
+	} else {
+		fmt.Printf("Initial querying for %d configurations ... \n", len(tui.Tabs))
 	}
-	fmt.Printf("Initial querying instance %s ... \n", cf.Instance)
-	fmt.Println("\tGet job groups ... ")
-	jobgroups, err := FetchJobGroups(instance)
-	if err != nil {
-		return fmt.Errorf("error fetching job groups: %s", err)
-	}
-	if len(jobgroups) == 0 {
-		fmt.Fprintf(os.Stderr, "Warn: No job groups\n")
-	}
-	tui.Model.SetJobGroups(jobgroups)
-	fmt.Print("\033[s") // Save cursor position
-	fmt.Printf("\tGet jobs for %d groups ...", len(cf.Groups))
-	jobs, err := FetchJobs(instance, func(group int, groups int, job int, jobs int) {
-		fmt.Print("\033[u") // Restore cursor position
-		fmt.Print("\033[K") // Erase till end of line
-		fmt.Printf("\tGet jobs for %d groups ... %d/%d", len(cf.Groups), group, groups)
-		if job == 0 {
-			fmt.Printf(" (%d jobs)", jobs)
-		} else {
-			fmt.Printf(" (%d/%d jobs)", job, jobs)
-		}
-	})
-	fmt.Println()
-	if err != nil {
-		return fmt.Errorf("error fetching jobs: %s", err)
-	}
-	if len(jobs) == 0 {
-		// No reason to continue - there are no jobs to scan
-		return fmt.Errorf("no jobs found")
-	}
-	// Failed jobs will be also scanned for comments
-	for _, job := range jobs {
-		state := job.JobState()
-		if state == "failed" || state == "incomplete" || state == "parallel_failed" {
-			reviewed, err := isReviewed(job, instance, state == "parallel_failed")
-			if err != nil {
-				return fmt.Errorf("error fetching job comment: %s", err)
+
+	for i, _ := range tui.Tabs {
+		model := &tui.Tabs[i]
+		cf := model.Config
+
+		// Refresh rates below 5 minutes are not allowed on public instances due to the load it puts on them
+
+		if cf.RefreshInterval < 300 {
+			if strings.Contains(cf.Instance, "://openqa.suse.de") || strings.Contains(cf.Instance, "://openqa.opensuse.org") {
+				cf.RefreshInterval = 300
 			}
-			tui.Model.SetReviewed(job.ID, reviewed)
+		}
+
+		fmt.Printf("Initial querying instance %s for config %d/%d ... \n", cf.Instance, i+1, len(tui.Tabs))
+		model.jobGroups, err = FetchJobGroups(model.Instance)
+		if err != nil {
+			return fmt.Errorf("error fetching job groups: %s", err)
+		}
+		if len(model.jobGroups) == 0 {
+			fmt.Fprintf(os.Stderr, "Warn: No job groups\n")
+		}
+		fmt.Print("\033[s") // Save cursor position
+		fmt.Printf("\tGet jobs for %d groups ...", len(cf.Groups))
+		jobs, err := FetchJobs(model, func(group int, groups int, job int, jobs int) {
+			fmt.Print("\033[u") // Restore cursor position
+			fmt.Print("\033[K") // Erase till end of line
+			fmt.Printf("\tGet jobs for %d groups ... %d/%d", len(cf.Groups), group, groups)
+			if job == 0 {
+				fmt.Printf(" (%d jobs)", jobs)
+			} else {
+				fmt.Printf(" (%d/%d jobs)", job, jobs)
+			}
+		})
+		model.Apply(jobs)
+		fmt.Println()
+		if err != nil {
+			return fmt.Errorf("error fetching jobs: %s", err)
+		}
+		if len(jobs) == 0 {
+			// No reason to continue - there are no jobs to scan
+			return fmt.Errorf("no jobs found")
+		}
+		// Failed jobs will be also scanned for comments
+		for _, job := range model.jobs {
+			state := job.JobState()
+			if state == "failed" || state == "incomplete" || state == "parallel_failed" {
+				reviewed, err := isReviewed(job, model, state == "parallel_failed")
+				if err != nil {
+					return fmt.Errorf("error fetching job comment: %s", err)
+				}
+				model.SetReviewed(job.ID, reviewed)
+			}
+		}
+
+		// Register RabbitMQ
+		if cf.RabbitMQ != "" {
+			rabbitmq, err := registerRabbitMQ(model, cf.RabbitMQ, cf.RabbitMQTopic)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error establishing link to RabbitMQ %s: %s\n", rabbitRemote(cf.RabbitMQ), err)
+			}
+			rabbitmqs = append(rabbitmqs, rabbitmq)
 		}
 	}
-	knownJobs = jobs
-	tui.Model.Apply(knownJobs)
 	fmt.Println("Initial fetching completed. Entering main loop ... ")
 	tui.Start()
 	tui.Update()
 
-	// Register RabbitMQ
-	if cf.RabbitMQ != "" {
-		rabbitmq, err = registerRabbitMQ(tui, cf.RabbitMQ, cf.RabbitMQTopic)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error establishing link to RabbitMQ %s: %s\n", rabbitRemote(cf.RabbitMQ), err)
-		}
-		defer rabbitmq.Close()
-	}
-
 	// Periodic refresh
-	if cf.RefreshInterval > 0 {
-		go func() {
-			for {
-				time.Sleep(time.Duration(cf.RefreshInterval) * time.Second)
-				if err := refreshJobs(tui, instance); err != nil {
-					tui.SetStatus(fmt.Sprintf("Error while refreshing: %s", err))
+	for i := range tui.Tabs {
+		model := &tui.Tabs[i]
+		interval := model.Config.RefreshInterval
+		if interval > 0 {
+			go func(currentTab int) {
+				for {
+					time.Sleep(time.Duration(interval) * time.Second)
+					// Only refresh, if current tab is ours
+					if tui.currentTab == currentTab {
+						if err := RefreshJobs(); err != nil {
+							tui.SetStatus(fmt.Sprintf("Error while refreshing: %s", err))
+						}
+					}
 				}
-			}
-		}()
+			}(i)
+		}
 	}
 
 	tui.awaitTerminationSignal()
 	tui.LeaveAltScreen()
-	if cf.RabbitMQ != "" {
-		rabbitmq.Close()
+	for i := range rabbitmqs {
+		rabbitmqs[i].Close()
 	}
 	return nil
 }

@@ -54,3 +54,11 @@ func rabbitRemote(remote string) string {
 	}
 	return remote
 }
+
+func extractFilename(path string) string {
+	i := strings.LastIndex(path, "/")
+	if i > 0 && i < len(path)-1 {
+		return path[i+1:]
+	}
+	return path
+}
