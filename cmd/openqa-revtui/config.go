@@ -21,8 +21,8 @@ type Config struct {
 	RabbitMQ        string            // RabbitMQ url to be used
 	RabbitMQTopic   string            // Topic to subscribe to
 	DefaultParams   map[string]string // Default parameters
-	HideStatus      []string          // Status to hide
-	Notify          bool              // Notify on job status change
+	HideStatus      []string          // Hide jobs that carry this status
+	Notify          bool              // Send system notification on job changes
 	RefreshInterval int64             // Periodic refresh delay in seconds
 	Groups          []Group           // Groups that will be monitord
 	MaxJobs         int               // Maximum number of jobs per group to consider
@@ -81,4 +81,15 @@ func CreateConfig() Config {
 	cf.MaxJobs = 20
 	cf.RequestJobLimit = 100
 	return cf
+}
+
+func LoadDefaultConfig() (Config, error) {
+	var cf Config
+	configFile := homeDir() + "/.openqa-revtui.toml"
+	if fileExists(configFile) {
+		if err := cf.LoadToml(configFile); err != nil {
+			return cf, err
+		}
+	}
+	return cf, nil
 }
