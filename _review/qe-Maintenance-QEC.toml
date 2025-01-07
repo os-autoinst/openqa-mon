@@ -262,7 +262,7 @@ MaxLifetime = 86400
 
 [[Groups]]
 Name = "SLE 15-SP6 WSL"
-Params = { groupid = "326" }
+Params = { groupid = "595" }
 MaxLifetime = 86400
 
 [[Groups]]
