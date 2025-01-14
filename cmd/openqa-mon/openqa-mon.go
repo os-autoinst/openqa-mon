@@ -62,7 +62,7 @@ func printHelp() {
 	fmt.Println("  --config FILE                    Read additional config file FILE")
 	fmt.Println("  -i, --input FILE                 Read jobs from FILE (additionally to stdin)")
 	fmt.Println("")
-	fmt.Println("2024, https://github.com/os-autoinst/openqa-mon")
+	fmt.Println("https://github.com/os-autoinst/openqa-mon")
 }
 
 /** Try to match the url to be a test url. On success, return the remote and the job id */
