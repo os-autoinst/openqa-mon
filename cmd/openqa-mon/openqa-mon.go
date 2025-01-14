@@ -19,7 +19,7 @@ import (
 )
 
 var config Config
-var tui TUI
+var tui *TUI
 
 // Remote instance
 type Remote struct {
@@ -932,7 +932,7 @@ func continuousMonitoring(remotes []Remote) {
 				// Note: There are no messages that signal when a job is started
 				queue := []string{"#.job.done", "#.job.restart"}
 				remote := assembleRabbitMQRemote(rabbit.Remote, rabbit.Username, rabbit.Password)
-				rabbitmq, err := registerRabbitMQ(&tui, openqaURI, remote, queue)
+				rabbitmq, err := registerRabbitMQ(tui, openqaURI, remote, queue)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "Error establishing link to RabbitMQ %s: %s\n", rabbit.Remote, err)
 					config.Paused = false

@@ -94,7 +94,7 @@ func PrintLine(line string, maxWidth int) {
 	fmt.Println(line)
 }
 
-func CreateTUI() TUI {
+func CreateTUI() *TUI {
 	var tui TUI
 	tui.done = make(chan bool, 1)
 	tui.Keypress = nil
@@ -103,7 +103,7 @@ func CreateTUI() TUI {
 	tui.hideEnable = true
 	tui.currentPage = 0
 	tui.totalPages = 1
-	return tui
+	return &tui
 }
 
 func bell() {
