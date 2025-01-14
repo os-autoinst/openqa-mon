@@ -61,10 +61,6 @@ func trimSplit(s string, sep string) []string {
 	return split
 }
 
-func trimLower(s string) string {
-	return strings.ToLower(strings.TrimSpace(s))
-}
-
 func homeDir() string {
 	usr, err := user.Current()
 	if err != nil {
