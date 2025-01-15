@@ -19,7 +19,7 @@ import (
 )
 
 var config Config
-var tui TUI
+var tui *TUI
 
 // Remote instance
 type Remote struct {
@@ -62,7 +62,7 @@ func printHelp() {
 	fmt.Println("  --config FILE                    Read additional config file FILE")
 	fmt.Println("  -i, --input FILE                 Read jobs from FILE (additionally to stdin)")
 	fmt.Println("")
-	fmt.Println("2024, https://github.com/os-autoinst/openqa-mon")
+	fmt.Println("https://github.com/os-autoinst/openqa-mon")
 }
 
 /** Try to match the url to be a test url. On success, return the remote and the job id */
@@ -119,17 +119,6 @@ func getFailedJobs(jobs []gopenqa.Job) []gopenqa.Job {
 		}
 	}
 	return ret
-}
-
-/** Check if the given job should not be displayed */
-func hideJob(job gopenqa.Job, config Config) bool {
-	for _, s := range config.HideStates {
-		s = trimLower(s)
-		if trimLower(job.State) == s || trimLower(job.Result) == s {
-			return true
-		}
-	}
-	return false
 }
 
 /** Append the given remote by adding a job id to the existing remote or creating a new one */
@@ -215,37 +204,6 @@ func expandArguments(args []string) ([]string, error) {
 		}
 	}
 	return ret, nil
-}
-
-func jobsContainId(jobs []gopenqa.Job, id int64) bool {
-	for _, job := range jobs {
-		if job.ID == id {
-			return true
-		}
-	}
-	return false
-}
-
-func getJobHierarchy(job gopenqa.Job, follow bool) ([]gopenqa.Job, error) {
-	jobs := make([]gopenqa.Job, 0)
-	// TODO: The prefix got missing ...
-	chained, err := job.FetchChildren(unique(job.Children.Chained), follow)
-	if err != nil {
-		return jobs, err
-	}
-	jobs = append(jobs, chained...)
-	directlyChained, err := job.FetchChildren(unique(job.Children.DirectlyChained), follow)
-	if err != nil {
-		return jobs, err
-	}
-	jobs = append(jobs, directlyChained...)
-	parallel, err := job.FetchChildren(unique(job.Children.Parallel), follow)
-	if err != nil {
-		return jobs, err
-	}
-	jobs = append(jobs, parallel...)
-
-	return jobs, nil
 }
 
 /** Try to update the job with the given status, if present. Returns the found job and true if the job was present */
@@ -974,7 +932,7 @@ func continuousMonitoring(remotes []Remote) {
 				// Note: There are no messages that signal when a job is started
 				queue := []string{"#.job.done", "#.job.restart"}
 				remote := assembleRabbitMQRemote(rabbit.Remote, rabbit.Username, rabbit.Password)
-				rabbitmq, err := registerRabbitMQ(&tui, openqaURI, remote, queue)
+				rabbitmq, err := registerRabbitMQ(tui, openqaURI, remote, queue)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "Error establishing link to RabbitMQ %s: %s\n", rabbit.Remote, err)
 					config.Paused = false

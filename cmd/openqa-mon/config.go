@@ -44,7 +44,7 @@ func strBool(text string) (bool, error) {
 			return false, nil
 		}
 	}
-	return true, fmt.Errorf("Illegal bool value")
+	return true, fmt.Errorf("illegal bool value")
 }
 
 func (cf *Config) SetDefaults() {
