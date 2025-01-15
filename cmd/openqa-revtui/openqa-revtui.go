@@ -34,6 +34,7 @@ func parseProgramArgs(cf *Config) ([]Config, error) {
 				}
 				filename := os.Args[i]
 				var cf Config
+				cf.RequestJobLimit = 100 // Set default limit
 				if err := cf.LoadToml(filename); err != nil {
 					return cfs, fmt.Errorf("in %s: %s", filename, err)
 				}

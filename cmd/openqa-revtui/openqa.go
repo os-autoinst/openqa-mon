@@ -103,9 +103,13 @@ func fetchJobsFollow(ids []int64, model *TUIModel, progress func(i, n int)) ([]g
 	// We split the job ids into multiple requests if necessary
 	jobs := make([]gopenqa.Job, 0)
 	// Progress variables
-	chunks := len(ids) / model.Config.RequestJobLimit
+	limit := model.Config.RequestJobLimit
+	if limit <= 0 {
+		limit = len(ids)
+	}
+	chunks := len(ids) / limit
 	for i := 0; len(ids) > 0; i++ { // Repeat until no more ids are available.
-		n := min(model.Config.RequestJobLimit, len(ids))
+		n := min(limit, len(ids))
 		chunk, err := model.Instance.GetJobsFollow(ids[:n])
 		if progress != nil {
 			progress(i, chunks)
