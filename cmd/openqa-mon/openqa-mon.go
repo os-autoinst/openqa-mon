@@ -30,7 +30,7 @@ type Remote struct {
 var remotes []Remote
 
 func printHelp() {
-	fmt.Printf("Usage: %s [OPTIONS] REMOTE\n", os.Args[0])
+	fmt.Printf("Usage: %s [OPTIONS] REMOTE [JOBS]\n", os.Args[0])
 	fmt.Println("  REMOTE can be the directlink to a test (e.g. https://openqa.opensuse.org/t123)")
 	fmt.Println("  or a job range (e.g. https://openqa.opensuse.org/t123..125 or https://openqa.opensuse.org/t123+2)")
 	fmt.Println("")
@@ -60,7 +60,7 @@ func printHelp() {
 	fmt.Println("  --hide-state STATES              Hide jobs with that are in the given state (e.g. 'running,assigned')")
 	fmt.Println("")
 	fmt.Println("  --config FILE                    Read additional config file FILE")
-	fmt.Println("  -i, --input FILE                 Read jobs from FILE (additionally to stdin)")
+	fmt.Println("  -i, --input FILE                 Read jobs from FILE (additionally to program parameters)")
 	fmt.Println("")
 	fmt.Println("https://github.com/os-autoinst/openqa-mon")
 }

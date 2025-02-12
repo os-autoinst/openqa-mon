@@ -1,0 +1,107 @@
+." Manpage for openqa-revtui
+." Contact felix.niederwanger@suse.de to correct errors and/or typos.
+.TH openqa-revtui 8 "12 Feb 2025" "1.1" "openqa-revtui man page"
+.SH NAME
+openqa-revtui - Terminal based openQA job review dashboard
+.SH SYNOPSIS
+openqa-revtui [OPTIONS] [FLAVOR] [CONFIG...]
+.SH DESCRIPTION
+openqa-revtui is a terminal-based dashboard to review the status of whole openQA job groups based on
+custom selection criteria.
+
+The program accepts toml based configuration files to filter the relevant job groups and jobs therein to be displayed.
+
+While the program can be configured via program line arguments, one typically uses a configuration file.
+.SH OPTIONS
+.TP
+.B -h|--help
+Print help message
+
+.TP
+.B -c|--config FILE
+Load configuration from FILE, provided in toml format.
+                      
+.TP
+.B -r|--remote REMOTE
+Define openQA remote URL (e.g. 'https://openqa.opensuse.org')
+
+.TP
+.B -q,--rabbit,--rabbitmq URL
+Define RabbitMQ URL (e.g. 'amqps://opensuse:opensuse@rabbit.opensuse.org')
+
+.TP
+.B -i,--hide,--hide-status STATUSES
+Comma-separates list of job statuses which should be ignored
+
+.TP
+.B -p,--param NAME=VALUE
+Set a default parameter (e.g. 'distri=opensuse')
+
+.TP
+.B -n,--notify
+Enable notifications
+
+.TP
+.B -m,--mute
+Disable notifications
+
+
+.SH CONFIG FILES
+
+.TP
+The program expects one or more toml-based configuration files, like the following example:
+
+.BR Instance = """https://openqa.opensuse.org"""
+.br
+.BR RabbitMQ = """amqps://opensuse:opensuse@rabbit.opensuse.org"""
+.br
+.BR RabbitMQTopic = """opensuse.openqa.job.done"""
+.br
+.BR HideStatus = [ """scheduled""", """cancelled""", """skipped""" ]
+.br
+.BR RefreshInterval = 60
+.br
+.BR MaxJobs = 20
+.br
+.BR GroupBy = """groups"""
+.br
+.BR DefaultParams = { distri = """opensuse""", version = """Tumbleweed""" }
+.br
+.BR RequestJobLimit = 100
+.br
+.BR ""
+.br
+.BR [[Groups]]
+.br
+.BR Name = """openSUSE Tumbleweed DVD"""
+.br
+.BR Params = { flavor = """DVD""" }
+.br
+.BR MaxLifetime = 86400
+.br
+.BR ""
+.br
+.BR [[Groups]]
+.br
+.BR Name = """openSUSE Tumbleweed JeOS"""
+.br
+.BR Params = { flavor = """JeOS-for-kvm-and-xen""" }
+.br
+.BR MaxLifetime = 86400
+.br
+
+
+.SH COPYRIGHT
+.PP
+Copyright (C) 2025 SUSE LLC
+
+.SH CREDITS
+.PP
+Creator: Felix Niederwanger <felix.niederwanger@suse.de>
+
+This tool has been created to help me and my colleagues work better with openQA.
+
+
+.SH
+.PP
+https://github.com/os-autoinst/openqa-mon openqa-mq(8)
