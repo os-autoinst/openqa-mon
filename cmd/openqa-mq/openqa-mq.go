@@ -48,17 +48,18 @@ func printUsage() {
 	fmt.Println("Use 'opensuse','o3' or 'ooo' as REMOTE for openqa.opensuse.org, or 'osd' for openqa.suse.de")
 	fmt.Println("If remote is a amqp:// or amqps:// URI, username and password will be ignored")
 	fmt.Println("OPTIONS")
-	fmt.Println("  -r HOST           Set remote endpoint of address. Identical to REMOTE")
+	fmt.Println("  -h, --help        Print this help message")
+	fmt.Println("  --o3,--ooo        Use settings for openqa.opensuse.org (default)")
+	fmt.Println("  --osd             Use settings for openqa.suse.de")
+	fmt.Println("")
+	fmt.Println("  -r HOST           Set remote endpoint or address. Identical to REMOTE")
 	fmt.Println("  -k KEY            Add key to bind to. Multiple parameters are allowed. Identical to KEY")
 	fmt.Println("  -u USER           Set username for the amqp connection. Identical to USERNAME")
 	fmt.Println("  -p PASS           Set password for the amqpconnection. Identical to PASSWORD")
 	fmt.Println("  -i                Use insecure (unencrypted) connection")
 	fmt.Println("  -n, --no-topic    Don't print the topic")
 	fmt.Println("  -v, --verbose     Verbose mode")
-	fmt.Println("  -version          Print program version")
-	fmt.Println("")
-	fmt.Println("  --osd             Use settings for openqa.suse.de")
-	fmt.Println("  --o3,--ooo        Use settings for openqa.opensuse.org (default)")
+	fmt.Println("  --version          Print program version")
 }
 
 // Returns the remote host from a RabbitMQ URL

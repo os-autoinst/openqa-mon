@@ -1,15 +1,14 @@
 ." Manpage for openqa-mon
 ." Contact felix.niederwanger@suse.de to correct errors and/or typos.
-.TH openqa-mon 8 "23 Apr 2020" "1.0" "openqa-mon man page"
+.TH openqa-mon 8 "12 Feb 2025" "1.1" "openqa-mon man page"
 .SH NAME
-openqa-mon - CLI client for monitoring status of openQA jobs
+openqa-mon - CLI tool for live monitoring of openQA jobs
 .SH SYNOPSIS
 openqa-mon [OPTIONS] REMOTE [JOBS]
 .SH DESCRIPTION
-openqa-mon is a command line tool for monitoring and live monitoring of jobs on
-an openQA instance. The tool periodically queries one or multiple instances
-and gives or an overview of the currently running jobs or monitors a set of
-given job IDs.
+openqa-mon is a command line tool for live monitoring of openQA jobs.
+The tool periodically queries one or multiple instances and gives or an
+overview of the currently running jobs or monitors a set of given job IDs.
 .SH OPTIONS
 .TP
 .B -h|--help
@@ -24,6 +23,10 @@ The -j parameter can be omitted, openqa-mon detects an integer, set of interger 
 .TP
 .B -c|--continuous SECONDS
 Enable live monitor and refresh at the given SECONDS intervals
+
+.TP
+.B -e|--exit
+Exit openqa-mon when all jobs are done (only in continuous mode)
 
 .TP
 .B -b|--bell
@@ -55,12 +58,36 @@ Follow jobs, i.e. replace jobs by their clones if available.
 This setting is useful to track jobs if they are going to be restarted in openQA.
 
 .TP
+.B --no-follow
+Don't follow jobs. Useful to override the follow setting from a config file.
+
+.TP
+.B --rabbitmq
+Explicitly enable RabbitMQ. This feature is still considered experimental
+
+.TP
+.B --rabbit FILE
+Explicitly enable RabbitMQ and load the RabbitMQ server configuration(s) from FILE.
+
+.TP
+.B --no-rabbit
+Don't use RabbitMQ, even if available
+
+.TP
 .B -p|--hierarchy
 Display job hierarchy (i.e. children of the jobs). This is particulary useful for virtualization runs.
 
 .TP
+.B --hide-state STATES
+Hide jobs with that are in the given state (e.g. 'running,assigned')
+
+.TP
 .B --config FILE
 Reads additional config file FILE. See CONFIG FILES for details.
+
+.TP
+.B -i|--input FILE
+Read jobs from FILE, additional to the ones provided via program arguments
 
 
 .SH CONFIG FILES
@@ -102,6 +129,9 @@ An example configuration file looks like the following:
 .br
 .BR "# Follow = true"
 .br
+.BR "## Enable RabbitMQ (experimental!!)"
+.br
+.BR "# RabbitMQ = true"
 
 .SH EXAMPLES
 
@@ -170,15 +200,11 @@ Monitor job 413 on instance http://openqa.opensuse.org/ with enabled notificatio
 
 .SH COPYRIGHT
 .PP
-Copyright (C) 2020 SUSE LLC
+Copyright (C) 2025 SUSE LLC
 
 .SH CREDITS
 .PP
 Creator: Felix Niederwanger <felix.niederwanger@suse.de>
-
-Thanks for the constructive feedback to (in no particular order)
-
-- Christian Dywan - Pavel Dostal - Oliver Kurz - George Gkioulis - Jozef Pupava -
 
 This tool has been created to help me and my colleagues work better with openQA.
 

@@ -92,7 +92,7 @@ func parseProgramArgs(cf *Config) ([]Config, error) {
 }
 
 func printUsage() {
-	fmt.Printf("Usage: %s [OPTIONS] [FLAVORS]\n", os.Args[0])
+	fmt.Printf("Usage: %s [OPTIONS] [FLAVOR] [CONFIG...]\n", os.Args[0])
 	fmt.Println("")
 	fmt.Println("OPTIONS")
 	fmt.Println("    -h,--help                           Print this help message")

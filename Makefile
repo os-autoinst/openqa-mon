@@ -25,7 +25,7 @@ install: openqa-mon openqa-mq openqa-revtui
 	install openqa-mon $(PREFIX)
 	install openqa-mq $(PREFIX)
 	install openqa-revtui $(PREFIX)
-	install doc/openqa-mon.8 /usr/local/man/man8/
+	install doc/openqa-{mon,mq,revtui}.8 /usr/local/man/man8/
 uninstall:
 	rm -f /usr/local/bin/openqa-mon
 	rm -f /usr/local/bin/openqa-mq

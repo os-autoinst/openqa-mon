@@ -1,0 +1,70 @@
+." Manpage for openqa-mq
+." Contact felix.niederwanger@suse.de to correct errors and/or typos.
+.TH openqa-mq 8 "12 Feb 2025" "1.1" "openqa-mq man page"
+.SH NAME
+openqa-mq - Print RabbitMQ messages from openQA
+.SH SYNOPSIS
+openqa-mq [OPTIONS] [REMOTE] [KEY] [USERNAME] [PASSWORD]
+.SH DESCRIPTION
+openqa-mq connects to a given RabbitMQ instance and prints openQA related messages.
+
+To get started use e.g. 'openqa-mq --ooo' for monitoring openqa.opensuse.org.
+.SH OPTIONS
+.TP
+.B -h|--help
+Print help message
+
+.TP
+.B --o3,--ooo
+Use settings for openqa.opensuse.org (default)
+
+.TP
+.B --osd
+Use settings for openqa.suse.de
+
+.TP
+.B -r HOST
+Set remote endpoint or address. Identical to REMOTE
+
+.TP
+.B -k KEY
+Set key to bind to. Multiple parameters are allowed. Identical to KEY
+
+.TP
+.B -u USER
+Set username for the amqp connection. Identical to USERNAME
+
+.TP
+.B -p PASS
+Set password for the amqpconnection. Identical to PASSWORD
+
+.TP
+.B -i
+Use insecure (unencrypted) connection
+
+.TP
+.B -n|--no-topic
+Don't print the topic of the message
+
+.TP
+.B -v
+Verbose mode
+
+.TP
+.B --version
+Print program version
+
+.SH COPYRIGHT
+.PP
+Copyright (C) 2025 SUSE LLC
+
+.SH CREDITS
+.PP
+Creator: Felix Niederwanger <felix.niederwanger@suse.de>
+
+This tool has been created to help me and my colleagues work better with openQA.
+
+
+.SH
+.PP
+https://github.com/os-autoinst/openqa-mon openqa-mq(8)
