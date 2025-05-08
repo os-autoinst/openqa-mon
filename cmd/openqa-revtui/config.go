@@ -93,3 +93,12 @@ func LoadDefaultConfig() (Config, error) {
 	}
 	return cf, nil
 }
+
+func (cf *Config) SetRabbitO3() {
+	cf.RabbitMQ = "amqps://opensuse:opensuse@rabbit.opensuse.org"
+	cf.RabbitMQTopic = "opensuse.openqa.job.done"
+}
+func (cf *Config) SetRabbitOSD() {
+	cf.RabbitMQ = "amqps://suse:suse@rabbit.suse.de"
+	cf.RabbitMQTopic = "suse.openqa.job.done"
+}

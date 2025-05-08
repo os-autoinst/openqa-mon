@@ -71,15 +71,50 @@ func parseProgramArgs(cf *Config) ([]Config, error) {
 				return cfs, fmt.Errorf("illegal argument: %s", arg)
 			}
 		} else {
-			// Convenience logic. If it contains a = then assume it's a parameter, otherwise assume it's a config file
-			if strings.Contains(arg, "=") {
-				if name, value, err := splitNV(arg); err != nil {
-					return cfs, fmt.Errorf("argument parameter is invalid: %s", err)
-				} else {
-					cf.DefaultParams[name] = value
+			// Additional parameters can be either a link to an overview page for openQA, a configuration parameter or a config file
+
+			// If it's a link, assume it's an overview page
+			if strings.HasPrefix(arg, "http://") || strings.HasPrefix(arg, "https://") {
+				// Require parameters
+				i := strings.Index(arg, "?")
+				if i <= 0 {
+					return cfs, fmt.Errorf("invalid monitoring link")
 				}
-			} else {
-				// Assume it's a config file
+				link, args := arg[:i], strings.Split(arg[i+1:], "&")
+				if !strings.HasSuffix(link, "/tests/overview") {
+					return cfs, fmt.Errorf("unsupported monitoring link")
+				}
+				link = link[:len(link)-15] // Remove suffix
+
+				// Disable RabbitMQ because we cannot predict which instance will be used.
+				cf := CreateConfig()
+				cf.Instance = link
+				cf.MaxJobs = 0
+				cf.RefreshInterval = 300 // By default refresh every 5 minutes
+				cf.GroupBy = "none"
+				var group Group
+
+				// For default platforms, use RabbitMQ
+				cf.RabbitMQ = ""
+				cf.RabbitMQTopic = ""
+				if strings.Contains("://openqa.opensuse.org", cf.Instance) {
+					cf.SetRabbitO3()
+				} else if strings.Contains("://openqa.suse.de", cf.Instance) {
+					cf.SetRabbitOSD()
+				}
+
+				// Parse parameters from link
+				group.Params = make(map[string]string)
+				for _, arg := range args {
+					if name, value, err := splitNV(arg); err != nil {
+						return cfs, fmt.Errorf("argument parameter in link is invalid: %s", err)
+					} else {
+						group.Params[name] = value
+					}
+				}
+				cf.Groups = append(cf.Groups, group)
+				cfs = append(cfs, cf)
+			} else { // Assume it's a config file
 				var cf Config
 				if err := cf.LoadToml(arg); err != nil {
 					return cfs, fmt.Errorf("in %s: %s", arg, err)
