@@ -161,14 +161,13 @@ type FetchJobsCallback func(int, int, int, int)
 func FetchJobs(model *TUIModel, callback FetchJobsCallback) ([]gopenqa.Job, error) {
 	ret := make([]gopenqa.Job, 0)
 	for i, group := range model.Config.Groups {
-		params := group.Params
-		jobs, err := model.Instance.GetOverview("", params)
+		jobs, err := model.Instance.GetOverview("", group.Params)
 		if err != nil {
 			return ret, err
 		}
 
-		// Limit jobs to at most MaxJobs
-		if len(jobs) > model.Config.MaxJobs {
+		// Limit jobs to at most MaxJobs, if set (0 = unlimited)
+		if model.Config.MaxJobs > 0 && len(jobs) > model.Config.MaxJobs {
 			jobs = jobs[:model.Config.MaxJobs]
 		}
 
