@@ -9,55 +9,12 @@ MaxJobs = 20                                     # Max. job per group to display
 GroupBy = "groups"                               # Group by defined groups ("none" or "groups")
 RequestJobLimit = 100                            # Query up to 100 jobs per http request
 
-## BCI and Base images #########################################################
-
-[[Groups]]
-Name = "BCI Base Images 15-SP6"
-Params = { groupid = "538", build = "" }
-MaxLifetime = 86400
-
-[[Groups]]
-Name = "BCI Base Images 15-SP5"
-Params = { groupid = "475", build = "" }
-MaxLifetime = 86400
-
-[[Groups]]
-Name = "BCI Base Images 15-SP4"
-Params = { groupid = "443", build = "" }
-MaxLifetime = 86400
-
-[[Groups]]
-Name = "BCI Base Images 15-SP3"
-Params = { groupid = "442", build = "" }
-MaxLifetime = 86400
-
-[[Groups]]
-Name = "BCI Language Images"
-Params = { groupid = "444", build = "" }
-MaxLifetime = 86400
-
-[[Groups]]
-Name = "BCI Application Images"
-Params = { groupid = "445", build = "" }
-MaxLifetime = 86400
-
-[[Groups]]
-Name = "Base Images (pre-BCI, <15SP3)"
-Params = { groupid = "453", build = "" }
-MaxLifetime = 86400
-
-[[Groups]]
-Name = "SUMA images"
-Params = { groupid = "516", build = "" }
-MaxLifetime = 86400
-
-[[Groups]]
-Name = "BCI repo"
-Params = { groupid = "428", build = "" }
-MaxLifetime = 86400
-
-
 ## Container Maintenance updates ###############################################
+
+[[Groups]]
+Name = "Containers Maintenance Updates 15-SP7"
+Params = { groupid = "417", build = "%yesterday%-1", version="15-SP7" }
+MaxLifetime = 86400
 
 [[Groups]]
 Name = "Containers Maintenance Updates 15-SP6"
@@ -85,16 +42,6 @@ Params = { groupid = "417", build = "%yesterday%-1", version="15-SP2" }
 MaxLifetime = 86400
 
 [[Groups]]
-Name = "Containers Maintenance Updates 15-SP1"
-Params = { groupid = "417", build = "%yesterday%-1", version="15-SP1" }
-MaxLifetime = 86400
-
-[[Groups]]
-Name = "Containers Maintenance Updates 15"
-Params = { groupid = "417", build = "%yesterday%-1", version="15" }
-MaxLifetime = 86400
-
-[[Groups]]
 Name = "Containers Maintenance Updates 12-SP5"
 Params = { groupid = "417", build = "%yesterday%-1", version="12-SP5" }
 MaxLifetime = 86400
@@ -108,6 +55,11 @@ MaxLifetime = 86400
 
 
 ## JeOS/MinimalVM Maintenance updates ##########################################
+
+[[Groups]]
+Name = "JeOS Maintenance Updates 15-SP7"
+Params = { groupid = "419", build = "%yesterday%-1", version = "15-SP7" }
+MaxLifetime = 86400
 
 [[Groups]]
 Name = "JeOS Maintenance Updates 15-SP6"
@@ -135,11 +87,6 @@ Params = { groupid = "419", build = "%yesterday%-1", version = "15-SP2" }
 MaxLifetime = 86400
 
 [[Groups]]
-Name = "JeOS Maintenance Updates 15-SP1"
-Params = { groupid = "419", build = "%yesterday%-1", version = "15-SP1" }
-MaxLifetime = 86400
-
-[[Groups]]
 Name = "JeOS Maintenance Updates 12-SP5"
 Params = { groupid = "419", build = "%yesterday%-1", version = "12-SP5" }
 MaxLifetime = 86400
@@ -148,23 +95,25 @@ MaxLifetime = 86400
 ## PublicCloud Maintenance updates #############################################
 
 [[Groups]]
+Name = "PublicCloud Maintenance Updates 15-SP7"
+Params = { groupid = "427", build = "%yesterday%-1", version="15-SP7" }
+
+[[Groups]]
 Name = "PublicCloud Maintenance Updates 15-SP6"
 Params = { groupid = "427", build = "%yesterday%-1", version="15-SP6" }
+
 [[Groups]]
 Name = "PublicCloud Maintenance Updates 15-SP5"
 Params = { groupid = "427", build = "%yesterday%-1", version="15-SP5" }
+
 [[Groups]]
 Name = "PublicCloud Maintenance Updates 15-SP4"
 Params = { groupid = "427", build = "%yesterday%-1", version="15-SP4" }
+
 [[Groups]]
 Name = "PublicCloud Maintenance Updates 15-SP3"
 Params = { groupid = "427", build = "%yesterday%-1", version="15-SP3" }
-[[Groups]]
-Name = "PublicCloud Maintenance Updates 15-SP2"
-Params = { groupid = "427", build = "%yesterday%-1", version="15-SP2" }
-[[Groups]]
-Name = "PublicCloud Maintenance Updates 15-SP1"
-Params = { groupid = "427", build = "%yesterday%-1", version="15-SP1" }
+
 [[Groups]]
 Name = "PublicCloud Maintenance Updates 12-SP5"
 Params = { groupid = "427", build = "%yesterday%-1", version="12-SP5" }
@@ -207,6 +156,16 @@ Params = { groupid = "572" }
 MaxLifetime = 86400
 
 [[Groups]]
+Name = "SL Micro 6.0 Product Increments Public Cloud"
+Params = { groupid = "613", version="6.0" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "SL Micro 6.1 Product Increments Public Cloud"
+Params = { groupid = "613", version="6.1" }
+MaxLifetime = 86400
+
+[[Groups]]
 Name = "SLE Micro Maintenance Updates 5.5"
 Params = { groupid = "420", build = "%yesterday%-1", version = "5.5" }
 MaxLifetime = 86400
@@ -231,7 +190,32 @@ Name = "SLE Micro Maintenance Updates 5.1"
 Params = { groupid = "420", build = "%yesterday%-1", version = "5.1" }
 MaxLifetime = 86400
 
-## Single Incidents
+[[Groups]]
+Name = "SLE Micro Maintenance Updates 5.5 Public Cloud"
+Params = { groupid = "532", build = "%yesterday%-1", version = "5.5" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "SLE Micro Maintenance Updates 5.4  Public Cloud"
+Params = { groupid = "532", build = "%yesterday%-1", version = "5.4" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "SLE Micro Maintenance Updates 5.3  Public Cloud"
+Params = { groupid = "532", build = "%yesterday%-1", version = "5.3" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "SLE Micro Maintenance Updates 5.2  Public Cloud"
+Params = { groupid = "532", build = "%yesterday%-1", version = "5.2" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "SLE Micro Maintenance Updates 5.1  Public Cloud"
+Params = { groupid = "532", build = "%yesterday%-1", version = "5.1" }
+MaxLifetime = 86400
+
+## Single Incidents SLE Micro
 
 [[Groups]]
 Name = "SLE Micro Maintenance Incidents for 5.5"
