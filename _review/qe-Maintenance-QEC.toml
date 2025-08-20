@@ -9,6 +9,18 @@ MaxJobs = 20                                     # Max. job per group to display
 GroupBy = "groups"                               # Group by defined groups ("none" or "groups")
 RequestJobLimit = 100                            # Query up to 100 jobs per http request
 
+## Create host disks ###########################################################
+
+[[Groups]]
+Name = "Create bootable host HDDs"
+Params = { groupid = "377", build = "" }
+MaxLifetime = 432000 # 5 days
+
+[[Groups]]
+Name = "Create publiccloud-tools HDD"
+Params = { groupid = "276", build = "" }
+MaxLifetime = 432000 # 5 days
+
 ## Container Maintenance updates ###############################################
 
 [[Groups]]
@@ -38,14 +50,6 @@ Params = { groupid = "417", build = "%yesterday%-1", version="15-SP2" }
 [[Groups]]
 Name = "Containers Maintenance Updates 12-SP5"
 Params = { groupid = "417", build = "%yesterday%-1", version="12-SP5" }
-
-# Create host disk images
-
-[[Groups]]
-Name = "Create bootable host HDDs"
-Params = { groupid = "377", build = "" }
-MaxLifetime = 432000 # 5 days
-
 
 ## JeOS/MinimalVM Maintenance updates ##########################################
 
@@ -104,26 +108,6 @@ Params = { groupid = "427", build = "%yesterday%-1", version="12-SP5" }
 Name = "Public Cloud Single Incidents"
 Params = { groupid = "430" }
 MaxLifetime = 1209600 # 2 weeks
-
-# Create openQA helper instance disk image
-
-[[Groups]]
-Name = "Create publiccloud-tools HDD"
-Params = { groupid = "276", build = "" }
-MaxLifetime = 432000 # 5 days
-
-## SLE Micro image updates
-
-[[Groups]]
-Name = "SLE Micro Toolbox updates"
-Params = { groupid = "451" }
-MaxLifetime = 432000 # 5 days
-
-[[Groups]]
-Name = "SLE Micro for Rancher"
-Params = { groupid = "449" }
-MaxLifetime = 432000 # 5 days
-
 
 ## SLE Micro Maintenance updates ###############################################
 
@@ -214,6 +198,18 @@ Name = "SLE Micro Maintenance Incidents for 5.1"
 Params = { groupid = "482" }
 MaxLifetime = 432000 # 5 days
 
+
+## SLE Micro image updates
+
+[[Groups]]
+Name = "SLE Micro Toolbox updates"
+Params = { groupid = "451" }
+MaxLifetime = 432000 # 5 days
+
+[[Groups]]
+Name = "SLE Micro for Rancher"
+Params = { groupid = "449" }
+MaxLifetime = 432000 # 5 days
 
 ## WSL builds ##################################################################
 
