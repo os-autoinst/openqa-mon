@@ -13,7 +13,7 @@ jobs:
       - name: Setup go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: '1.23'
       - name: Install requirements
         run: go mod download
       - name: Build openqa-mon
@@ -28,7 +28,7 @@ jobs:
       - name: Setup go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: '1.23'
       - name: Install requirements
         run: go mod download
       - name: Build openqa-mq
@@ -43,7 +43,7 @@ jobs:
       - name: Setup go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: '1.23'
       - name: Install requirements
         run: go mod download
       - name: Build openqa-review
