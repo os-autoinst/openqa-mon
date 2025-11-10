@@ -9,10 +9,16 @@ MaxJobs = 20                                     # Max. job per group to display
 GroupBy = "groups"                               # Group by defined groups ("none" or "groups")
 RequestJobLimit = 100                            # Query up to 100 jobs per http request
 
-## BCI and Base images
+## BCI and Base images #########################################################
+
 [[Groups]]
 Name = "BCI Base Images 16"
 Params = { groupid = "608", build = "" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "BCI Base Images 15-SP7"
+Params = { groupid = "623", build = "" }
 MaxLifetime = 86400
 
 [[Groups]]
@@ -53,6 +59,16 @@ MaxLifetime = 86400
 [[Groups]]
 Name = "SUMA images"
 Params = { groupid = "516", build = "" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "Rancher Application Collection images"
+Params = { groupid = "582", build = "" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "Helm Charts"
+Params = { groupid = "631", build = "" }
 MaxLifetime = 86400
 
 [[Groups]]
