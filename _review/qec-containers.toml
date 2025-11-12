@@ -9,7 +9,23 @@ MaxJobs = 20                                     # Max. job per group to display
 GroupBy = "groups"                               # Group by defined groups ("none" or "groups")
 RequestJobLimit = 100                            # Query up to 100 jobs per http request
 
-## Maintenance updates
+## Maintenance updates #########################################################
+
+[[Groups]]
+Name = "SLES 16 Containers Staging"
+Params = { groupid = "678" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "SLES 16 Containers Product Increments"
+Params = { groupid = "682" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "Containers Maintenance Updates 15-SP7"
+Params = { groupid = "417", build = "%yesterday%-1", version="15-SP7" }
+MaxLifetime = 86400
+
 [[Groups]]
 Name = "Containers Maintenance Updates 15-SP6"
 Params = { groupid = "417", build = "%yesterday%-1", version="15-SP6" }
@@ -50,8 +66,7 @@ Name = "Containers Maintenance Updates 12-SP5"
 Params = { groupid = "417", build = "%yesterday%-1", version="12-SP5" }
 MaxLifetime = 86400
 
-# Create host disk images
-
+# Create container host disk images
 [[Groups]]
 Name = "Create bootable host HDDs"
 Params = { groupid = "377", build = "" }
