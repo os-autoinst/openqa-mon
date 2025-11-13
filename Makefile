@@ -1,3 +1,5 @@
+.PHONY: lint
+
 default: all
 static: openqa-mon-static openqa-mq-static openqa-revtui-static
 
@@ -34,6 +36,9 @@ uninstall:
 
 test:
 	go test ./...
+
+lint:
+	taplo fmt _review/*.toml
 
 clean:
 	go clean
