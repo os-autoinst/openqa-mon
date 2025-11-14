@@ -9,7 +9,23 @@ MaxJobs = 20                                     # Max. job per group to display
 GroupBy = "groups"                               # Group by defined groups ("none" or "groups")
 RequestJobLimit = 100                            # Query up to 100 jobs per http request
 
-## Maintenance updates
+## Maintenance updates #########################################################
+
+[[Groups]]
+Name = "SLES 16 MinimalVM Staging"
+Params = { groupid = "676" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "SLES 16 MinimalVM Product Increments"
+Params = { groupid = "677" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "JeOS Maintenance Updates 15-SP7"
+Params = { groupid = "419", build = "%yesterday%-1", version = "15-SP7" }
+MaxLifetime = 86400
+
 [[Groups]]
 Name = "JeOS Maintenance Updates 15-SP6"
 Params = { groupid = "419", build = "%yesterday%-1", version = "15-SP6" }

@@ -11,7 +11,21 @@ GroupBy = "groups"                               # Group by defined groups ("non
 DefaultParams = { distri = "sle" }               # Set of default parameters
 RequestJobLimit = 100                            # Query up to 100 jobs per http request
 
-## Maintenance updates
+## Maintenance updates #########################################################
+
+
+[[Groups]]
+Name = "SLES 16 Public Cloud Staging"
+Params = { groupid = "684" }
+MaxLifetime = 86400
+[[Groups]]
+Name = "SLES 16 Public Cloud Product Increments"
+Params = { groupid = "685" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "PublicCloud Maintenance Updates 15-SP7"
+Params = { groupid = "427", build = "%yesterday%-1", version="15-SP7" }
 [[Groups]]
 Name = "PublicCloud Maintenance Updates 15-SP6"
 Params = { groupid = "427", build = "%yesterday%-1", version="15-SP6" }
@@ -34,7 +48,31 @@ Params = { groupid = "427", build = "%yesterday%-1", version="15-SP1" }
 Name = "PublicCloud Maintenance Updates 12-SP5"
 Params = { groupid = "427", build = "%yesterday%-1", version="12-SP5" }
 
+# Maintenance images
+[[Groups]]
+Name = "PublicCloud Mainteanance Images - Azure"
+Params = { groupid = "463" }
+MaxLifetime = 86400
+[[Groups]]
+Name = "PublicCloud Mainteanance Images - EC2"
+Params = { groupid = "464" }
+MaxLifetime = 86400
+[[Groups]]
+Name = "PublicCloud Mainteanance Images - GCE"
+Params = { groupid = "465" }
+MaxLifetime = 86400
+[[Groups]]
+Name = "PublicCloud Mainteanance Images - SLEM"
+Params = { groupid = "653" }
+MaxLifetime = 86400
+
 # SLE-Micro
+[[Groups]]
+Name = "PublicCloud SLEM 6.0 Product Increments"
+Params = { groupid = "613" }
+[[Groups]]
+Name = "PublicCloud SLEM 6.2 Product Increments"
+Params = { groupid = "701" }
 [[Groups]]
 Name = "PublicCloud Maintenance Updates 5.5"
 Params = { groupid = "532", build = "%yesterday%-1", version="5.5" }
