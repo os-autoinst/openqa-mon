@@ -5,6 +5,12 @@ This directory contains example configuration files for `openqa-revtui`
 * [opensuse-microos.toml](opensuse-microos.toml) - Review template for openSUSE MicroOS test runs
 * [opensuse-tumbleweed.toml](opensuse-tumbleweed.toml) - Review template for openSUSE Tumbleweed test runs
 
+Files in this directory must be linted with the `taplo` tool:
+
+```bash
+$ taplo fmt *.toml
+```
+
 ## SLES templates for QE-C
 
 Find a selection of templates for the qe-c squad (containers and images)
@@ -19,8 +25,6 @@ Individual files:
 * [qec-minimalvm.toml](qec-minimalvm.toml) - Review template for MinimalVM/JeOS images
 * [qec-sle-micro.toml](qec-sle-micro.toml) - Review template for SLE Micro
 * [qec-wsl.toml](qec-wsl.toml) - Review template for SLE WSL images
-* [qec-wicked.toml](qec-wicked.toml) - Review template for wicked images
-* [qec-alp.toml](qec-alp.toml) - Review template for ALP (Dolomite)
 
 ## Create a TODO template
 

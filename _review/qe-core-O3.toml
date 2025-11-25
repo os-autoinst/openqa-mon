@@ -1,14 +1,25 @@
 ## Review template file for QE-Core job groups in O3
 # See: https://confluence.suse.com/display/qasle/Bugbusters+and+Review+Shifts#BugbustersandReviewShifts-Links
 
-Instance = "https://openqa.opensuse.org"                        # openQA instance to query
-RabbitMQ = "amqps://opensuse:opensuse@rabbit.opensuse.org"      # RabbitMQ instance to query
-RabbitMQTopic = "opensuse.openqa.job.done"                      # RabbitMQ topic to query
-HideStatus = ["scheduled", "passed", "softfailed", "cancelled", "skipped", "running", "uploading", "parallel_failed", "reviewed", "user_cancelled"]  # Hide jobs in defined states
-RefreshInterval = 60                                            # Refresh from API once every minute
-MaxJobs = 20                                                    # Max. job per group to display
-GroupBy = "groups"                                              # Group by defined groups ("none" or "groups")
-RequestJobLimit = 100                                           # Query up to 100 jobs per http request
+Instance = "https://openqa.opensuse.org" # openQA instance to query
+RabbitMQ = "amqps://opensuse:opensuse@rabbit.opensuse.org" # RabbitMQ instance to query
+RabbitMQTopic = "opensuse.openqa.job.done" # RabbitMQ topic to query
+HideStatus = [
+  "scheduled",
+  "passed",
+  "softfailed",
+  "cancelled",
+  "skipped",
+  "running",
+  "uploading",
+  "parallel_failed",
+  "reviewed",
+  "user_cancelled",
+] # Hide jobs in defined states
+RefreshInterval = 60 # Refresh from API once every minute
+MaxJobs = 20 # Max. job per group to display
+GroupBy = "groups" # Group by defined groups ("none" or "groups")
+RequestJobLimit = 100 # Query up to 100 jobs per http request
 
 # Tumbleweed
 
@@ -33,4 +44,3 @@ MaxLifetime = 86400
 Name = "openSUSE Leap 15.5 Backports"
 Params = { groupid = "113", build = "" }
 MaxLifetime = 86400
-

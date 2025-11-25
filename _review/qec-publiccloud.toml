@@ -1,15 +1,26 @@
 ## Review template file for PublicCloud test runs on OSD
 
-Instance = "https://openqa.suse.de"              # openQA instance to query
-RabbitMQ = "amqps://suse:suse@rabbit.suse.de"    # RabbitMQ instance to query
-RabbitMQTopic = "suse.openqa.job.done"           # RabbitMQ topic to query
-HideStatus = ["scheduled", "passed", "softfailed", "cancelled", "skipped", "running", "uploading", "parallel_failed", "reviewed", "user_cancelled"]  # Hide jobs in defined states
-Notify = false                                   # No notifications by default
-RefreshInterval = 60                             # Refresh from API once every minute
-MaxJobs = 20                                     # Max. job per group to display
-GroupBy = "groups"                               # Group by defined groups ("none" or "groups")
-DefaultParams = { distri = "sle" }               # Set of default parameters
-RequestJobLimit = 100                            # Query up to 100 jobs per http request
+Instance = "https://openqa.suse.de" # openQA instance to query
+RabbitMQ = "amqps://suse:suse@rabbit.suse.de" # RabbitMQ instance to query
+RabbitMQTopic = "suse.openqa.job.done" # RabbitMQ topic to query
+HideStatus = [
+  "scheduled",
+  "passed",
+  "softfailed",
+  "cancelled",
+  "skipped",
+  "running",
+  "uploading",
+  "parallel_failed",
+  "reviewed",
+  "user_cancelled",
+] # Hide jobs in defined states
+Notify = false # No notifications by default
+RefreshInterval = 60 # Refresh from API once every minute
+MaxJobs = 20 # Max. job per group to display
+GroupBy = "groups" # Group by defined groups ("none" or "groups")
+DefaultParams = { distri = "sle" } # Set of default parameters
+RequestJobLimit = 100 # Query up to 100 jobs per http request
 
 ## Maintenance updates #########################################################
 
@@ -25,28 +36,28 @@ MaxLifetime = 86400
 
 [[Groups]]
 Name = "PublicCloud Maintenance Updates 15-SP7"
-Params = { groupid = "427", build = "%yesterday%-1", version="15-SP7" }
+Params = { groupid = "427", build = "%yesterday%-1", version = "15-SP7" }
 [[Groups]]
 Name = "PublicCloud Maintenance Updates 15-SP6"
-Params = { groupid = "427", build = "%yesterday%-1", version="15-SP6" }
+Params = { groupid = "427", build = "%yesterday%-1", version = "15-SP6" }
 [[Groups]]
 Name = "PublicCloud Maintenance Updates 15-SP5"
-Params = { groupid = "427", build = "%yesterday%-1", version="15-SP5" }
+Params = { groupid = "427", build = "%yesterday%-1", version = "15-SP5" }
 [[Groups]]
 Name = "PublicCloud Maintenance Updates 15-SP4"
-Params = { groupid = "427", build = "%yesterday%-1", version="15-SP4" }
+Params = { groupid = "427", build = "%yesterday%-1", version = "15-SP4" }
 [[Groups]]
 Name = "PublicCloud Maintenance Updates 15-SP3"
-Params = { groupid = "427", build = "%yesterday%-1", version="15-SP3" }
+Params = { groupid = "427", build = "%yesterday%-1", version = "15-SP3" }
 [[Groups]]
 Name = "PublicCloud Maintenance Updates 15-SP2"
-Params = { groupid = "427", build = "%yesterday%-1", version="15-SP2" }
+Params = { groupid = "427", build = "%yesterday%-1", version = "15-SP2" }
 [[Groups]]
 Name = "PublicCloud Maintenance Updates 15-SP1"
-Params = { groupid = "427", build = "%yesterday%-1", version="15-SP1" }
+Params = { groupid = "427", build = "%yesterday%-1", version = "15-SP1" }
 [[Groups]]
 Name = "PublicCloud Maintenance Updates 12-SP5"
-Params = { groupid = "427", build = "%yesterday%-1", version="12-SP5" }
+Params = { groupid = "427", build = "%yesterday%-1", version = "12-SP5" }
 
 # Maintenance images
 [[Groups]]
@@ -75,13 +86,13 @@ Name = "PublicCloud SLEM 6.2 Product Increments"
 Params = { groupid = "701" }
 [[Groups]]
 Name = "PublicCloud Maintenance Updates 5.5"
-Params = { groupid = "532", build = "%yesterday%-1", version="5.5" }
+Params = { groupid = "532", build = "%yesterday%-1", version = "5.5" }
 [[Groups]]
 Name = "PublicCloud Maintenance Updates 5.4"
-Params = { groupid = "532", build = "%yesterday%-1", version="5.4" }
+Params = { groupid = "532", build = "%yesterday%-1", version = "5.4" }
 [[Groups]]
 Name = "PublicCloud Maintenance Updates 5.3"
-Params = { groupid = "532", build = "%yesterday%-1", version="5.3" }
+Params = { groupid = "532", build = "%yesterday%-1", version = "5.3" }
 [[Groups]]
 Name = "SLEM Product Increments"
 Params = { groupid = "613" }
@@ -99,4 +110,3 @@ MaxLifetime = 86400
 Name = "Create publiccloud-tools HDD"
 Params = { groupid = "276", build = "" }
 MaxLifetime = 86400
-

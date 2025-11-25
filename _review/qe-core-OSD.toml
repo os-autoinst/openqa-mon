@@ -1,14 +1,25 @@
 ## Review template file for QE-Core job groups in OSD
 # See: https://confluence.suse.com/display/qasle/Bugbusters+and+Review+Shifts#BugbustersandReviewShifts-Links
 
-Instance = "https://openqa.suse.de"              # openQA instance to query
-RabbitMQ = "amqps://suse:suse@rabbit.suse.de"    # RabbitMQ instance to query
-RabbitMQTopic = "suse.openqa.job.done"           # RabbitMQ topic to query
-HideStatus = ["scheduled", "passed", "softfailed", "cancelled", "skipped", "running", "uploading", "parallel_failed", "reviewed", "user_cancelled"]  # Hide jobs in defined states
-RefreshInterval = 60                             # Refresh from API once every minute
-MaxJobs = 20                                     # Max. job per group to display
-GroupBy = "groups"                               # Group by defined groups ("none" or "groups")
-RequestJobLimit = 100                            # Query up to 100 jobs per http request
+Instance = "https://openqa.suse.de" # openQA instance to query
+RabbitMQ = "amqps://suse:suse@rabbit.suse.de" # RabbitMQ instance to query
+RabbitMQTopic = "suse.openqa.job.done" # RabbitMQ topic to query
+HideStatus = [
+  "scheduled",
+  "passed",
+  "softfailed",
+  "cancelled",
+  "skipped",
+  "running",
+  "uploading",
+  "parallel_failed",
+  "reviewed",
+  "user_cancelled",
+] # Hide jobs in defined states
+RefreshInterval = 60 # Refresh from API once every minute
+MaxJobs = 20 # Max. job per group to display
+GroupBy = "groups" # Group by defined groups ("none" or "groups")
+RequestJobLimit = 100 # Query up to 100 jobs per http request
 
 # SLE Maintenance: Test Repo / Core Maintenance Updates
 
@@ -82,4 +93,3 @@ MaxLifetime = 86400
 Name = "SLE 15 - Functional"
 Params = { groupid = "110", build = "" }
 MaxLifetime = 86400
-
