@@ -46,3 +46,14 @@ jobs:
         run: go mod download
       - name: Build openqa-review
         run: make openqa-revtui
+
+  tomllint:
+    name: "Linting _review files"
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v6
+      - name: 'Tomllint'
+        uses: uncenter/setup-taplo@v1
+      - run: taplo fmt --check _review/*.toml
+
