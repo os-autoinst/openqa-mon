@@ -32,6 +32,50 @@ Name = "Create publiccloud-tools HDD"
 Params = { groupid = "276", build = "" }
 MaxLifetime = 432000                     # 5 days
 
+## SLES 16 #####################################################################
+
+[[Groups]]
+Name = "SLES 16 Containers Staging"
+Params = { groupid = "678" }
+MaxLifetime = 604800
+
+[[Groups]]
+Name = "SLES 16 Containers Product Increments"
+Params = { groupid = "682" }
+MaxLifetime = 604800
+
+[[Groups]]
+Name = "SLES 16 MinimalVM Staging"
+Params = { groupid = "676" }
+MaxLifetime = 604800
+
+[[Groups]]
+Name = "SLES 16 MinimalVM Product Increments"
+Params = { groupid = "677" }
+MaxLifetime = 604800
+
+[[Groups]]
+Name = "SLES 16 Public Cloud Staging"
+Params = { groupid = "684" }
+MaxLifetime = 604800
+[[Groups]]
+Name = "SLES 16 Public Cloud Product Increments"
+Params = { groupid = "685" }
+MaxLifetime = 604800
+
+[[Groups]]
+Name = "SL Micro 6.2 Staging Updates"
+Params = { groupid = "699" }
+MaxLifetime = 604800
+[[Groups]]
+Name = "SL Micro 6.2 Product Increments"
+Params = { groupid = "700" }
+MaxLifetime = 604800
+[[Groups]]
+Name = "SL Micro 6.2 Product Increments - Public Cloud"
+Params = { groupid = "701" }
+MaxLifetime = 604800
+
 ## Container Maintenance updates ###############################################
 
 [[Groups]]
@@ -123,24 +167,19 @@ MaxLifetime = 1209600                  # 2 weeks
 ## SLE Micro Maintenance updates ###############################################
 
 [[Groups]]
-Name = "SL Micro 6.0 Staging Updates for Containers"
+Name = "SL Micro 6 Staging Updates for Containers"
 Params = { groupid = "566" }
-MaxLifetime = 432000                                 # 5 days
+MaxLifetime = 432000                               # 5 days
 
 [[Groups]]
-Name = "SL Micro 6.0 Product Updates for Containers"
+Name = "SL Micro 6 Product Updates for Containers"
 Params = { groupid = "572" }
-MaxLifetime = 432000                                 # 5 days
+MaxLifetime = 432000                               # 5 days
 
 [[Groups]]
-Name = "SL Micro 6.0 Product Increments Public Cloud"
-Params = { groupid = "613", version = "6.0" }
-MaxLifetime = 432000                                  # 5 days
-
-[[Groups]]
-Name = "SL Micro 6.1 Product Increments Public Cloud"
-Params = { groupid = "613", version = "6.1" }
-MaxLifetime = 432000                                  # 5 days
+Name = "SL Micro 6 Product Increments Public Cloud"
+Params = { groupid = "613" }
+MaxLifetime = 432000                                # 5 days
 
 [[Groups]]
 Name = "SLE Micro Maintenance Updates 5.5"
@@ -223,16 +262,6 @@ Params = { groupid = "449" }
 MaxLifetime = 432000           # 5 days
 
 ## WSL builds ##################################################################
-
-[[Groups]]
-Name = "SLE 15-SP6 WSL"
-Params = { groupid = "595" }
-MaxLifetime = 432000         # 5 days
-
-[[Groups]]
-Name = "SLE 15-SP5 WSL"
-Params = { groupid = "461" }
-MaxLifetime = 432000         # 5 days
 
 ## Windows KVM Installation
 
