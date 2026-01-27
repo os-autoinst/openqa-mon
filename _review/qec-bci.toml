@@ -23,6 +23,11 @@ RequestJobLimit = 100 # Query up to 100 jobs per http request
 ## BCI and Base images #########################################################
 
 [[Groups]]
+Name = "BCI Base Images 16.1"
+Params = { groupid = "710", build = "" }
+MaxLifetime = 86400
+
+[[Groups]]
 Name = "BCI Base Images 16"
 Params = { groupid = "608", build = "" }
 MaxLifetime = 86400
@@ -48,11 +53,6 @@ Params = { groupid = "443", build = "" }
 MaxLifetime = 86400
 
 [[Groups]]
-Name = "BCI Base Images 15-SP3"
-Params = { groupid = "442", build = "" }
-MaxLifetime = 86400
-
-[[Groups]]
 Name = "BCI Language Images"
 Params = { groupid = "444", build = "" }
 MaxLifetime = 86400
@@ -63,7 +63,7 @@ Params = { groupid = "445", build = "" }
 MaxLifetime = 86400
 
 [[Groups]]
-Name = "Base Images (pre-BCI, <15SP3)"
+Name = "Base Images (12-SP5)"
 Params = { groupid = "453", build = "" }
 MaxLifetime = 86400
 
@@ -80,6 +80,11 @@ MaxLifetime = 86400
 [[Groups]]
 Name = "Helm Charts"
 Params = { groupid = "631", build = "" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "IBM HPVS"
+Params = { groupid = "586", build = "" }
 MaxLifetime = 86400
 
 [[Groups]]
