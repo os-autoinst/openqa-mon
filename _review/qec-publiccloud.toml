@@ -47,15 +47,6 @@ Params = { groupid = "427", build = "%yesterday%-1", version = "15-SP5" }
 Name = "PublicCloud Maintenance Updates 15-SP4"
 Params = { groupid = "427", build = "%yesterday%-1", version = "15-SP4" }
 [[Groups]]
-Name = "PublicCloud Maintenance Updates 15-SP3"
-Params = { groupid = "427", build = "%yesterday%-1", version = "15-SP3" }
-[[Groups]]
-Name = "PublicCloud Maintenance Updates 15-SP2"
-Params = { groupid = "427", build = "%yesterday%-1", version = "15-SP2" }
-[[Groups]]
-Name = "PublicCloud Maintenance Updates 15-SP1"
-Params = { groupid = "427", build = "%yesterday%-1", version = "15-SP1" }
-[[Groups]]
 Name = "PublicCloud Maintenance Updates 12-SP5"
 Params = { groupid = "427", build = "%yesterday%-1", version = "12-SP5" }
 
@@ -71,10 +62,6 @@ MaxLifetime = 86400
 [[Groups]]
 Name = "PublicCloud Mainteanance Images - GCE"
 Params = { groupid = "465" }
-MaxLifetime = 86400
-[[Groups]]
-Name = "PublicCloud Mainteanance Images - SLEM"
-Params = { groupid = "653" }
 MaxLifetime = 86400
 
 # SLE-Micro
