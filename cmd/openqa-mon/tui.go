@@ -143,6 +143,9 @@ func PrintJob(job gopenqa.Job, useColors bool, width int) {
 			}
 		} else if job.State == "cancelled" {
 			fmt.Print(ANSI_MAGENTA)
+		} else if job.State == "scheduled" {
+			fmt.Print(ANSI_CYAN)
+			status = fmt.Sprintf("scheduled (p=%d)", job.Priority)
 		} else {
 			fmt.Print(ANSI_CYAN)
 		}
