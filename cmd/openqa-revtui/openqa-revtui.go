@@ -256,7 +256,11 @@ func RefreshJobs() error {
 		ids = append(ids, job.ID)
 	}
 	callback := func(i, n int) {
-		tui.SetStatus(fmt.Sprintf("Refreshing %d jobs ... %d%% ", len(oldJobs), 100/n*i))
+		if n == 0 {
+			tui.SetStatus(fmt.Sprintf("Refreshing %d jobs ...", len(oldJobs)))
+		} else {
+			tui.SetStatus(fmt.Sprintf("Refreshing %d jobs ... %d%% ", len(oldJobs), 100/n*i))
+		}
 		tui.Update()
 	}
 	jobs, err := fetchJobsFollow(ids, model, callback)
