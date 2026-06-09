@@ -22,13 +22,14 @@ func parseProgramArgs(cf *Config) ([]Config, error) {
 			continue
 		}
 		if arg[0] == '-' {
-			if arg == "-h" || arg == "--help" {
+			switch arg {
+			case "-h", "--help":
 				printUsage()
 				os.Exit(0)
-			} else if arg == "--version" {
+			case "--version":
 				fmt.Println("openqa-revtui version " + internal.VERSION)
 				os.Exit(0)
-			} else if arg == "-c" || arg == "--config" {
+			case "-c", "--config":
 				if i++; i >= n {
 					return cfs, fmt.Errorf("missing argument: %s", "config file")
 				}
@@ -39,22 +40,22 @@ func parseProgramArgs(cf *Config) ([]Config, error) {
 					return cfs, fmt.Errorf("in %s: %s", filename, err)
 				}
 				cfs = append(cfs, cf)
-			} else if arg == "-r" || arg == "--remote" {
+			case "-r", "--remote":
 				if i++; i >= n {
 					return cfs, fmt.Errorf("missing argument: %s", "remote")
 				}
 				cf.Instance = os.Args[i]
-			} else if arg == "-q" || arg == "--rabbit" || arg == "--rabbitmq" {
+			case "-q", "--rabbit", "--rabbitmq":
 				if i++; i >= n {
 					return cfs, fmt.Errorf("missing argument: %s", "RabbitMQ link")
 				}
 				cf.RabbitMQ = os.Args[i]
-			} else if arg == "-i" || arg == "--hide" || arg == "--hide-status" {
+			case "-i", "--hide", "--hide-status":
 				if i++; i >= n {
 					return cfs, fmt.Errorf("missing argument: %s", "Status to hide")
 				}
 				cf.HideStatus = append(cf.HideStatus, strings.Split(os.Args[i], ",")...)
-			} else if arg == "-p" || arg == "--param" {
+			case "-p", "--param":
 				if i++; i >= n {
 					return cfs, fmt.Errorf("missing argument: %s", "parameter")
 				}
@@ -63,11 +64,11 @@ func parseProgramArgs(cf *Config) ([]Config, error) {
 				} else {
 					cf.DefaultParams[name] = value
 				}
-			} else if arg == "-n" || arg == "--notify" || arg == "--notifications" {
+			case "-n", "--notify", "--notifications":
 				cf.Notify = true
-			} else if arg == "-m" || arg == "--mute" || arg == "--silent" || arg == "--no-notify" {
+			case "-m", "--mute", "--silent", "--no-notify":
 				cf.Notify = false
-			} else {
+			default:
 				return cfs, fmt.Errorf("illegal argument: %s", arg)
 			}
 		} else {
