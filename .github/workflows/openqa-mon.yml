@@ -15,7 +15,7 @@ jobs:
       - name: Setup go
         uses: actions/setup-go@v6
         with: &goversion
-          go-version: '1.24'
+          go-version: '1.25'
       - name: Install requirements
         run: go mod download
       - name: Build openqa-mon
