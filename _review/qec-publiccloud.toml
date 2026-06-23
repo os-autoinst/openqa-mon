@@ -69,9 +69,6 @@ MaxLifetime = 86400
 Name = "PublicCloud SLEM 6.0 Product Increments"
 Params = { groupid = "613" }
 [[Groups]]
-Name = "PublicCloud SLEM 6.2 Product Increments"
-Params = { groupid = "701" }
-[[Groups]]
 Name = "PublicCloud Maintenance Updates 5.5"
 Params = { groupid = "532", build = "%yesterday%-1", version = "5.5" }
 [[Groups]]
