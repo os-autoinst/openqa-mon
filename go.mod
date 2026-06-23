@@ -1,17 +1,15 @@
 module github.com/os-autoinst/openqa-mon
 
-go 1.24.0
-
-toolchain go1.24.2
+go 1.25.0
 
 require (
-	github.com/BurntSushi/toml v1.5.0
+	github.com/BurntSushi/toml v1.6.0
 	github.com/os-autoinst/gopenqa v1.0.0
-	golang.org/x/crypto v0.45.0
+	golang.org/x/crypto v0.53.0
 )
 
 require (
-	github.com/rabbitmq/amqp091-go v1.10.0
-	golang.org/x/sys v0.38.0 // indirect
-	golang.org/x/term v0.37.0 // indirect
+	github.com/rabbitmq/amqp091-go v1.12.0
+	golang.org/x/sys v0.46.0 // indirect
+	golang.org/x/term v0.44.0 // indirect
 )

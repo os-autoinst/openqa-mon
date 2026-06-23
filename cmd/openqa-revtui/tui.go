@@ -620,7 +620,7 @@ func (tui *TUI) formatJobLine(job gopenqa.Job, width int) string {
 				cname = ""
 			}
 		}
-		return fmt.Sprintf(c2 + fmt.Sprintf("%-12s", state) + ANSI_RESET + " " + cname)
+		return fmt.Sprintf("%s%-12s%s%s", c2, state, ANSI_RESET, cname)
 	}
 }
 
