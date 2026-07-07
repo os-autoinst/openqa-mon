@@ -71,10 +71,6 @@ MaxLifetime = 604800
 Name = "SL Micro 6.2 Product Increments"
 Params = { groupid = "700" }
 MaxLifetime = 604800
-[[Groups]]
-Name = "SL Micro 6.2 Product Increments - Public Cloud"
-Params = { groupid = "701" }
-MaxLifetime = 604800
 
 ## Container Maintenance updates ###############################################
 
