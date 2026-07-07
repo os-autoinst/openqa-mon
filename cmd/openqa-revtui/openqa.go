@@ -163,7 +163,7 @@ func FetchJobs(model *TUIModel, callback FetchJobsCallback) ([]gopenqa.Job, erro
 	for i, group := range model.Config.Groups {
 		jobs, err := model.Instance.GetOverview("", group.Params)
 		if err != nil {
-			return ret, err
+			return ret, fmt.Errorf("%s in %s", err, group.String())
 		}
 
 		// Limit jobs to at most MaxJobs, if set (0 = unlimited)
