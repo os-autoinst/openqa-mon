@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -101,4 +102,10 @@ func (cf *Config) SetRabbitO3() {
 func (cf *Config) SetRabbitOSD() {
 	cf.RabbitMQ = "amqps://suse:suse@rabbit.suse.de"
 	cf.RabbitMQTopic = "suse.openqa.job.done"
+}
+
+// Human readable representation of the group
+func (grp *Group) String() string {
+	buf, _ := json.Marshal(grp.Params)
+	return fmt.Sprintf("'%s' %s", grp.Name, string(buf))
 }
