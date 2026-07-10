@@ -2,3 +2,15 @@
 merge_queue:
   status_comments: none
   queue_controls_comment: false
+pull_request_rules:
+  - name: automatic merge for dependabot updates
+    conditions:
+      - base=main
+      - author=dependabot[bot]
+      - -label~=^acceptance-tests-needed|not-ready
+      - "#check-failure=0"
+      - "#check-pending=0"
+      - linear-history
+    actions:
+      merge:
+        method: squash
