@@ -174,10 +174,6 @@ Name = "SLE Micro Maintenance Updates 5.3"
 Params = { groupid = "420", build = "%yesterday%-1", version = "5.3" }
 
 [[Groups]]
-Name = "SLE Micro Maintenance Updates 5.2"
-Params = { groupid = "420", build = "%yesterday%-1", version = "5.2" }
-
-[[Groups]]
 Name = "SLE Micro Maintenance Updates 5.5 Public Cloud"
 Params = { groupid = "532", build = "%yesterday%-1", version = "5.5" }
 
@@ -188,10 +184,6 @@ Params = { groupid = "532", build = "%yesterday%-1", version = "5.4" }
 [[Groups]]
 Name = "SLE Micro Maintenance Updates 5.3  Public Cloud"
 Params = { groupid = "532", build = "%yesterday%-1", version = "5.3" }
-
-[[Groups]]
-Name = "SLE Micro Maintenance Updates 5.2  Public Cloud"
-Params = { groupid = "532", build = "%yesterday%-1", version = "5.2" }
 
 ## Single Incidents SLE Micro
 
@@ -208,11 +200,6 @@ MaxLifetime = 432000                             # 5 days
 [[Groups]]
 Name = "SLE Micro Maintenance Incidents for 5.3"
 Params = { groupid = "484" }
-MaxLifetime = 432000                             # 5 days
-
-[[Groups]]
-Name = "SLE Micro Maintenance Incidents for 5.2"
-Params = { groupid = "483" }
 MaxLifetime = 432000                             # 5 days
 
 ## SLE Micro image updates
