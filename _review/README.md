@@ -24,7 +24,8 @@ Individual files:
 * [qec-bci.toml](qec-bci.toml) - Review template for SLE BCI container images
 * [qec-minimalvm.toml](qec-minimalvm.toml) - Review template for MinimalVM/JeOS images
 * [qec-sle-micro.toml](qec-sle-micro.toml) - Review template for SLE Micro
-* [qec-wsl.toml](qec-wsl.toml) - Review template for SLE WSL images
+* [qec-qr.toml](qec-qr.toml) - Review template for Quarterly Refresh MinimalVM test runs
+* [qec-sles16-latest.toml](qec-sles16-latest.toml) - Review template for miscellaneous SLE 16 test runs (container host, minimal-VM, public cloud clients, transactional images)
 
 ## Create a TODO template
 

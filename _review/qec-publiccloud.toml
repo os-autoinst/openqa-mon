@@ -60,6 +60,10 @@ MaxLifetime = 86400
 Name = "PublicCloud Mainteanance Images - SAP"
 Params = { groupid = "640" }
 MaxLifetime = 86400
+[[Groups]]
+Name = "PublicCloud Mainteanance Images - SLEM"
+Params = { groupid = "653" }
+MaxLifetime = 86400
 
 [[Groups]]
 Name = "LTP Stable"

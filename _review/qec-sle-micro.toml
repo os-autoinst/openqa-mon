@@ -28,6 +28,16 @@ Name = "SLE Micro for Rancher"
 Params = { groupid = "449" }
 MaxLifetime = 86400
 
+[[Groups]]
+Name = "Container Host"
+Params = { groupid = "513" }
+MaxLifetime = 86400
+
+[[Groups]]
+Name = "Image config"
+Params = { groupid = "560" }
+MaxLifetime = 86400
+
 ## Maintenance updates #########################################################
 
 ## SL Micro

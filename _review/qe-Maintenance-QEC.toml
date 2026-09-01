@@ -116,7 +116,6 @@ Params = { groupid = "419", build = "%yesterday%-1", version = "15-SP4" }
 Name = "JeOS Maintenance Updates 12-SP5"
 Params = { groupid = "419", build = "%yesterday%-1", version = "12-SP5" }
 
-
 ## PublicCloud Maintenance updates #############################################
 
 [[Groups]]
