@@ -87,7 +87,7 @@ func IsTTY() bool {
 	}
 }
 
-// shortenStatus abbreviates status labels that don't fit in the narrow (14 char) status field
+// shortenStatus abbreviates status labels that don't fit in the narrow (12 char) status field
 func shortenStatus(status string) string {
 	switch status {
 	case "parallel_restarted":
@@ -97,8 +97,8 @@ func shortenStatus(status string) string {
 	case "user_restarted":
 		return "user_restart"
 	}
-	if strings.HasPrefix(status, "scheduled (p=") {
-		return "sched" + status[len("scheduled"):]
+	if strings.HasPrefix(status, "scheduled (p=") && strings.HasSuffix(status, ")") {
+		return "sched p=" + status[len("scheduled (p="):len(status)-1]
 	}
 	return status
 }
@@ -176,9 +176,10 @@ func PrintJob(job gopenqa.Job, useColors bool, width int) {
 	// |id 8 chars|2 spaces|name@machine[2spaces|link]|2 spaces|status, right-aligned
 	// Status is normally 18 chars wide (fits "parallel_restarted"). If that
 	// leaves no room for the name, status labels are shortened and the field
-	// shrinks to 14 chars to free up space for the name.
+	// shrinks to 12 chars (fits e.g. "running 100%", "sched p=-150") to free
+	// up space for the name.
 	fixedCharactersFull := 30  // 8+2+2+18
-	fixedCharactersShort := 26 // 8+2+2+14
+	fixedCharactersShort := 24 // 8+2+2+12
 	fixedCharacters := fixedCharactersFull
 	statusWidth := 18
 
@@ -190,7 +191,7 @@ func PrintJob(job gopenqa.Job, useColors bool, width int) {
 
 	if width-fixedCharactersFull < len(name) {
 		fixedCharacters = fixedCharactersShort
-		statusWidth = 14
+		statusWidth = 12
 		status = shortenStatus(status)
 	}
 
