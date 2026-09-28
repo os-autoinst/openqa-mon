@@ -2,5 +2,8 @@
 /openqa-mon
 /openqa-revtui
 /openqa-mq
+/openqa-mon-*
+/openqa-revtui-*
+/openqa-mq-*
 # Temporary files
 /*.json

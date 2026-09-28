@@ -1,24 +1,25 @@
 .PHONY: lint
 
 default: all
-static: openqa-mon-static openqa-mq-static openqa-revtui-static
 
 GOARGS=
 PREFIX=/usr/local/bin/
 
 all: openqa-mon openqa-mq openqa-revtui
-openqa-mon: cmd/openqa-mon/openqa-mon.go cmd/openqa-mon/config.go cmd/openqa-mon/tui.go cmd/openqa-mon/util.go
-	go build $(GOARGS) -o $@ $^
-openqa-mon-static: cmd/openqa-mon/openqa-mon.go cmd/openqa-mon/config.go cmd/openqa-mon/tui.go cmd/openqa-mon/util.go
-	CGO_ENABLED=0 go build -a -ldflags '-extldflags "-static"' -o openqa-mon $^
-openqa-mq: cmd/openqa-mq/openqa-mq.go
-	go build $(GOARGS) -o $@ $^
-openqa-mq-static: cmd/openqa-mq/openqa-mq.go
-	CGO_ENABLED=0 go build -a -ldflags '-extldflags "-static"' -o openqa-mq $^
-openqa-revtui: cmd/openqa-revtui/openqa-revtui.go cmd/openqa-revtui/tui.go cmd/openqa-revtui/utils.go cmd/openqa-revtui/openqa.go cmd/openqa-revtui/config.go
-	go build $(GOARGS) -o $@ $^
-openqa-revtui-static: cmd/openqa-revtui/openqa-revtui.go cmd/openqa-revtui/tui.go cmd/openqa-revtui/utils.go cmd/openqa-revtui/openqa.go cmd/openqa-revtui/config.go
-	CGO_ENABLED=0 go build -a -ldflags '-extldflags "-static"' -o openqa-revtui $^
+openqa-mon: cmd/openqa-mon/*.go internal/main.go
+	go build $(GOARGS) -o $@ cmd/openqa-mon/*.go
+openqa-mq: cmd/openqa-mq/*.go internal/main.go
+	go build $(GOARGS) -o $@ cmd/openqa-mq/*.go 
+openqa-revtui: cmd/openqa-revtui/*.go internal/main.go
+	go build $(GOARGS) -o $@ cmd/openqa-revtui/*.go
+
+release: cmd/openqa-mon/*.go cmd/openqa-revtui/*.go cmd/openqa-mq/*.go internal/main.go
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -a -ldflags '-extldflags "-static"' -o openqa-revtui-x86_64 cmd/openqa-revtui/*.go
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -a -ldflags '-extldflags "-static"' -o openqa-mq-x86_64 cmd/openqa-mq/*.go
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -a -ldflags '-extldflags "-static"' -o openqa-mon-x86_64 cmd/openqa-mon/*.go
+	GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -a -ldflags '-extldflags "-static"' -o openqa-revtui-aarch64 cmd/openqa-revtui/*.go
+	GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -a -ldflags '-extldflags "-static"' -o openqa-mq-aarch64 cmd/openqa-mq/*.go
+	GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -a -ldflags '-extldflags "-static"' -o openqa-mon-aarch64 cmd/openqa-mon/*.go
 
 requirements:
 	go get ./...
