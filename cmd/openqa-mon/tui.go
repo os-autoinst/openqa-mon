@@ -87,6 +87,22 @@ func IsTTY() bool {
 	}
 }
 
+// shortenStatus abbreviates status labels that don't fit in the narrow (12 char) status field
+func shortenStatus(status string) string {
+	switch status {
+	case "parallel_restarted":
+		return "parallel_re"
+	case "user_cancelled":
+		return "user_cancell"
+	case "user_restarted":
+		return "user_restart"
+	}
+	if strings.HasPrefix(status, "scheduled (p=") && strings.HasSuffix(status, ")") {
+		return "sched p=" + status[len("scheduled (p="):len(status)-1]
+	}
+	return status
+}
+
 func PrintLine(line string, maxWidth int) {
 	if maxWidth > 0 && len(line) > maxWidth {
 		line = line[:maxWidth]
@@ -124,7 +140,7 @@ func PrintJob(job gopenqa.Job, useColors bool, width int) {
 	status := job.JobState()
 	if job.State == "running" {
 		if pct, ok := job.Progress(); ok {
-			status = fmt.Sprintf("running %d%%", pct)
+			status = fmt.Sprintf("running %3d%%", pct)
 		}
 	}
 	if useColors {
@@ -157,16 +173,28 @@ func PrintJob(job gopenqa.Job, useColors bool, width int) {
 	}
 
 	// Spacing rules:
-	// |id 8 chars|2 spaces|name@machine[2spaces|link]|2 spaces|status 15 characteres
-
-	// fixed characters: 8+2+2+18 = 30
-	fixedCharacters := 30
+	// |id 8 chars|2 spaces|name@machine[2spaces|link]|2 spaces|status, right-aligned
+	// Status is normally 18 chars wide (fits "parallel_restarted"). If that
+	// leaves no room for the name, status labels are shortened and the field
+	// shrinks to 12 chars (fits e.g. "running 100%", "sched p=-150") to free
+	// up space for the name.
+	fixedCharactersFull := 30  // 8+2+2+18
+	fixedCharactersShort := 24 // 8+2+2+12
+	fixedCharacters := fixedCharactersFull
+	statusWidth := 18
 
 	name := job.Prefix
 	if len(name) > 0 {
 		name += " "
 	}
 	name += job.Test + "@" + job.Settings.Machine
+
+	if width-fixedCharactersFull < len(name) {
+		fixedCharacters = fixedCharactersShort
+		statusWidth = 12
+		status = shortenStatus(status)
+	}
+
 	link := job.Link
 
 	// Is there space for the link (including 2 additional spaces between name and link)?
@@ -187,10 +215,10 @@ func PrintJob(job gopenqa.Job, useColors bool, width int) {
 		// Expand name
 		name = name + strings.Repeat(" ", i)
 	}
-	if len(status) < 18 {
-		status = strings.Repeat(" ", 18-len(status)) + status
+	if len(status) < statusWidth {
+		status = strings.Repeat(" ", statusWidth-len(status)) + status
 	}
-	fmt.Printf("%8d  %s%s  %.18s\n", job.ID, name, link, status)
+	fmt.Printf("%8d  %s%s  %.*s\n", job.ID, name, link, statusWidth, status)
 
 	// Reset color
 	if useColors {
