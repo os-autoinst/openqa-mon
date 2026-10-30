@@ -101,7 +101,7 @@ func matchTestURL(url string) (bool, string, []int64) {
 func checkJobLimit(remotes []Remote) error {
 	jobs := 0
 	for _, remote := range remotes {
-		jobs += len(remote.Jobs)
+		jobs += len(unique(remote.Jobs))
 	}
 	if config.DosProtection && jobs > maxJobsPerRun {
 		return fmt.Errorf("too many jobs requested (%d > %d), use --disable-dos-protection to override", jobs, maxJobsPerRun)
@@ -490,6 +490,12 @@ func parseProgramArguments(cliargs []string) error {
 	args, err := expandArguments(cliargs[1:])
 	if err != nil {
 		return err
+	}
+	// Apply the override before parsing so it works regardless of argument order
+	for _, arg := range args {
+		if arg == "--disable-dos-protection" {
+			config.DosProtection = false
+		}
 	}
 	// Manually parse program arguments, as the "flag" package is not sufficent for automatic parsing of job links and job numbers
 	for i := 0; i < len(args); i++ {

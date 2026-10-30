@@ -2,6 +2,7 @@
 package main
 
 import (
+	"math"
 	"os/user"
 	"strconv"
 	"strings"
@@ -70,10 +71,16 @@ func homeDir() string {
 }
 
 func createInt64Range(min int64, max int64, offset int64) []int64 {
+	if max < min || (offset > 0 && max > math.MaxInt64-offset) {
+		return []int64{}
+	}
 	// create with capacity to avoid runtime reallocation
 	ret := make([]int64, 0, (max-min)+1)
 	for i := min; i <= max; i++ {
 		ret = append(ret, i+offset)
+		if i == max {
+			break
+		}
 	}
 	return ret
 }
@@ -102,7 +109,10 @@ func parseJobIDs(parseText string) []int64 {
 		if start <= 0 {
 			return ret
 		}
-		steps, _ := strconv.Atoi(upper) // On errors it returns conveniently 0, so don't do error checking here
+		steps, err := strconv.Atoi(upper)
+		if err != nil || steps < 0 {
+			return ret
+		}
 		return createInt64Range(0, int64(steps), start)
 	}
 
