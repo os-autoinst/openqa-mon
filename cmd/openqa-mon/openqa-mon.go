@@ -29,6 +29,9 @@ type Remote struct {
 
 var remotes []Remote
 
+// Maximum number of jobs a single run may request, unless DoS protection is disabled
+const maxJobsPerRun = 100
+
 func printHelp() {
 	fmt.Printf("Usage: %s [OPTIONS] REMOTE [JOBS]\n", os.Args[0])
 	fmt.Println("  REMOTE can be the directlink to a test (e.g. https://openqa.opensuse.org/t123)")
@@ -50,6 +53,7 @@ func printHelp() {
 	fmt.Println("  --no-notify                      Disable desktop notifications")
 	fmt.Println("  -m,--monitor                     Enable bell and desktop notifications")
 	fmt.Println("  -s,--silent                      Disable bell and desktop notifications")
+	fmt.Println("  --disable-dos-protection         Allow requesting more than 100 jobs in a single run")
 	fmt.Println("")
 	fmt.Println("  -f,--follow                      Follow jobs, i.e. replace jobs by their clones if available")
 	fmt.Println("  --no-follow                      Don't follow jobs")
@@ -91,6 +95,18 @@ func matchTestURL(url string) (bool, string, []int64) {
 		}
 	}
 	return false, "", jobs
+}
+
+/* Refuse runs with too many jobs, to avoid overloading an openQA instance */
+func checkJobLimit(remotes []Remote) error {
+	jobs := 0
+	for _, remote := range remotes {
+		jobs += len(remote.Jobs)
+	}
+	if config.DosProtection && jobs > maxJobsPerRun {
+		return fmt.Errorf("too many jobs requested (%d > %d), use --disable-dos-protection to override", jobs, maxJobsPerRun)
+	}
+	return nil
 }
 
 /* checks if all given jobs are done */
@@ -534,6 +550,8 @@ func parseProgramArguments(cliargs []string) error {
 			case "--monitor":
 				config.Bell = true
 				config.Notify = true
+			case "--disable-dos-protection":
+				config.DosProtection = false
 			case "--follow":
 				config.Follow = true
 			case "--no-follow":
@@ -665,6 +683,11 @@ func main() {
 		sort.Slice(remote.Jobs, func(i, j int) bool {
 			return remote.Jobs[i] < remote.Jobs[j]
 		})
+	}
+
+	if err := checkJobLimit(remotes); err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+		os.Exit(1)
 	}
 
 	// Single listing mode, no TUI

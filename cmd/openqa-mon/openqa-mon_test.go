@@ -50,6 +50,26 @@ func TestRemotesMultipleJobs(t *testing.T) {
 	}
 }
 
+func TestJobLimit(t *testing.T) {
+	config.SetDefaults()
+	defer config.SetDefaults()
+
+	remotes := []Remote{{Jobs: make([]int64, maxJobsPerRun)}}
+	if err := checkJobLimit(remotes); err != nil {
+		t.Error("Expected", maxJobsPerRun, "jobs to be accepted, got:", err)
+	}
+
+	remotes[0].Jobs = append(remotes[0].Jobs, 1)
+	if err := checkJobLimit(remotes); err == nil {
+		t.Error("Expected more than", maxJobsPerRun, "jobs to be refused")
+	}
+
+	config.DosProtection = false
+	if err := checkJobLimit(remotes); err != nil {
+		t.Error("Expected --disable-dos-protection to accept the jobs, got:", err)
+	}
+}
+
 func TestShouldGiveError(t *testing.T) {
 	tests := []struct {
 		input       []string

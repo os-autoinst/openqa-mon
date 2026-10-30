@@ -18,6 +18,7 @@ type Config struct {
 	HideStates    []string // hide the following job states
 	Quit          bool     // quit program, once all jobs are completed
 	Paused        bool     // Continuous monitoring pased
+	DosProtection bool     // refuse runs requesting more than maxJobsPerRun jobs
 	RabbitMQ      bool     // Use rabbitmq if possible
 	RabbitMQFiles []string // Additional RabbitMQ configuration files to be loaded
 }
@@ -55,6 +56,7 @@ func (cf *Config) SetDefaults() {
 	cf.Hierarchy = false
 	cf.HideStates = make([]string, 0)
 	cf.Quit = false
+	cf.DosProtection = true
 	cf.RabbitMQ = false // Disabled by default for now
 	cf.RabbitMQFiles = make([]string, 0)
 }
