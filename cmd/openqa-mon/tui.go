@@ -344,6 +344,30 @@ func (tui *TUI) doHideJob(j gopenqa.Job) bool {
 	return false
 }
 
+// visibleJobs returns the jobs to display, without the hidden ones if hiding is enabled
+func (tui *TUI) visibleJobs() []gopenqa.Job {
+	if !tui.hideEnable {
+		return tui.Model.jobs
+	}
+	jobs := make([]gopenqa.Job, 0, len(tui.Model.jobs))
+	for _, job := range tui.Model.jobs {
+		if !tui.doHideJob(job) {
+			jobs = append(jobs, job)
+		}
+	}
+	return jobs
+}
+
+// pageLayout returns the slice bounds of the given page, the total page count and the page clamped to it
+func pageLayout(nJobs, perPage, page int) (start, end, total, cur int) {
+	perPage = max(1, perPage)
+	total = max(1, (nJobs+perPage-1)/perPage)
+	cur = max(0, min(page, total-1))
+	start = min(cur*perPage, nJobs)
+	end = min(start+perPage, nJobs)
+	return
+}
+
 // Redraw tui
 func (tui *TUI) Update() {
 	if len(tui.Model.jobs) == 0 {
@@ -352,12 +376,20 @@ func (tui *TUI) Update() {
 	}
 	width, height := terminalSize()
 
+	// header (1) and optional help (1) are always printed. The last row is for the status line.
+	reserved := 2
+	if tui.showHelp {
+		reserved++
+	}
+	jobs := tui.visibleJobs()
+	start, end, total, cur := pageLayout(len(jobs), height-reserved, tui.currentPage)
+	tui.totalPages, tui.currentPage = total, cur
+	tui.UpdateHeader()
+
 	tui.Clear()
 	lines := 0
-	if tui.header != "" {
-		PrintLine(tui.header, width)
-		lines++
-	}
+	PrintLine(tui.header, width)
+	lines++
 	if tui.showHelp {
 		help := "?:Toggle help  r:Refresh  d:Toggle notifications  b:Toggle bell  +/-:Modify refresh time  p:Toggle pause  <>:Page"
 		if len(tui.Model.HideStates) > 0 {
@@ -367,27 +399,13 @@ func (tui *TUI) Update() {
 		PrintLine(help, width)
 		lines++
 	}
-	pageHeight := height - 1
-	if tui.showStatus {
-		pageHeight--
-	}
-	// ensure to always have something to display without exceeding the slice limits
-	startIdx := min(tui.currentPage*pageHeight, len(tui.Model.jobs))
-	endIdx := min(startIdx+pageHeight, len(tui.Model.jobs))
-	tui.totalPages = len(tui.Model.jobs) / pageHeight
-	if len(tui.Model.jobs)%pageHeight > 0 {
-		tui.totalPages++ // one more page for any partial-page leftover
-	}
-	for _, job := range tui.Model.jobs[startIdx:endIdx] {
-		if tui.hideEnable && tui.doHideJob(job) {
-			continue
-		}
+	for _, job := range jobs[start:end] {
 		PrintJob(job, true, width)
 		lines++
 	}
 
 	// print some empty lines if needed to fill last page and make footer always on last line
-	for lines <= pageHeight {
+	for lines < height-1 {
 		fmt.Println()
 		lines++
 	}
