@@ -53,6 +53,11 @@ Enable bell and desktop notifications (alias for "--bell --notify")
 Disable bell and desktop notifications (alias for "--no-bell --no-notify")
 
 .TP
+.B --disable-dos-protection
+Allow requesting more than 100 jobs in a single run. By default, openqa-mon
+refuses runs with too many jobs to avoid overloading an openQA instance.
+
+.TP
 .B -f|--follow
 Follow jobs, i.e. replace jobs by their clones if available.
 This setting is useful to track jobs if they are going to be restarted in openQA.
