@@ -164,3 +164,13 @@ func uniqueJobs(jobs []gopenqa.Job) []gopenqa.Job {
 	}
 	return ret
 }
+
+// hasFailedModule returns true if any test module of the job has already failed, e.g. a running job in post_fail_hook
+func hasFailedModule(job gopenqa.Job) bool {
+	for _, m := range job.Modules {
+		if m.Result == "failed" {
+			return true
+		}
+	}
+	return false
+}

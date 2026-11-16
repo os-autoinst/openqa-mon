@@ -565,6 +565,9 @@ func (tui *TUI) formatJobLine(job gopenqa.Job, width int) string {
 		c1 = getDateColorcode(timestamp)
 	}
 	c2 := stateColor(state)
+	if state == "running" && hasFailedModule(job) {
+		c2 = ANSI_RED
+	}
 	// If it is scheduled, it does not make any sense to display the starting time, since it's not set
 	if state != "scheduled" && timestamp.Unix() > 0 {
 		tStr = timestamp.Format("2006-01-02-15:04:05")

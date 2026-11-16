@@ -3,6 +3,8 @@ package main
 import (
 	"reflect"
 	"testing"
+
+	"github.com/os-autoinst/gopenqa"
 )
 
 func TestAddRemoteFromCLI(t *testing.T) {
@@ -74,5 +76,16 @@ func TestShouldGiveError(t *testing.T) {
 		if err.Error() != tc.expectedmsg {
 			t.Error("Expected", tc.expectedmsg, "got:", err)
 		}
+	}
+}
+
+func TestHasFailedModule(t *testing.T) {
+	job := gopenqa.Job{Modules: []gopenqa.JobModule{{Result: "passed"}, {Result: "none"}}}
+	if hasFailedModule(job) {
+		t.Error("job without failed module reported as failed")
+	}
+	job.Modules = append(job.Modules, gopenqa.JobModule{Result: "failed"})
+	if !hasFailedModule(job) {
+		t.Error("job with failed module not reported as failed")
 	}
 }
