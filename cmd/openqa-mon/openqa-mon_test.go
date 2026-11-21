@@ -140,6 +140,7 @@ func TestInvalidAndHugeRangesDoNotPanic(t *testing.T) {
 
 	for _, input := range []string{
 		"9223372036854775807..9223372036854775807",
+		"1+9999999999",
 		"1+999999999999999999999",
 		"1+-5",
 	} {

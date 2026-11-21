@@ -113,6 +113,9 @@ func parseJobIDs(parseText string) []int64 {
 		if err != nil || steps < 0 {
 			return ret
 		}
+		if config.DosProtection && steps >= maxJobsPerRun {
+			steps = maxJobsPerRun
+		}
 		return createInt64Range(0, int64(steps), start)
 	}
 
