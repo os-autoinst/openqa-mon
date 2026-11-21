@@ -60,6 +60,7 @@ OPTIONS
   -m,--monitor                     Enable bell and desktop notifications
   -s,--silent                      Disable bell and desktop notifications
 
+  --disable-dos-protection         Allow requesting more than 100 jobs in a single run
   -f,--follow                      Follow jobs, i.e. replace jobs by their clones if available
   --no-follow                      Don't follow jobs
   --rabbitmq                       Explicitly enable rabbitmq (experimental!!)
