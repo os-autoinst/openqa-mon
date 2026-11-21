@@ -99,6 +99,9 @@ func parseJobIDs(parseText string) []int64 {
 		if min > max {
 			min, max = max, min
 		}
+		if config.DosProtection && max-min > maxJobsPerRun {
+			max = min + maxJobsPerRun
+		}
 		return createInt64Range(min, max, 0)
 	}
 	// Search for + (usage: jobID+3 returns [jobID,jobID+3])
