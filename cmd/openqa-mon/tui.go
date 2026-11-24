@@ -129,7 +129,11 @@ func PrintJob(job gopenqa.Job, useColors bool, width int) {
 	}
 	if useColors {
 		if job.State == "running" {
-			fmt.Print(ANSI_BLUE)
+			if hasFailedModule(job) {
+				fmt.Print(ANSI_RED)
+			} else {
+				fmt.Print(ANSI_BLUE)
+			}
 		} else if job.State == "done" {
 			status = job.Result
 			switch job.Result {
