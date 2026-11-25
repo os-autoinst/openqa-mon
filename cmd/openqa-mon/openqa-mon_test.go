@@ -225,3 +225,20 @@ func TestHasFailedModule(t *testing.T) {
 		t.Error("job with failed module not reported as failed")
 	}
 }
+
+func TestShortenStatus(t *testing.T) {
+	tests := map[string]string{
+		"parallel_restarted": "restarted",
+		"user_restarted":     "restarted",
+		"user_cancelled":     "user_cancell",
+		"scheduled (p=50)":   "sched p=50",
+		"scheduled (p=-150)": "sched p=-150",
+		"timeout_exceeded":   "timeout_exce",
+		"passed":             "passed",
+	}
+	for in, want := range tests {
+		if got := shortenStatus(in); got != want {
+			t.Errorf("shortenStatus(%q) = %q; want %q", in, got, want)
+		}
+	}
+}
