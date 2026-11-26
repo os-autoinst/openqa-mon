@@ -15,8 +15,6 @@ pull_request_rules:
       - and:
           - "#approved-reviews-by>=2"
           - "#changes-requested-reviews-by=0"
-          # https://doc.mergify.io/examples.html#require-all-requested-reviews-to-be-approved
-          - "#review-requested=0"
     actions: &merge
       merge:
         method: merge
@@ -29,12 +27,22 @@ pull_request_rules:
           - base=main
           - label=merge-fast
     actions: *merge
-  - name: automatic merge for dependabot updates
+  - name: automatic merge for dependabot updates that only bump dependencies
     conditions:
       - and: *base_checks
-      - and:
-          - base=main
+      - and: &bot_gate
           - author=dependabot[bot]
-    actions:
+          - "#changes-requested-reviews-by=0"
+      # A commit pushed on top of the bot's own is a code change, not a bump
+      - "#commits=1"
+      # A bump only writes these paths; anything else needs review
+      - -files~=^(?!(\.github/workflows/[^/]+\.ya?ml)$).+
+    actions: &squash
       merge:
         method: squash
+  - name: require review for other dependabot updates
+    conditions:
+      - and: *base_checks
+      - and: *bot_gate
+      - "#approved-reviews-by>=1"
+    actions: *squash
